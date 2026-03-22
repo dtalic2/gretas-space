@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Snake Game - Version Selector</title>
+    <title>SNK CLSH - Snake Clash</title>
     <style>
         * {
             margin: 0;
@@ -23,10 +23,21 @@
         }
 
         h1 {
-            font-size: 2rem;
-            margin-bottom: 10px;
+            font-size: 2.8rem;
+            margin-bottom: 4px;
             color: #4ade80;
-            text-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+            text-shadow: 0 0 30px rgba(74, 222, 128, 0.4), 0 0 60px rgba(74, 222, 128, 0.15);
+            letter-spacing: 6px;
+            font-weight: 900;
+        }
+
+        .hero-canvas-wrap {
+            margin-bottom: 12px;
+        }
+
+        #hero-canvas {
+            display: block;
+            border-radius: 8px;
         }
 
         .version-bar {
@@ -75,7 +86,7 @@
             position: relative;
         }
 
-        canvas {
+        canvas#game-canvas {
             border: 2px solid #333;
             border-radius: 4px;
             display: block;
@@ -129,10 +140,25 @@
             color: #555;
             font-size: 0.8rem;
         }
+
+        .footer {
+            margin-top: 30px;
+            padding: 12px 24px;
+            color: #4ade80;
+            font-size: 1rem;
+            letter-spacing: 2px;
+            text-transform: lowercase;
+            border-top: 1px solid #222;
+            text-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
+        }
     </style>
 </head>
 <body>
-    <h1>Snake Game</h1>
+    <h1>SNK CLSH</h1>
+
+    <div class="hero-canvas-wrap">
+        <canvas id="hero-canvas" width="400" height="220"></canvas>
+    </div>
 
     <div class="version-bar" id="version-bar"></div>
     <div class="version-info" id="version-info"></div>
@@ -147,6 +173,11 @@
     </div>
 
     <div class="controls-help">Arrow Keys or WASD to move &bull; Space to pause &bull; Enter to restart</div>
+
+    <div class="footer">updated snake clash</div>
+
+    <!-- Hero artwork -->
+    <script src="hero.js"></script>
 
     <!-- Version registry - add new versions here -->
     <script src="versions/registry.js"></script>
