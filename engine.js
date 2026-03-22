@@ -1,9 +1,10 @@
 /**
  * Snake Game Engine
  *
- * Supports keyboard + native touch (swipe on canvas, d-pad buttons).
- * Touch is handled via a simple tap helper that fires on touchend
- * with no preventDefault on buttons — letting iOS handle them natively.
+ * Touch: plain onclick handlers on buttons (works on every iOS version).
+ * Swipe: touchstart/touchend on canvas only.
+ * All buttons use inline onclick= calling window globals — the most
+ * reliable pattern on mobile Safari.
  */
 (function () {
     const canvas = document.getElementById("game-canvas");
@@ -22,12 +23,10 @@
     try {
         const saved = localStorage.getItem("snake-high-scores");
         if (saved) highScores = JSON.parse(saved);
-    } catch (e) { /* ignore */ }
+    } catch (e) {}
 
     function saveHighScores() {
-        try {
-            localStorage.setItem("snake-high-scores", JSON.stringify(highScores));
-        } catch (e) { /* ignore */ }
+        try { localStorage.setItem("snake-high-scores", JSON.stringify(highScores)); } catch (e) {}
     }
 
     // ─── Version bar ───
@@ -38,14 +37,9 @@
             btn.className = "version-btn";
             btn.textContent = `v${v.number} — ${v.name}`;
             btn.dataset.version = v.number;
-            // Use ontouchend for instant response on iOS, onclick as fallback
-            tap(btn, () => selectVersion(v.number));
+            btn.onclick = function () { selectVersion(v.number); };
             versionBar.appendChild(btn);
         });
-    }
-
-    function updateVersionInfo(v) {
-        versionInfo.innerHTML = `<strong>v${v.number} — ${v.name}:</strong> ${v.description}`;
     }
 
     function highlightButton(number) {
@@ -54,14 +48,14 @@
         });
     }
 
-    // ─── Version select / init ───
+    // ─── Select version ───
     function selectVersion(number) {
         const v = SnakeVersions.getByNumber(number);
         if (!v) return;
 
         currentVersion = v;
         highlightButton(number);
-        updateVersionInfo(v);
+        versionInfo.innerHTML = `<strong>v${v.number} — ${v.name}:</strong> ${v.description}`;
 
         const config = v.config || {};
         const gridSize = config.gridSize || 20;
@@ -80,7 +74,6 @@
 
         game = {};
         v.init(ctx, game);
-
         scoreEl.textContent = game.score || 0;
         highScoreEl.textContent = highScores[`v${number}`] || 0;
 
@@ -91,12 +84,10 @@
 
     function loop(timestamp) {
         loopId = requestAnimationFrame(loop);
-
         if (timestamp - lastTick >= ctx.tickRate) {
             lastTick = timestamp;
             if (currentVersion.update) currentVersion.update(ctx, game);
             scoreEl.textContent = game.score || 0;
-
             const key = `v${currentVersion.number}`;
             if ((game.score || 0) > (highScores[key] || 0)) {
                 highScores[key] = game.score;
@@ -104,124 +95,109 @@
                 saveHighScores();
             }
         }
-
         if (currentVersion.draw) currentVersion.draw(ctx, game, canvas);
     }
 
-    // ─── Input dispatch ───
+    // ─── Core input ───
     function handleInput(key) {
         if (!currentVersion) return;
-
         if (key === " " && game.state === "playing") {
-            game._paused = true;
-            game.state = "paused";
-            return;
+            game._paused = true; game.state = "paused"; return;
         }
         if (key === " " && game.state === "paused") {
-            game._paused = false;
-            game.state = "playing";
-            return;
+            game._paused = false; game.state = "playing"; return;
         }
-
         if (currentVersion.onKey) {
             const result = currentVersion.onKey(key, game);
             if (result === "restart") selectVersion(currentVersion.number);
         }
     }
 
-    // ─── Tap helper: fires callback on touchend (instant) or click (desktop) ───
-    // Does NOT call preventDefault so iOS native button styling works.
-    function tap(el, fn) {
-        let touched = false;
-        el.addEventListener("touchend", (e) => {
-            touched = true;
-            fn(e);
-            // Prevent the ghost click that follows touchend
-            setTimeout(() => { touched = false; }, 400);
-        });
-        el.addEventListener("click", (e) => {
-            if (!touched) fn(e);
-        });
+    // ─── Start/restart: works for ANY state ───
+    function startOrRestart() {
+        if (!currentVersion) return;
+        if (game.state === "ready") {
+            // Directly set playing — bypass onKey entirely
+            game.state = "playing";
+        } else if (game.state === "dead") {
+            selectVersion(currentVersion.number);
+            // After reinit, auto-start
+            game.state = "playing";
+        } else if (game.state === "paused") {
+            game._paused = false;
+            game.state = "playing";
+        }
     }
 
+    function pause() {
+        if (!currentVersion) return;
+        if (game.state === "playing") {
+            game._paused = true; game.state = "paused";
+        } else if (game.state === "paused") {
+            game._paused = false; game.state = "playing";
+        }
+    }
+
+    // ─── Expose globals for inline onclick ───
+    window._snkPlay = startOrRestart;
+    window._snkPause = pause;
+    window._snkDir = function (dir) {
+        var map = { up: "ArrowUp", down: "ArrowDown", left: "ArrowLeft", right: "ArrowRight" };
+        handleInput(map[dir]);
+        // Also auto-start if still on ready screen
+        if (game.state === "ready") game.state = "playing";
+    };
+    window._snkSelectVersion = selectVersion;
+
     // ─── Keyboard ───
-    document.addEventListener("keydown", (e) => {
+    document.addEventListener("keydown", function (e) {
         handleInput(e.key);
         if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
             e.preventDefault();
         }
     });
 
-    // ─── Canvas swipe + tap ───
-    // Only preventDefault on the canvas element itself (not the whole page)
-    let swipeStart = null;
+    // ─── Canvas touch: swipe to steer, tap to start/pause ───
+    var touchX = 0, touchY = 0;
 
-    canvas.addEventListener("touchstart", (e) => {
-        // Prevent scroll only when touching the game canvas
-        e.preventDefault();
-        const t = e.changedTouches[0];
-        swipeStart = { x: t.clientX, y: t.clientY, time: Date.now() };
-    }, { passive: false });
+    canvas.addEventListener("touchstart", function (e) {
+        var t = e.touches[0];
+        touchX = t.clientX;
+        touchY = t.clientY;
+        // Don't preventDefault here — let iOS handle it naturally
+    }, { passive: true });
 
-    canvas.addEventListener("touchmove", (e) => {
-        e.preventDefault();
-    }, { passive: false });
+    canvas.addEventListener("touchend", function (e) {
+        var t = e.changedTouches[0];
+        var dx = t.clientX - touchX;
+        var dy = t.clientY - touchY;
+        var dist = Math.abs(dx) + Math.abs(dy); // manhattan distance
 
-    canvas.addEventListener("touchend", (e) => {
-        e.preventDefault();
-        if (!swipeStart) return;
-        const t = e.changedTouches[0];
-        const dx = t.clientX - swipeStart.x;
-        const dy = t.clientY - swipeStart.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const dt = Date.now() - swipeStart.time;
-        swipeStart = null;
-
-        // Tap
-        if (dist < 20 && dt < 350) {
+        if (dist < 20) {
+            // Tap
             if (game.state === "ready" || game.state === "dead") {
-                handleInput("Enter");
+                startOrRestart();
             } else {
-                handleInput(" ");
+                pause();
             }
-            return;
-        }
-
-        // Swipe
-        if (dist >= 20) {
+        } else {
+            // Swipe
             if (Math.abs(dx) > Math.abs(dy)) {
                 handleInput(dx > 0 ? "ArrowRight" : "ArrowLeft");
             } else {
                 handleInput(dy > 0 ? "ArrowDown" : "ArrowUp");
             }
+            if (game.state === "ready") game.state = "playing";
         }
+    }, { passive: true });
+
+    // Prevent canvas from scrolling the page on swipe
+    canvas.addEventListener("touchmove", function (e) {
+        e.preventDefault();
     }, { passive: false });
-
-    // ─── D-Pad buttons ───
-    const dirKeyMap = { up: "ArrowUp", down: "ArrowDown", left: "ArrowLeft", right: "ArrowRight" };
-
-    document.querySelectorAll(".dpad-btn").forEach(btn => {
-        const dir = btn.dataset.dir;
-        tap(btn, () => handleInput(dirKeyMap[dir]));
-    });
-
-    // ─── Action buttons ───
-    const btnStart = document.getElementById("btn-start");
-    const btnPause = document.getElementById("btn-pause");
-
-    if (btnStart) {
-        tap(btnStart, () => {
-            if (game.state === "ready" || game.state === "dead") handleInput("Enter");
-            else if (game.state === "playing" || game.state === "paused") handleInput("Enter");
-        });
-    }
-
-    if (btnPause) {
-        tap(btnPause, () => handleInput(" "));
-    }
 
     // ─── Init ───
     buildVersionBar();
-    const versions = SnakeVersions.getAll();
+    var versions = SnakeVersions.getAll();
     if (versions.length > 0) selectVersion(versions[0].number);
 })();

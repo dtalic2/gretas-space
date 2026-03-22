@@ -211,10 +211,10 @@ SnakeVersions.register({
 
         // Overlays
         if (game.state === "ready") {
-            this._drawOverlay(g, canvas, "Speed Ramp", "Gets faster as you eat! Press Enter to start");
+            this._drawOverlay(g, canvas, "Speed Ramp", "Gets faster as you eat! Tap or press Enter");
         }
         if (game.state === "dead") {
-            this._drawOverlay(g, canvas, "Game Over", `Score: ${game.score}  —  Press Enter to restart`);
+            this._drawOverlay(g, canvas, "Game Over", `Score: ${game.score}  —  Tap or press Enter`);
         }
     },
 

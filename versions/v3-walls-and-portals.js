@@ -255,10 +255,10 @@ SnakeVersions.register({
 
         // Overlays
         if (game.state === "ready") {
-            this._drawOverlay(g, canvas, "Walls & Portals", "Walls block, portals teleport. Press Enter to start");
+            this._drawOverlay(g, canvas, "Walls & Portals", "Walls block, portals teleport. Tap to play");
         }
         if (game.state === "dead") {
-            this._drawOverlay(g, canvas, "Game Over", `Score: ${game.score}  —  Press Enter to restart`);
+            this._drawOverlay(g, canvas, "Game Over", `Score: ${game.score}  —  Tap or press Enter`);
         }
     },
 

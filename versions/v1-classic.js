@@ -143,10 +143,10 @@ SnakeVersions.register({
 
         // Overlays
         if (game.state === "ready") {
-            this._drawOverlay(g, canvas, "Classic Snake", "Press Enter or Space to start");
+            this._drawOverlay(g, canvas, "Classic Snake", "Tap or press Enter to play");
         }
         if (game.state === "dead") {
-            this._drawOverlay(g, canvas, "Game Over", `Score: ${game.score}  —  Press Enter to restart`);
+            this._drawOverlay(g, canvas, "Game Over", `Score: ${game.score}  —  Tap or press Enter`);
         }
     },
 
