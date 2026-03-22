@@ -8,94 +8,140 @@
     <title>SNK CLSH - Snake Clash</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            background: #0a0a0a;
+            background: #050508;
             color: #e0e0e0;
             font-family: -apple-system, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            padding: 12px;
-            padding-top: max(12px, env(safe-area-inset-top));
-            padding-bottom: max(12px, env(safe-area-inset-bottom));
+            padding: 10px;
+            padding-top: max(10px, env(safe-area-inset-top));
+            padding-bottom: max(10px, env(safe-area-inset-bottom));
             overscroll-behavior: none;
         }
+
+        /* ===== HEADER ===== */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 420px;
+            margin-bottom: 6px;
+        }
         h1 {
-            font-size: 2.4rem;
-            margin-bottom: 4px;
+            font-size: 2rem;
             color: #4ade80;
-            text-shadow: 0 0 30px rgba(74, 222, 128, 0.4);
-            letter-spacing: 6px;
+            text-shadow: 0 0 25px rgba(74, 222, 128, 0.5), 0 0 60px rgba(74, 222, 128, 0.15);
+            letter-spacing: 5px;
             font-weight: 900;
         }
+        .coin-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: 1px solid #fbbf2444;
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #fbbf24;
+            text-shadow: 0 0 8px rgba(251, 191, 36, 0.3);
+        }
+        .coin-icon {
+            width: 18px; height: 18px;
+            background: radial-gradient(circle at 40% 40%, #fde68a, #f59e0b);
+            border-radius: 50%;
+            border: 1px solid #d97706;
+            display: inline-block;
+        }
+
+        /* ===== HERO ===== */
         .hero-canvas-wrap {
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
         }
         #hero-canvas {
             display: block;
-            border-radius: 8px;
+            border-radius: 10px;
             width: 100%;
             height: auto;
         }
+
+        /* ===== VERSION BAR ===== */
         .version-bar {
             display: flex;
-            gap: 8px;
-            margin-bottom: 10px;
+            gap: 6px;
+            margin-bottom: 8px;
             flex-wrap: wrap;
             justify-content: center;
         }
         .version-btn {
-            padding: 10px 18px;
-            border: 2px solid #333;
-            background: #1a1a1a;
-            color: #aaa;
-            border-radius: 8px;
+            padding: 8px 14px;
+            border: 2px solid #1a1a2e;
+            background: #0d0d1a;
+            color: #888;
+            border-radius: 10px;
             cursor: pointer;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.15s;
             -webkit-tap-highlight-color: rgba(74,222,128,0.2);
         }
         .version-btn.active {
-            background: #4ade80;
-            color: #0a0a0a;
+            background: linear-gradient(135deg, #065f46, #047857);
+            color: #d1fae5;
             border-color: #4ade80;
             font-weight: bold;
+            box-shadow: 0 0 12px rgba(74, 222, 128, 0.2);
         }
         .version-info {
             text-align: center;
-            margin-bottom: 8px;
-            color: #888;
-            font-size: 0.8rem;
+            margin-bottom: 6px;
+            color: #777;
+            font-size: 0.78rem;
             padding: 0 10px;
         }
         .version-info strong { color: #4ade80; }
-        #game-container {
-            position: relative;
-            width: 100%;
-            max-width: 400px;
-        }
-        canvas#game-canvas {
-            border: 2px solid #333;
-            border-radius: 4px;
-            display: block;
-            width: 100%;
-            height: auto;
-        }
+
+        /* ===== HUD ===== */
         .hud {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             width: 100%;
-            max-width: 400px;
-            margin-bottom: 6px;
-            font-size: 0.95rem;
+            max-width: 420px;
+            margin-bottom: 4px;
+            font-size: 0.85rem;
+            padding: 0 2px;
         }
-        .hud span { color: #4ade80; }
+        .hud span { color: #4ade80; font-weight: bold; }
+
+        /* ===== GAME CANVAS ===== */
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+        }
+        canvas#game-canvas {
+            border: 2px solid #1a1a2e;
+            border-radius: 6px;
+            display: block;
+            width: 100%;
+            height: auto;
+            box-shadow: 0 0 20px rgba(74, 222, 128, 0.05);
+        }
+
+        /* ===== CONTROLS ===== */
         .controls-help {
-            margin-top: 10px;
-            color: #555;
-            font-size: 0.75rem;
+            margin-top: 8px;
+            color: #444;
+            font-size: 0.72rem;
             text-align: center;
         }
 
@@ -104,14 +150,14 @@
             display: none;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
-            margin-top: 12px;
+            gap: 8px;
+            margin-top: 10px;
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
         }
         .mobile-btn-row {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             width: 100%;
             justify-content: center;
         }
@@ -119,26 +165,43 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #1a1a1a;
-            border: 2px solid #333;
-            border-radius: 14px;
+            background: #0d0d1a;
+            border: 2px solid #1a1a2e;
+            border-radius: 12px;
             color: #4ade80;
             font-weight: bold;
             cursor: pointer;
             -webkit-tap-highlight-color: rgba(74,222,128,0.3);
             -webkit-user-select: none;
             user-select: none;
+            transition: background 0.1s;
+        }
+        .mbtn:active {
+            background: #1a2e1a;
+            border-color: #4ade80;
         }
         .mbtn-action {
-            padding: 16px 0;
+            padding: 14px 0;
             flex: 1;
-            max-width: 130px;
-            font-size: 0.95rem;
+            max-width: 120px;
+            font-size: 0.85rem;
+        }
+        .mbtn-shop {
+            padding: 14px 0;
+            flex: 1;
+            max-width: 120px;
+            font-size: 0.85rem;
+            color: #fbbf24;
+            border-color: #fbbf2444;
+        }
+        .mbtn-shop:active {
+            background: #2e2a1a;
+            border-color: #fbbf24;
         }
         .mbtn-dir {
-            width: 60px;
-            height: 60px;
-            font-size: 1.6rem;
+            width: 56px;
+            height: 56px;
+            font-size: 1.5rem;
         }
         .dpad {
             display: grid;
@@ -146,45 +209,141 @@
                 ".    up   ."
                 "left mid  right"
                 ".    down .";
-            grid-template-columns: 60px 60px 60px;
-            grid-template-rows: 60px 60px 60px;
+            grid-template-columns: 56px 56px 56px;
+            grid-template-rows: 56px 56px 56px;
             gap: 4px;
         }
         .dpad-up    { grid-area: up; }
         .dpad-down  { grid-area: down; }
         .dpad-left  { grid-area: left; }
         .dpad-right { grid-area: right; }
-        .dpad-mid   {
-            grid-area: mid;
-            background: rgba(74,222,128,0.04);
-            border: 1px solid #222;
-            border-radius: 14px;
-        }
+        .dpad-mid   { grid-area: mid; background: rgba(74,222,128,0.03); border: 1px solid #151520; border-radius: 12px; }
 
-        .footer {
-            margin-top: 20px;
-            padding: 12px 24px;
-            color: #4ade80;
-            font-size: 1rem;
-            letter-spacing: 2px;
-            text-transform: lowercase;
-            border-top: 1px solid #222;
-            text-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
-        }
-        @media (max-width: 440px) {
-            h1 { font-size: 2rem; letter-spacing: 4px; }
-        }
         @media (pointer: coarse), (hover: none) {
             .mobile-controls { display: flex; }
             .controls-help { display: none; }
         }
+
+        /* ===== SHOP PANEL ===== */
+        .shop-panel {
+            width: 100%;
+            max-width: 420px;
+            margin-top: 12px;
+            background: linear-gradient(180deg, #0d0d1a, #080812);
+            border: 1px solid #1a1a2e;
+            border-radius: 12px;
+            padding: 16px;
+            overflow-y: auto;
+            max-height: 60vh;
+        }
+        .shop-panel.hidden { display: none; }
+        .shop-panel h2 {
+            color: #fbbf24;
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+            text-align: center;
+            letter-spacing: 3px;
+            text-shadow: 0 0 12px rgba(251, 191, 36, 0.3);
+        }
+        .shop-section { margin-bottom: 16px; }
+        .shop-section h3 {
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 8px;
+        }
+        .shop-item {
+            background: #111122;
+            border: 1px solid #222;
+            border-radius: 8px;
+            padding: 10px 8px;
+            text-align: center;
+            font-size: 0.75rem;
+        }
+        .shop-item.equipped {
+            border-color: #4ade80;
+            box-shadow: 0 0 8px rgba(74, 222, 128, 0.15);
+        }
+        .shop-item.owned {
+            border-color: #333;
+        }
+        .shop-preview {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            margin: 0 auto 6px;
+            border: 1px solid #333;
+        }
+        .shop-name {
+            color: #ccc;
+            font-weight: bold;
+            font-size: 0.72rem;
+            margin-bottom: 2px;
+        }
+        .shop-desc {
+            color: #666;
+            font-size: 0.65rem;
+            margin-bottom: 6px;
+        }
+        .shop-item button {
+            background: linear-gradient(135deg, #1a2e1a, #0d1a0d);
+            border: 1px solid #4ade80;
+            color: #4ade80;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            font-weight: bold;
+            -webkit-tap-highlight-color: rgba(74,222,128,0.3);
+        }
+        .shop-item button:active {
+            background: #2a4a2a;
+        }
+        .shop-badge {
+            display: inline-block;
+            background: #4ade80;
+            color: #050508;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 0.65rem;
+            font-weight: bold;
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            margin-top: 16px;
+            padding: 10px 20px;
+            color: #4ade80;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-transform: lowercase;
+            border-top: 1px solid #151520;
+            text-shadow: 0 0 10px rgba(74, 222, 128, 0.2);
+            opacity: 0.7;
+        }
+
+        @media (max-width: 440px) {
+            h1 { font-size: 1.7rem; letter-spacing: 4px; }
+        }
     </style>
 </head>
 <body>
-    <h1>SNK CLSH</h1>
+    <div class="header">
+        <h1>SNK CLSH</h1>
+        <div class="coin-badge">
+            <div class="coin-icon"></div>
+            <span id="coins-display">0</span>
+        </div>
+    </div>
 
     <div class="hero-canvas-wrap">
-        <canvas id="hero-canvas" width="400" height="220"></canvas>
+        <canvas id="hero-canvas" width="420" height="220"></canvas>
     </div>
 
     <div class="version-bar" id="version-bar"></div>
@@ -192,19 +351,20 @@
 
     <div class="hud">
         <div>Score: <span id="score">0</span></div>
-        <div>High Score: <span id="high-score">0</span></div>
+        <div>Best: <span id="high-score">0</span></div>
     </div>
 
     <div id="game-container">
         <canvas id="game-canvas" width="400" height="400"></canvas>
     </div>
 
-    <div class="controls-help">Arrow Keys or WASD to move &bull; Space to pause &bull; Enter to restart</div>
+    <div class="controls-help">Arrow Keys / WASD to move &bull; Space to pause &bull; Enter to restart</div>
 
     <div class="mobile-controls">
         <div class="mobile-btn-row">
             <div class="mbtn mbtn-action" onclick="window._snkPlay()">PLAY</div>
             <div class="mbtn mbtn-action" onclick="window._snkPause()">PAUSE</div>
+            <div class="mbtn mbtn-shop" onclick="window._snkToggleShop()">SHOP</div>
         </div>
         <div class="dpad">
             <div class="mbtn mbtn-dir dpad-up"    onclick="window._snkDir('up')">&#9650;</div>
@@ -215,13 +375,34 @@
         </div>
     </div>
 
-    <div class="footer">updated snake clash</div>
+    <!-- Desktop shop button -->
+    <button onclick="window._snkToggleShop()" style="
+        display:none; margin-top:8px; padding:8px 24px;
+        background:linear-gradient(135deg,#1a1a2e,#16213e);
+        border:1px solid #fbbf2444; color:#fbbf24; border-radius:8px;
+        font-size:0.85rem; font-weight:bold; cursor:pointer; letter-spacing:2px;
+    " id="desktop-shop-btn">SHOP</button>
+    <style>
+        @media (pointer: fine) and (hover: hover) {
+            #desktop-shop-btn { display: inline-block !important; }
+        }
+    </style>
+
+    <div class="shop-panel hidden" id="shop-panel">
+        <h2>SHOP</h2>
+        <div id="shop-content"></div>
+    </div>
+
+    <div class="footer">snake clash</div>
 
     <script src="hero.js"></script>
+    <script src="shop.js"></script>
+    <script src="particles.js"></script>
     <script src="versions/registry.js"></script>
     <script src="versions/v1-classic.js"></script>
     <script src="versions/v2-speed-ramp.js"></script>
     <script src="versions/v3-walls-and-portals.js"></script>
+    <script src="versions/v4-battle-royale.js"></script>
     <script src="engine.js"></script>
 </body>
 </html>
