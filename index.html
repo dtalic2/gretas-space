@@ -11,12 +11,14 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        html, body {
-            overscroll-behavior: none;
-            -webkit-overflow-scrolling: auto;
-            touch-action: manipulation;
+        html {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
         }
 
         body {
@@ -26,15 +28,18 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
-            min-height: -webkit-fill-available;
-            padding: 15px;
-            padding-top: env(safe-area-inset-top, 15px);
-            padding-bottom: env(safe-area-inset-bottom, 15px);
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            padding: 12px;
+            padding-top: max(12px, env(safe-area-inset-top));
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
         }
 
         h1 {
-            font-size: 2.8rem;
+            font-size: 2.4rem;
             margin-bottom: 4px;
             color: #4ade80;
             text-shadow: 0 0 30px rgba(74, 222, 128, 0.4), 0 0 60px rgba(74, 222, 128, 0.15);
@@ -43,35 +48,35 @@
         }
 
         .hero-canvas-wrap {
-            margin-bottom: 10px;
-            max-width: 100%;
+            margin-bottom: 8px;
+            width: 100%;
+            max-width: 400px;
         }
 
         #hero-canvas {
             display: block;
             border-radius: 8px;
-            max-width: 100%;
+            width: 100%;
             height: auto;
         }
 
         .version-bar {
             display: flex;
             gap: 8px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             flex-wrap: wrap;
             justify-content: center;
         }
 
         .version-btn {
-            padding: 8px 16px;
+            padding: 10px 18px;
             border: 2px solid #333;
             background: #1a1a1a;
             color: #aaa;
             border-radius: 8px;
             cursor: pointer;
             font-size: 0.85rem;
-            transition: all 0.2s;
-            -webkit-tap-highlight-color: transparent;
+            transition: background 0.15s, border-color 0.15s;
         }
 
         .version-btn:hover {
@@ -88,7 +93,7 @@
 
         .version-info {
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             color: #888;
             font-size: 0.8rem;
             padding: 0 10px;
@@ -100,14 +105,15 @@
 
         #game-container {
             position: relative;
-            max-width: 100%;
+            width: 100%;
+            max-width: 400px;
         }
 
         canvas#game-canvas {
             border: 2px solid #333;
             border-radius: 4px;
             display: block;
-            max-width: 100%;
+            width: 100%;
             height: auto;
             touch-action: none;
         }
@@ -130,84 +136,92 @@
             color: #555;
             font-size: 0.75rem;
             text-align: center;
-            padding: 0 10px;
         }
 
-        /* ===== TOUCH D-PAD ===== */
-        .dpad {
+        /* ===== TOUCH CONTROLS ===== */
+        .touch-controls {
             display: none;
-            margin-top: 14px;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-top: 12px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .touch-action-bar {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .touch-btn {
+            padding: 14px 0;
+            flex: 1;
+            max-width: 120px;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 12px;
+            color: #4ade80;
+            font-size: 0.9rem;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .touch-btn:active {
+            background: #4ade80;
+            color: #0a0a0a;
+            border-color: #4ade80;
+        }
+
+        .dpad {
             position: relative;
-            width: 160px;
-            height: 160px;
+            width: 170px;
+            height: 170px;
             flex-shrink: 0;
         }
 
         .dpad-btn {
             position: absolute;
-            width: 52px;
-            height: 52px;
-            background: rgba(74, 222, 128, 0.12);
-            border: 2px solid rgba(74, 222, 128, 0.35);
-            border-radius: 12px;
+            width: 54px;
+            height: 54px;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #4ade80;
-            font-size: 1.4rem;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
+            font-size: 1.5rem;
+            cursor: pointer;
             user-select: none;
             -webkit-user-select: none;
-            cursor: pointer;
-            transition: background 0.1s;
         }
 
-        .dpad-btn:active, .dpad-btn.pressed {
-            background: rgba(74, 222, 128, 0.35);
+        .dpad-btn:active {
+            background: #4ade80;
+            color: #0a0a0a;
             border-color: #4ade80;
         }
 
-        .dpad-up    { top: 0;    left: 54px; }
-        .dpad-down  { bottom: 0; left: 54px; }
-        .dpad-left  { top: 54px; left: 0;    }
-        .dpad-right { top: 54px; right: 0;   }
+        .dpad-up    { top: 0;    left: 58px; }
+        .dpad-down  { bottom: 0; left: 58px; }
+        .dpad-left  { top: 58px; left: 0;    }
+        .dpad-right { top: 58px; right: 0;   }
 
         .dpad-center {
             position: absolute;
-            top: 54px;
-            left: 54px;
-            width: 52px;
-            height: 52px;
-            background: rgba(74, 222, 128, 0.06);
-            border: 1px solid rgba(74, 222, 128, 0.15);
-            border-radius: 12px;
-        }
-
-        .touch-action-bar {
-            display: none;
-            gap: 12px;
-            margin-top: 10px;
-        }
-
-        .touch-action-btn {
-            padding: 10px 22px;
-            background: rgba(74, 222, 128, 0.12);
-            border: 2px solid rgba(74, 222, 128, 0.35);
-            border-radius: 10px;
-            color: #4ade80;
-            font-size: 0.9rem;
-            font-weight: bold;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-            user-select: none;
-            -webkit-user-select: none;
-            cursor: pointer;
-            transition: background 0.1s;
-        }
-
-        .touch-action-btn:active {
-            background: rgba(74, 222, 128, 0.35);
+            top: 58px;
+            left: 58px;
+            width: 54px;
+            height: 54px;
+            background: rgba(74, 222, 128, 0.04);
+            border: 1px solid #222;
+            border-radius: 14px;
         }
 
         .footer {
@@ -221,17 +235,12 @@
             text-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
         }
 
-        /* Responsive */
         @media (max-width: 440px) {
             h1 { font-size: 2rem; letter-spacing: 4px; }
-            body { padding: 10px; }
-            .version-btn { padding: 6px 12px; font-size: 0.78rem; }
         }
 
-        /* Show touch controls on touch devices */
-        @media (pointer: coarse) {
-            .dpad { display: block; }
-            .touch-action-bar { display: flex; }
+        @media (pointer: coarse), (hover: none) {
+            .touch-controls { display: flex; }
             .controls-help { display: none; }
         }
     </style>
@@ -257,19 +266,19 @@
 
     <div class="controls-help">Arrow Keys or WASD to move &bull; Space to pause &bull; Enter to restart</div>
 
-    <!-- Touch D-Pad -->
-    <div class="dpad" id="dpad">
-        <div class="dpad-btn dpad-up" data-dir="up">&#9650;</div>
-        <div class="dpad-btn dpad-left" data-dir="left">&#9664;</div>
-        <div class="dpad-center"></div>
-        <div class="dpad-btn dpad-right" data-dir="right">&#9654;</div>
-        <div class="dpad-btn dpad-down" data-dir="down">&#9660;</div>
-    </div>
-
-    <!-- Touch action buttons -->
-    <div class="touch-action-bar" id="touch-actions">
-        <button class="touch-action-btn" id="btn-start">START</button>
-        <button class="touch-action-btn" id="btn-pause">PAUSE</button>
+    <!-- Mobile touch controls -->
+    <div class="touch-controls" id="touch-controls">
+        <div class="touch-action-bar">
+            <div class="touch-btn" id="btn-start" role="button" tabindex="0">PLAY</div>
+            <div class="touch-btn" id="btn-pause" role="button" tabindex="0">PAUSE</div>
+        </div>
+        <div class="dpad" id="dpad">
+            <div class="dpad-btn dpad-up" data-dir="up" role="button" tabindex="0">&#9650;</div>
+            <div class="dpad-btn dpad-left" data-dir="left" role="button" tabindex="0">&#9664;</div>
+            <div class="dpad-center"></div>
+            <div class="dpad-btn dpad-right" data-dir="right" role="button" tabindex="0">&#9654;</div>
+            <div class="dpad-btn dpad-down" data-dir="down" role="button" tabindex="0">&#9660;</div>
+        </div>
     </div>
 
     <div class="footer">updated snake clash</div>
@@ -277,7 +286,7 @@
     <!-- Hero artwork -->
     <script src="hero.js"></script>
 
-    <!-- Version registry - add new versions here -->
+    <!-- Version registry -->
     <script src="versions/registry.js"></script>
 
     <!-- Game versions loaded in release order -->
@@ -285,7 +294,7 @@
     <script src="versions/v2-speed-ramp.js"></script>
     <script src="versions/v3-walls-and-portals.js"></script>
 
-    <!-- Core engine (loaded last, uses registered versions) -->
+    <!-- Core engine -->
     <script src="engine.js"></script>
 </body>
 </html>

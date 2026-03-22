@@ -1,11 +1,9 @@
 /**
  * Snake Game Engine
  *
- * Reads from the SnakeVersions registry, builds the UI, and runs
- * whichever version is selected. Version files handle all game logic
- * and rendering — this engine just orchestrates.
- *
- * Supports keyboard, swipe gestures, and on-screen d-pad for mobile.
+ * Supports keyboard + native touch (swipe on canvas, d-pad buttons).
+ * Touch is handled via a simple tap helper that fires on touchend
+ * with no preventDefault on buttons — letting iOS handle them natively.
  */
 (function () {
     const canvas = document.getElementById("game-canvas");
@@ -21,7 +19,6 @@
     let lastTick = 0;
     let highScores = {};
 
-    // Load high scores from localStorage
     try {
         const saved = localStorage.getItem("snake-high-scores");
         if (saved) highScores = JSON.parse(saved);
@@ -33,7 +30,7 @@
         } catch (e) { /* ignore */ }
     }
 
-    // Build version buttons
+    // ─── Version bar ───
     function buildVersionBar() {
         versionBar.innerHTML = "";
         SnakeVersions.getAll().forEach(v => {
@@ -41,7 +38,8 @@
             btn.className = "version-btn";
             btn.textContent = `v${v.number} — ${v.name}`;
             btn.dataset.version = v.number;
-            btn.addEventListener("click", () => selectVersion(v.number));
+            // Use ontouchend for instant response on iOS, onclick as fallback
+            tap(btn, () => selectVersion(v.number));
             versionBar.appendChild(btn);
         });
     }
@@ -56,7 +54,7 @@
         });
     }
 
-    // Select and start a version
+    // ─── Version select / init ───
     function selectVersion(number) {
         const v = SnakeVersions.getByNumber(number);
         if (!v) return;
@@ -65,7 +63,6 @@
         highlightButton(number);
         updateVersionInfo(v);
 
-        // Build context
         const config = v.config || {};
         const gridSize = config.gridSize || 20;
         const cw = config.canvasWidth || 400;
@@ -78,21 +75,15 @@
             cols: Math.floor(cw / gridSize),
             rows: Math.floor(ch / gridSize),
             tickRate: config.tickRate || 150,
-            setTickRate(rate) {
-                ctx.tickRate = rate;
-            },
+            setTickRate(rate) { ctx.tickRate = rate; },
         };
 
-        // Init game state
         game = {};
         v.init(ctx, game);
 
-        // Update score display
         scoreEl.textContent = game.score || 0;
-        const hs = highScores[`v${number}`] || 0;
-        highScoreEl.textContent = hs;
+        highScoreEl.textContent = highScores[`v${number}`] || 0;
 
-        // Start loop
         if (loopId) cancelAnimationFrame(loopId);
         lastTick = 0;
         loop(0);
@@ -101,18 +92,11 @@
     function loop(timestamp) {
         loopId = requestAnimationFrame(loop);
 
-        // Tick-based update
         if (timestamp - lastTick >= ctx.tickRate) {
             lastTick = timestamp;
-
-            if (currentVersion.update) {
-                currentVersion.update(ctx, game);
-            }
-
-            // Update score
+            if (currentVersion.update) currentVersion.update(ctx, game);
             scoreEl.textContent = game.score || 0;
 
-            // Track high score
             const key = `v${currentVersion.number}`;
             if ((game.score || 0) > (highScores[key] || 0)) {
                 highScores[key] = game.score;
@@ -121,17 +105,13 @@
             }
         }
 
-        // Draw every frame (allows smooth animations)
-        if (currentVersion.draw) {
-            currentVersion.draw(ctx, game, canvas);
-        }
+        if (currentVersion.draw) currentVersion.draw(ctx, game, canvas);
     }
 
-    // === Shared input handler ===
+    // ─── Input dispatch ───
     function handleInput(key) {
         if (!currentVersion) return;
 
-        // Pause
         if (key === " " && game.state === "playing") {
             game._paused = true;
             game.state = "paused";
@@ -145,13 +125,26 @@
 
         if (currentVersion.onKey) {
             const result = currentVersion.onKey(key, game);
-            if (result === "restart") {
-                selectVersion(currentVersion.number);
-            }
+            if (result === "restart") selectVersion(currentVersion.number);
         }
     }
 
-    // === Keyboard input ===
+    // ─── Tap helper: fires callback on touchend (instant) or click (desktop) ───
+    // Does NOT call preventDefault so iOS native button styling works.
+    function tap(el, fn) {
+        let touched = false;
+        el.addEventListener("touchend", (e) => {
+            touched = true;
+            fn(e);
+            // Prevent the ghost click that follows touchend
+            setTimeout(() => { touched = false; }, 400);
+        });
+        el.addEventListener("click", (e) => {
+            if (!touched) fn(e);
+        });
+    }
+
+    // ─── Keyboard ───
     document.addEventListener("keydown", (e) => {
         handleInput(e.key);
         if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
@@ -159,17 +152,15 @@
         }
     });
 
-    // === Swipe gesture detection on game canvas ===
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let touchStartTime = 0;
+    // ─── Canvas swipe + tap ───
+    // Only preventDefault on the canvas element itself (not the whole page)
+    let swipeStart = null;
 
     canvas.addEventListener("touchstart", (e) => {
+        // Prevent scroll only when touching the game canvas
         e.preventDefault();
-        const t = e.touches[0];
-        touchStartX = t.clientX;
-        touchStartY = t.clientY;
-        touchStartTime = Date.now();
+        const t = e.changedTouches[0];
+        swipeStart = { x: t.clientX, y: t.clientY, time: Date.now() };
     }, { passive: false });
 
     canvas.addEventListener("touchmove", (e) => {
@@ -178,27 +169,26 @@
 
     canvas.addEventListener("touchend", (e) => {
         e.preventDefault();
+        if (!swipeStart) return;
         const t = e.changedTouches[0];
-        const dx = t.clientX - touchStartX;
-        const dy = t.clientY - touchStartY;
-        const dt = Date.now() - touchStartTime;
-
+        const dx = t.clientX - swipeStart.x;
+        const dy = t.clientY - swipeStart.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
+        const dt = Date.now() - swipeStart.time;
+        swipeStart = null;
 
-        // Tap (short distance, short time) — start/restart
-        if (dist < 15 && dt < 300) {
-            if (game.state === "ready") {
+        // Tap
+        if (dist < 20 && dt < 350) {
+            if (game.state === "ready" || game.state === "dead") {
                 handleInput("Enter");
-            } else if (game.state === "dead") {
-                handleInput("Enter");
-            } else if (game.state === "playing" || game.state === "paused") {
+            } else {
                 handleInput(" ");
             }
             return;
         }
 
-        // Swipe — direction
-        if (dist > 20) {
+        // Swipe
+        if (dist >= 20) {
             if (Math.abs(dx) > Math.abs(dy)) {
                 handleInput(dx > 0 ? "ArrowRight" : "ArrowLeft");
             } else {
@@ -207,67 +197,31 @@
         }
     }, { passive: false });
 
-    // === D-Pad buttons ===
-    const dirKeyMap = {
-        up: "ArrowUp",
-        down: "ArrowDown",
-        left: "ArrowLeft",
-        right: "ArrowRight",
-    };
+    // ─── D-Pad buttons ───
+    const dirKeyMap = { up: "ArrowUp", down: "ArrowDown", left: "ArrowLeft", right: "ArrowRight" };
 
     document.querySelectorAll(".dpad-btn").forEach(btn => {
         const dir = btn.dataset.dir;
-
-        function fireDir(e) {
-            e.preventDefault();
-            handleInput(dirKeyMap[dir]);
-            btn.classList.add("pressed");
-            setTimeout(() => btn.classList.remove("pressed"), 120);
-        }
-
-        btn.addEventListener("touchstart", fireDir, { passive: false });
-        btn.addEventListener("mousedown", fireDir);
+        tap(btn, () => handleInput(dirKeyMap[dir]));
     });
 
-    // === Touch action buttons (Start / Pause) ===
+    // ─── Action buttons ───
     const btnStart = document.getElementById("btn-start");
     const btnPause = document.getElementById("btn-pause");
 
     if (btnStart) {
-        btnStart.addEventListener("touchstart", (e) => {
-            e.preventDefault();
-            if (game.state === "ready" || game.state === "dead") {
-                handleInput("Enter");
-            }
-        }, { passive: false });
-        btnStart.addEventListener("click", () => {
-            if (game.state === "ready" || game.state === "dead") {
-                handleInput("Enter");
-            }
+        tap(btnStart, () => {
+            if (game.state === "ready" || game.state === "dead") handleInput("Enter");
+            else if (game.state === "playing" || game.state === "paused") handleInput("Enter");
         });
     }
 
     if (btnPause) {
-        btnPause.addEventListener("touchstart", (e) => {
-            e.preventDefault();
-            handleInput(" ");
-        }, { passive: false });
-        btnPause.addEventListener("click", () => {
-            handleInput(" ");
-        });
+        tap(btnPause, () => handleInput(" "));
     }
 
-    // === Prevent iOS rubber-band scrolling while playing ===
-    document.body.addEventListener("touchmove", (e) => {
-        if (game.state === "playing") {
-            e.preventDefault();
-        }
-    }, { passive: false });
-
-    // Initialize with v1
+    // ─── Init ───
     buildVersionBar();
     const versions = SnakeVersions.getAll();
-    if (versions.length > 0) {
-        selectVersion(versions[0].number);
-    }
+    if (versions.length > 0) selectVersion(versions[0].number);
 })();
