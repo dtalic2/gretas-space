@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game - Version Selector</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #4ade80;
+            text-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+        }
+
+        .version-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .version-btn {
+            padding: 8px 18px;
+            border: 2px solid #333;
+            background: #1a1a1a;
+            color: #aaa;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .version-btn:hover {
+            border-color: #4ade80;
+            color: #4ade80;
+        }
+
+        .version-btn.active {
+            background: #4ade80;
+            color: #0a0a0a;
+            border-color: #4ade80;
+            font-weight: bold;
+        }
+
+        .version-info {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        .version-info strong {
+            color: #4ade80;
+        }
+
+        #game-container {
+            position: relative;
+        }
+
+        canvas {
+            border: 2px solid #333;
+            border-radius: 4px;
+            display: block;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.75);
+            border-radius: 4px;
+        }
+
+        .overlay h2 {
+            font-size: 1.8rem;
+            color: #4ade80;
+            margin-bottom: 10px;
+        }
+
+        .overlay p {
+            margin-bottom: 8px;
+            color: #ccc;
+        }
+
+        .overlay .start-hint {
+            color: #888;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            width: 400px;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .hud span {
+            color: #4ade80;
+        }
+
+        .controls-help {
+            margin-top: 15px;
+            color: #555;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>Snake Game</h1>
+
+    <div class="version-bar" id="version-bar"></div>
+    <div class="version-info" id="version-info"></div>
+
+    <div class="hud">
+        <div>Score: <span id="score">0</span></div>
+        <div>High Score: <span id="high-score">0</span></div>
+    </div>
+
+    <div id="game-container">
+        <canvas id="game-canvas" width="400" height="400"></canvas>
+    </div>
+
+    <div class="controls-help">Arrow Keys or WASD to move &bull; Space to pause &bull; Enter to restart</div>
+
+    <!-- Version registry - add new versions here -->
+    <script src="versions/registry.js"></script>
+
+    <!-- Game versions loaded in release order -->
+    <script src="versions/v1-classic.js"></script>
+    <script src="versions/v2-speed-ramp.js"></script>
+    <script src="versions/v3-walls-and-portals.js"></script>
+
+    <!-- Core engine (loaded last, uses registered versions) -->
+    <script src="engine.js"></script>
+</body>
+</html>
