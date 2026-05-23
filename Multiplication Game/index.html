@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Times Table Farm</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #050508;
+            color: #e0e0e0;
+            font-family: -apple-system, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px 12px 40px;
+        }
+
+        .title {
+            font-size: 1.7rem;
+            font-weight: 900;
+            letter-spacing: 3px;
+            margin-bottom: 14px;
+            background: linear-gradient(135deg, #4ade80, #fbbf24);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ── Currencies ── */
+        .currencies {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 14px;
+            width: 100%;
+            max-width: 420px;
+        }
+        .currency {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+        .currency-points {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: 1px solid #4ade8055;
+            color: #4ade80;
+        }
+        .currency-dollars {
+            background: linear-gradient(135deg, #0d1f12, #0a1a0f);
+            border: 1px solid #22c55e55;
+            color: #22c55e;
+        }
+
+        /* ── Character ── */
+        .character-section {
+            width: 100%;
+            max-width: 420px;
+            background: linear-gradient(180deg, #0d0d1a, #080812);
+            border: 1px solid #1a1a2e;
+            border-radius: 16px;
+            padding: 18px 20px 14px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .character {
+            font-size: 4.5rem;
+            margin-bottom: 8px;
+            display: inline-block;
+        }
+        .character.bounce { animation: bounce 0.35s ease; }
+        .character.shake  { animation: shake 0.4s ease; }
+        @keyframes bounce {
+            0%   { transform: scale(1); }
+            40%  { transform: scale(1.25) translateY(-6px); }
+            100% { transform: scale(1); }
+        }
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            20%     { transform: translateX(-10px); }
+            60%     { transform: translateX(10px); }
+        }
+
+        .hp-label {
+            font-size: 0.72rem;
+            color: #666;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+        .hp-bar-bg {
+            background: #111122;
+            border-radius: 8px;
+            height: 14px;
+            width: 100%;
+            overflow: hidden;
+            border: 1px solid #222;
+            margin-bottom: 4px;
+        }
+        .hp-bar {
+            height: 100%;
+            border-radius: 8px;
+            transition: width 0.4s ease, background-color 0.4s ease;
+        }
+        .hp-text { font-size: 0.72rem; color: #555; }
+
+        /* ── Inventory ── */
+        .inventory-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 8px 12px;
+            background: #0a0a15;
+            border: 1px solid #1a1a2e;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            min-height: 40px;
+            align-items: center;
+            width: 100%;
+            max-width: 420px;
+        }
+        .inv-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: #111122;
+            border: 1px solid #222;
+            border-radius: 6px;
+            padding: 3px 9px;
+            font-size: 0.82rem;
+        }
+        .inv-empty { color: #3a3a5a; font-size: 0.72rem; }
+
+        /* ── Tabs ── */
+        .main-panel { width: 100%; max-width: 420px; }
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+        .tab {
+            flex: 1;
+            padding: 8px 4px;
+            background: #0d0d1a;
+            border: 1px solid #1a1a2e;
+            border-radius: 8px;
+            color: #555;
+            font-size: 0.7rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s;
+            user-select: none;
+        }
+        .tab.active {
+            background: linear-gradient(135deg, #065f46, #047857);
+            color: #d1fae5;
+            border-color: #4ade80;
+        }
+        .tab-market.active {
+            background: linear-gradient(135deg, #14532d, #166534);
+            color: #bbf7d0;
+            border-color: #22c55e;
+        }
+        .tab-life.active {
+            background: linear-gradient(135deg, #450a0a, #7f1d1d);
+            color: #fecaca;
+            border-color: #ef4444;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ── Quiz ── */
+        .quiz-panel {
+            background: linear-gradient(180deg, #0d0d1a, #080812);
+            border: 1px solid #1a1a2e;
+            border-radius: 12px;
+            padding: 20px 16px 16px;
+            text-align: center;
+        }
+        .question {
+            font-size: 2.4rem;
+            font-weight: 900;
+            color: #fff;
+            margin-bottom: 6px;
+            text-shadow: 0 0 24px rgba(74,222,128,0.25);
+            letter-spacing: 2px;
+        }
+        .streak-bar {
+            font-size: 0.75rem;
+            color: #fbbf24;
+            margin-bottom: 14px;
+            min-height: 18px;
+        }
+        .answer-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .answer-input {
+            flex: 1;
+            background: #111122;
+            border: 2px solid #1a1a2e;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1.5rem;
+            padding: 10px 12px;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .answer-input:focus  { border-color: #4ade80; }
+        .answer-input.correct { border-color: #4ade80; background: #071a0a; }
+        .answer-input.wrong   { border-color: #ef4444; background: #1a0707; }
+        .submit-btn {
+            background: linear-gradient(135deg, #065f46, #047857);
+            border: 1px solid #4ade80;
+            color: #d1fae5;
+            border-radius: 8px;
+            padding: 10px 18px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .feedback {
+            min-height: 26px;
+            font-size: 0.88rem;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        .feedback.correct { color: #4ade80; }
+        .feedback.wrong   { color: #ef4444; }
+
+        /* Numpad */
+        .numpad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-top: 14px;
+        }
+        .np-btn {
+            background: #111122;
+            border: 1px solid #1a1a2e;
+            border-radius: 8px;
+            color: #bbb;
+            font-size: 1.2rem;
+            padding: 12px 0;
+            cursor: pointer;
+            transition: all 0.1s;
+            user-select: none;
+        }
+        .np-btn:active { background: #1a1a2e; color: #4ade80; }
+        .np-btn.np-clear  { background: #160909; border-color: #ef444433; color: #ef4444; }
+        .np-btn.np-submit {
+            background: linear-gradient(135deg, #065f46, #047857);
+            border-color: #4ade80; color: #d1fae5;
+        }
+
+        /* ── Shop / Market grids ── */
+        .panel-box {
+            background: linear-gradient(180deg, #0d0d1a, #080812);
+            border: 1px solid #1a1a2e;
+            border-radius: 12px;
+            padding: 14px;
+        }
+        .panel-label {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #555;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+        .item-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        .item-card {
+            background: #111122;
+            border: 1px solid #1e1e33;
+            border-radius: 10px;
+            padding: 10px 6px;
+            text-align: center;
+        }
+        .item-emoji  { font-size: 2rem; margin-bottom: 4px; line-height: 1; }
+        .item-name   { font-size: 0.65rem; color: #aaa; font-weight: bold; margin-bottom: 3px; }
+        .item-price  { font-size: 0.72rem; font-weight: bold; margin-bottom: 3px; }
+        .item-price.pts  { color: #4ade80; }
+        .item-price.usd  { color: #22c55e; }
+        .item-owned  { font-size: 0.62rem; color: #555; margin-bottom: 6px; }
+        .item-action {
+            font-size: 0.65rem;
+            font-weight: bold;
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: none;
+        }
+        .item-action.buy-btn {
+            background: linear-gradient(135deg, #065f46, #047857);
+            color: #d1fae5;
+            border: 1px solid #4ade80;
+        }
+        .item-action.sell-btn {
+            background: linear-gradient(135deg, #14532d, #166534);
+            color: #bbf7d0;
+            border: 1px solid #22c55e;
+        }
+        .item-action:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        /* ── Life panel ── */
+        .life-drain-note {
+            text-align: center;
+            font-size: 0.72rem;
+            color: #ef4444;
+            margin-bottom: 12px;
+            opacity: 0.8;
+        }
+        .life-opt {
+            background: #111122;
+            border: 1px solid #1e1e33;
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .life-opt-left { display: flex; align-items: center; gap: 10px; }
+        .life-opt-emoji { font-size: 1.8rem; }
+        .life-opt-name  { font-size: 0.85rem; font-weight: bold; color: #ccc; }
+        .life-opt-desc  { font-size: 0.68rem; color: #555; }
+        .life-buy-btn {
+            background: linear-gradient(135deg, #450a0a, #7f1d1d);
+            border: 1px solid #ef4444;
+            color: #fecaca;
+            border-radius: 8px;
+            padding: 7px 14px;
+            font-size: 0.78rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .life-buy-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-70px);
+            background: #111122;
+            border: 1px solid #4ade80;
+            color: #4ade80;
+            padding: 8px 22px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            transition: transform 0.28s ease;
+            z-index: 100;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+        .toast.show  { transform: translateX(-50%) translateY(0); }
+        .toast.error { border-color: #ef4444; color: #ef4444; }
+        .toast.money { border-color: #22c55e; color: #22c55e; }
+        .toast.dmg   { border-color: #ef4444; color: #ef4444; }
+
+        /* ── Game over overlay ── */
+        .gameover {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(5,5,8,0.93);
+            z-index: 200;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 12px;
+            padding: 20px;
+        }
+        .gameover.show { display: flex; }
+        .gameover-skull { font-size: 5rem; }
+        .gameover h2 { font-size: 2.2rem; color: #ef4444; letter-spacing: 3px; }
+        .gameover-stats { color: #666; font-size: 0.88rem; line-height: 1.7; }
+        .restart-btn {
+            background: linear-gradient(135deg, #065f46, #047857);
+            border: 1px solid #4ade80;
+            color: #d1fae5;
+            padding: 12px 36px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="title">TIMES TABLE FARM</div>
+
+<!-- Currency row -->
+<div class="currencies">
+    <div class="currency currency-points">⭐ <span id="pts-display">0</span> pts</div>
+    <div class="currency currency-dollars">$ <span id="usd-display">5.00</span></div>
+</div>
+
+<!-- Character + HP -->
+<div class="character-section">
+    <div class="character" id="char">👨‍🌾</div>
+    <div class="hp-label">LIFE — drains over time · spend $ to restore</div>
+    <div class="hp-bar-bg">
+        <div class="hp-bar" id="hp-bar" style="width:100%;background:#4ade80;"></div>
+    </div>
+    <div class="hp-text" id="hp-text">100 / 100 HP</div>
+</div>
+
+<!-- Inventory -->
+<div class="inventory-bar" id="inventory-bar">
+    <span class="inv-empty">Inventory empty — buy fruits &amp; plants from the Shop</span>
+</div>
+
+<!-- Main panel -->
+<div class="main-panel">
+    <div class="tabs">
+        <div class="tab active"      id="tab-quiz"   onclick="switchTab('quiz')">📝 QUIZ</div>
+        <div class="tab"             id="tab-shop"   onclick="switchTab('shop')">🛒 SHOP</div>
+        <div class="tab tab-market"  id="tab-market" onclick="switchTab('market')">💰 MARKET</div>
+        <div class="tab tab-life"    id="tab-life"   onclick="switchTab('life')">❤️ LIFE</div>
+    </div>
+
+    <!-- QUIZ -->
+    <div class="tab-content active" id="content-quiz">
+        <div class="quiz-panel">
+            <div class="question" id="question">? × ? = ?</div>
+            <div class="streak-bar" id="streak-bar">Streak: 0</div>
+            <div class="answer-row">
+                <input id="answer-input" class="answer-input" type="number"
+                       placeholder="?" inputmode="numeric" autocomplete="off">
+                <button class="submit-btn" onclick="submitAnswer()">✓</button>
+            </div>
+            <div class="feedback" id="feedback"></div>
+            <div class="numpad">
+                <button class="np-btn" onclick="np('7')">7</button>
+                <button class="np-btn" onclick="np('8')">8</button>
+                <button class="np-btn" onclick="np('9')">9</button>
+                <button class="np-btn" onclick="np('4')">4</button>
+                <button class="np-btn" onclick="np('5')">5</button>
+                <button class="np-btn" onclick="np('6')">6</button>
+                <button class="np-btn" onclick="np('1')">1</button>
+                <button class="np-btn" onclick="np('2')">2</button>
+                <button class="np-btn" onclick="np('3')">3</button>
+                <button class="np-btn np-clear"  onclick="np('⌫')">⌫</button>
+                <button class="np-btn" onclick="np('0')">0</button>
+                <button class="np-btn np-submit" onclick="submitAnswer()">✓</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SHOP -->
+    <div class="tab-content" id="content-shop">
+        <div class="panel-box">
+            <div class="panel-label">⭐ Spend Points · Buy fruits &amp; plants</div>
+            <div class="item-grid" id="shop-grid"></div>
+        </div>
+    </div>
+
+    <!-- MARKET -->
+    <div class="tab-content" id="content-market">
+        <div class="panel-box">
+            <div class="panel-label">$ Sell items · Earn Dollars</div>
+            <div class="item-grid" id="market-grid"></div>
+        </div>
+    </div>
+
+    <!-- LIFE -->
+    <div class="tab-content" id="content-life">
+        <div class="panel-box">
+            <div class="panel-label">❤️ Restore Life · Spend Dollars</div>
+            <div class="life-drain-note">HP drains –1 every 5 s · wrong answers cost –10 HP</div>
+            <div id="life-options"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Game over -->
+<div class="gameover" id="gameover">
+    <div class="gameover-skull">💀</div>
+    <h2>GAME OVER</h2>
+    <div class="gameover-stats" id="go-stats"></div>
+    <button class="restart-btn" onclick="restartGame()">Play Again</button>
+</div>
+
+<script>
+// ─── Catalog ─────────────────────────────────────────────────────────────────
+const ITEMS = [
+    { id:'apple',      emoji:'🍎', name:'Apple',      pts:5,  usd:2  },
+    { id:'strawberry', emoji:'🍓', name:'Strawberry', pts:8,  usd:3  },
+    { id:'grapes',     emoji:'🍇', name:'Grapes',     pts:12, usd:5  },
+    { id:'watermelon', emoji:'🍉', name:'Watermelon', pts:18, usd:8  },
+    { id:'sunflower',  emoji:'🌻', name:'Sunflower',  pts:10, usd:4  },
+    { id:'cactus',     emoji:'🌵', name:'Cactus',     pts:20, usd:9  },
+    { id:'rose',       emoji:'🌹', name:'Rose',       pts:25, usd:12 },
+    { id:'tulip',      emoji:'🌷', name:'Tulip',      pts:15, usd:6  },
+    { id:'mushroom',   emoji:'🍄', name:'Mushroom',   pts:22, usd:10 },
+];
+
+const LIFE_OPTS = [
+    { id:'snack',    emoji:'🍞', name:'Snack',        desc:'+20 HP',  cost:1,   hp:20  },
+    { id:'meal',     emoji:'🍲', name:'Hot Meal',     desc:'+50 HP',  cost:2,   hp:50  },
+    { id:'medicine', emoji:'💊', name:'Medicine',     desc:'+80 HP',  cost:3.5, hp:80  },
+    { id:'fullheal', emoji:'✨', name:'Full Restore', desc:'Full HP', cost:5,   hp:9999},
+];
+
+// ─── State ────────────────────────────────────────────────────────────────────
+const SAVE_KEY = 'multfarm-v1';
+let s = fresh();
+
+function fresh() {
+    return { pts:0, usd:5, hp:100, maxHp:100, streak:0,
+             bestStreak:0, correct:0, wrong:0, inv:{}, dead:false };
+}
+
+function save() {
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch(_) {}
+}
+function loadSave() {
+    try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (raw) { const d = JSON.parse(raw); if (!d.dead) s = Object.assign(fresh(), d); }
+    } catch(_) {}
+}
+
+// ─── Questions ────────────────────────────────────────────────────────────────
+let q = null;
+
+function newQuestion() {
+    const TABLES = [2,3,4,5,6,7,8,9,10,11,12];
+    const a = TABLES[Math.floor(Math.random() * TABLES.length)];
+    const b = Math.floor(Math.random() * 12) + 1;
+    q = { a, b, ans: a * b };
+    document.getElementById('question').textContent = `${a} × ${b} = ?`;
+    const inp = document.getElementById('answer-input');
+    inp.value = '';
+    inp.className = 'answer-input';
+    document.getElementById('feedback').textContent = '';
+    document.getElementById('feedback').className = 'feedback';
+}
+
+function submitAnswer() {
+    if (s.dead) return;
+    const inp = document.getElementById('answer-input');
+    const val = parseInt(inp.value, 10);
+    if (isNaN(val) || inp.value === '') return;
+
+    const fb = document.getElementById('feedback');
+
+    if (val === q.ans) {
+        s.streak++;
+        s.bestStreak = Math.max(s.bestStreak, s.streak);
+        // Points: 5 base + 1 per 3 streak + bonus at 5+
+        const earned = 5 + Math.floor(s.streak / 3) + (s.streak >= 5 ? 3 : 0);
+        s.pts += earned;
+        s.correct++;
+        inp.className = 'answer-input correct';
+        fb.textContent = `✓ Correct! +${earned} pts`;
+        fb.className = 'feedback correct';
+        anim('bounce');
+        toast(`+${earned} pts ⭐`);
+        setTimeout(newQuestion, 650);
+    } else {
+        s.streak = 0;
+        const dmg = 10;
+        s.hp = Math.max(0, s.hp - dmg);
+        s.wrong++;
+        inp.className = 'answer-input wrong';
+        fb.textContent = `✗ Answer was ${q.ans} · −${dmg} HP`;
+        fb.className = 'feedback wrong';
+        anim('shake');
+        toast(`−${dmg} HP`, 'dmg');
+        refreshHP();
+        if (s.hp <= 0) { gameOver(); return; }
+        setTimeout(newQuestion, 1200);
+    }
+
+    document.getElementById('streak-bar').textContent =
+        `Streak: ${s.streak}${s.streak >= 3 ? ' 🔥' : ''}`;
+    refreshAll();
+    save();
+}
+
+// ─── HP drain (–1 HP every 5 s) ──────────────────────────────────────────────
+setInterval(() => {
+    if (s.dead) return;
+    s.hp = Math.max(0, s.hp - 1);
+    refreshHP();
+    save();
+    if (s.hp <= 0) gameOver();
+}, 5000);
+
+// ─── Shop / Market / Life ─────────────────────────────────────────────────────
+function buyItem(id) {
+    if (s.dead) return;
+    const item = ITEMS.find(x => x.id === id);
+    if (s.pts < item.pts) { toast(`Need ${item.pts} pts`, 'error'); return; }
+    s.pts -= item.pts;
+    s.inv[id] = (s.inv[id] || 0) + 1;
+    toast(`Got ${item.emoji} ${item.name}!`);
+    refreshAll(); renderShop(); renderMarket(); save();
+}
+
+function sellItem(id) {
+    if (s.dead) return;
+    const item = ITEMS.find(x => x.id === id);
+    if (!s.inv[id] || s.inv[id] < 1) { toast('None to sell', 'error'); return; }
+    s.inv[id]--;
+    if (!s.inv[id]) delete s.inv[id];
+    s.usd = round2(s.usd + item.usd);
+    toast(`Sold ${item.emoji} +$${item.usd}`, 'money');
+    refreshAll(); renderMarket(); save();
+}
+
+function buyLife(id) {
+    if (s.dead) return;
+    const opt = LIFE_OPTS.find(x => x.id === id);
+    if (s.usd < opt.cost) { toast(`Need $${opt.cost}`, 'error'); return; }
+    s.usd = round2(s.usd - opt.cost);
+    const gained = Math.min(opt.hp, s.maxHp - s.hp);
+    s.hp = Math.min(s.maxHp, s.hp + opt.hp);
+    toast(`${opt.emoji} +${gained} HP`);
+    anim('bounce');
+    refreshAll(); renderLife(); save();
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function refreshAll() {
+    document.getElementById('pts-display').textContent = s.pts;
+    document.getElementById('usd-display').textContent = s.usd.toFixed(2);
+    refreshHP();
+    renderInventory();
+}
+
+function refreshHP() {
+    const pct = Math.max(0, (s.hp / s.maxHp) * 100);
+    const bar = document.getElementById('hp-bar');
+    bar.style.width = pct + '%';
+    bar.style.backgroundColor = pct > 55 ? '#4ade80' : pct > 25 ? '#fbbf24' : '#ef4444';
+    document.getElementById('hp-text').textContent = `${s.hp} / ${s.maxHp} HP`;
+    const charEl = document.getElementById('char');
+    if (!s.dead) charEl.textContent = pct > 55 ? '👨‍🌾' : pct > 25 ? '😰' : '😱';
+}
+
+function renderInventory() {
+    const el = document.getElementById('inventory-bar');
+    const entries = Object.entries(s.inv).filter(([,n]) => n > 0);
+    if (!entries.length) {
+        el.innerHTML = '<span class="inv-empty">Inventory empty — buy fruits &amp; plants from the Shop</span>';
+        return;
+    }
+    el.innerHTML = entries.map(([id,n]) => {
+        const item = ITEMS.find(x => x.id === id);
+        return `<span class="inv-item">${item.emoji} <strong>${n}</strong></span>`;
+    }).join('');
+}
+
+function renderShop() {
+    document.getElementById('shop-grid').innerHTML = ITEMS.map(item => `
+        <div class="item-card">
+            <div class="item-emoji">${item.emoji}</div>
+            <div class="item-name">${item.name}</div>
+            <div class="item-price pts">⭐ ${item.pts}</div>
+            <div class="item-owned">Owned: ${s.inv[item.id] || 0}</div>
+            <button class="item-action buy-btn" onclick="buyItem('${item.id}')"
+                ${s.pts < item.pts ? 'disabled' : ''}>BUY</button>
+        </div>`).join('');
+}
+
+function renderMarket() {
+    document.getElementById('market-grid').innerHTML = ITEMS.map(item => {
+        const n = s.inv[item.id] || 0;
+        return `
+        <div class="item-card">
+            <div class="item-emoji">${item.emoji}</div>
+            <div class="item-name">${item.name}</div>
+            <div class="item-price usd">$${item.usd}</div>
+            <div class="item-owned">Have: ${n}</div>
+            <button class="item-action sell-btn" onclick="sellItem('${item.id}')"
+                ${n < 1 ? 'disabled' : ''}>SELL</button>
+        </div>`;
+    }).join('');
+}
+
+function renderLife() {
+    document.getElementById('life-options').innerHTML = LIFE_OPTS.map(opt => `
+        <div class="life-opt">
+            <div class="life-opt-left">
+                <div class="life-opt-emoji">${opt.emoji}</div>
+                <div>
+                    <div class="life-opt-name">${opt.name}</div>
+                    <div class="life-opt-desc">${opt.desc}</div>
+                </div>
+            </div>
+            <button class="life-buy-btn" onclick="buyLife('${opt.id}')"
+                ${s.usd < opt.cost ? 'disabled' : ''}>$${opt.cost}</button>
+        </div>`).join('');
+}
+
+// ─── Tab switching ────────────────────────────────────────────────────────────
+function switchTab(name) {
+    ['quiz','shop','market','life'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.toggle('active', t === name);
+        document.getElementById(`content-${t}`).classList.toggle('active', t === name);
+    });
+    if (name === 'shop')   renderShop();
+    if (name === 'market') renderMarket();
+    if (name === 'life')   renderLife();
+}
+
+// ─── Numpad ───────────────────────────────────────────────────────────────────
+function np(key) {
+    const inp = document.getElementById('answer-input');
+    if (key === '⌫') { inp.value = inp.value.slice(0, -1); }
+    else if (inp.value.length < 4) { inp.value += key; }
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+let _toastT = null;
+function toast(msg, type) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast show' + (type ? ' ' + type : '');
+    if (_toastT) clearTimeout(_toastT);
+    _toastT = setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+// ─── Character animation ──────────────────────────────────────────────────────
+function anim(cls) {
+    const el = document.getElementById('char');
+    el.classList.remove('bounce','shake');
+    void el.offsetWidth;
+    el.classList.add(cls);
+    setTimeout(() => el.classList.remove(cls), 500);
+}
+
+// ─── Game over / restart ──────────────────────────────────────────────────────
+function gameOver() {
+    s.dead = true;
+    save();
+    document.getElementById('char').textContent = '💀';
+    document.getElementById('go-stats').innerHTML =
+        `Correct: ${s.correct} &nbsp;|&nbsp; Wrong: ${s.wrong}<br>Best Streak: ${s.bestStreak} 🔥`;
+    document.getElementById('gameover').classList.add('show');
+}
+
+function restartGame() {
+    s = fresh();
+    save();
+    document.getElementById('gameover').classList.remove('show');
+    document.getElementById('streak-bar').textContent = 'Streak: 0';
+    refreshAll();
+    newQuestion();
+    switchTab('quiz');
+}
+
+// ─── Keyboard ─────────────────────────────────────────────────────────────────
+document.getElementById('answer-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitAnswer();
+});
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function round2(n) { return Math.round(n * 100) / 100; }
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+loadSave();
+refreshAll();
+newQuestion();
+</script>
+</body>
+</html>
