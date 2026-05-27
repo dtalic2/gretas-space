@@ -1,0 +1,68 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Universal Binary
+        run: |
+          mkdir -p build/OSXBar.app/Contents/MacOS
+          mkdir -p build/OSXBar.app/Contents/Resources
+
+          swiftc \
+            Sources/OSXBar/main.swift \
+            Sources/OSXBar/Progress.swift \
+            Sources/OSXBar/AppDelegate.swift \
+            -framework AppKit \
+            -target arm64-apple-macosx12.0 \
+            -o build/OSXBar_arm64
+
+          swiftc \
+            Sources/OSXBar/main.swift \
+            Sources/OSXBar/Progress.swift \
+            Sources/OSXBar/AppDelegate.swift \
+            -framework AppKit \
+            -target x86_64-apple-macosx12.0 \
+            -o build/OSXBar_x86_64
+
+          lipo -create build/OSXBar_arm64 build/OSXBar_x86_64 \
+               -output build/OSXBar.app/Contents/MacOS/OSXBar
+
+          cp Resources/Info.plist build/OSXBar.app/Contents/Info.plist
+
+      - name: Create DMG
+        run: |
+          mkdir -p /tmp/dmg_source
+          cp -r build/OSXBar.app /tmp/dmg_source/
+          ln -s /Applications /tmp/dmg_source/Applications
+          hdiutil create \
+            -volname "OSXBar" \
+            -srcfolder /tmp/dmg_source \
+            -ov -format UDZO \
+            build/OSXBar.dmg
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "OSXBar ${{ github.ref_name }}"
+          files: build/OSXBar.dmg
+          body: |
+            ## Install
+            1. Download `OSXBar.dmg`
+            2. Open it and drag **OSXBar** to your **Applications** folder
+            3. Launch OSXBar from Applications
+
+            > **macOS security warning?** Right-click → Open, or run:
+            > `xattr -cr /Applications/OSXBar.app`
