@@ -441,7 +441,7 @@ function updatePlayer(dt){
   ix/=l;iy/=l;
   if(Math.abs(ix)>0.12)P.face=ix<0?-1:1;
   P.ft+=dt;if(P.ft>200){P.ft=0;P.frame^=1}
-  const SP=2.2*(dt/16.67);
+  const SP=(touchMode?1.1:2.0)*(dt/16.67);
   const sx=ix*SP*8, sy=iy*SP*8;
   let dwx=(sx/HW+sy/HH)/2, dwy=(sy/HH-sx/HW)/2;
   if(passable(P.wx+dwx,P.wy))P.wx+=dwx;
@@ -649,7 +649,63 @@ function shadowAt(sx,sy,rx,ry){
 function emojiAt(em,sx,sy,size,flip){
   cx.save();cx.translate(sx,sy);if(flip<0)cx.scale(-1,1);
   cx.font=size+'px serif';cx.textAlign='center';cx.textBaseline='middle';
+  cx.fillStyle='rgba(0,0,0,1)'; // reset — shadow gradient must not bleed into emoji
   cx.fillText(em,0,0);cx.restore();
+}
+
+// Canvas-drawn farmer character (foot-centre = origin after translate)
+function drawFarmer(sx,sy,face,moving,frame){
+  const bob=moving?(frame?-2:0):0;
+  cx.save();cx.translate(sx,sy+bob);if(face<0)cx.scale(-1,1);
+
+  // legs
+  cx.fillStyle='#1e3a8a';
+  if(moving&&frame){
+    cx.fillRect(-7,-14,5,14);cx.fillRect(2,-14,5,11);
+  }else{
+    cx.fillRect(-7,-14,5,11);cx.fillRect(2,-14,5,14);
+  }
+  // boots
+  cx.fillStyle='#2c1001';cx.fillRect(-9,-1,8,4);cx.fillRect(0,-1,9,4);
+
+  // overalls body
+  cx.fillStyle='#2563eb';cx.fillRect(-9,-28,18,16);
+  // shirt bib (red plaid peek)
+  cx.fillStyle='#b91c1c';cx.fillRect(-5,-28,10,9);
+  // strap left
+  cx.fillStyle='#1d4ed8';cx.fillRect(-7,-29,4,7);
+  // strap right
+  cx.fillRect(3,-29,4,7);
+
+  // arms (skin)
+  cx.fillStyle='#fcd34d';
+  if(moving){
+    const sw=frame?3:-3;
+    cx.fillRect(-12,-27+sw,4,11);cx.fillRect(8,-27-sw,4,11);
+  }else{
+    cx.fillRect(-12,-27,4,11);cx.fillRect(8,-27,4,11);
+  }
+
+  // head
+  cx.fillStyle='#fcd34d';cx.beginPath();cx.arc(0,-36,8,0,Math.PI*2);cx.fill();
+  // rosy cheek
+  cx.fillStyle='rgba(255,130,80,.35)';cx.beginPath();cx.arc(4.5,-35,3,0,Math.PI*2);cx.fill();
+  // eye (facing right — flipped for left)
+  cx.fillStyle='#1e293b';cx.beginPath();cx.arc(4,-37,1.5,0,Math.PI*2);cx.fill();
+  // smile
+  cx.strokeStyle='#78350f';cx.lineWidth=1.5;
+  cx.beginPath();cx.arc(1,-34,3,0.15,Math.PI-0.15);cx.stroke();
+
+  // hat brim
+  cx.fillStyle='#ca8a04';cx.fillRect(-12,-44,24,4);
+  // hat crown
+  cx.fillStyle='#a16207';cx.fillRect(-7,-56,14,13);
+  // hat band
+  cx.fillStyle='#7c2d12';cx.fillRect(-7,-45,14,3);
+  // crown highlight
+  cx.fillStyle='rgba(255,255,160,.18)';cx.fillRect(-7,-56,5,5);
+
+  cx.restore();
 }
 
 let anim=0;
@@ -737,12 +793,13 @@ function render(){
   }});});
   // player
   ents.push({d:P.wx+P.wy,z:3,fn:()=>{
-    const[sx,sy]=scr(P.wx,P.wy);const bob=P.moving?(P.frame?-2:0):0;
-    shadowAt(sx,sy+HH+2,13,5);
-    emojiAt('👨‍🌾',sx,sy+HH-14+bob,30,P.face);
+    const[sx,sy]=scr(P.wx,P.wy);
+    shadowAt(sx,sy+HH+2,14,5);
+    drawFarmer(sx,sy+HH,P.face,P.moving,P.frame);
+    // label above hat (drawn without flip)
     cx.font='bold 9px sans-serif';cx.textAlign='center';
-    cx.fillStyle='rgba(5,10,5,.78)';cx.fillRect(sx-15,sy+HH-40,30,14);
-    cx.fillStyle='#86efac';cx.fillText('YOU',sx,sy+HH-30);cx.textAlign='left';
+    cx.fillStyle='rgba(5,10,5,.82)';cx.fillRect(sx-15,sy+HH-74,30,14);
+    cx.fillStyle='#86efac';cx.fillText('YOU',sx,sy+HH-64);cx.textAlign='left';
   }});
 
   ents.sort((a,b)=>a.d-b.d||a.z-b.z);
