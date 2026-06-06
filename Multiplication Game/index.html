@@ -59,6 +59,40 @@
             color: #22c55e;
         }
 
+        /* ── Difficulty selector ── */
+        .difficulty-bar {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 14px;
+            width: 100%;
+            max-width: 420px;
+        }
+        .diff-btn {
+            flex: 1;
+            padding: 9px 4px;
+            background: #0d0d1a;
+            border: 1px solid #1a1a2e;
+            border-radius: 10px;
+            color: #666;
+            font-size: 0.78rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.15s;
+            user-select: none;
+        }
+        .diff-btn.active[data-diff="easy"] {
+            background: linear-gradient(135deg, #134e4a, #115e59);
+            color: #99f6e4; border-color: #2dd4bf;
+        }
+        .diff-btn.active[data-diff="medium"] {
+            background: linear-gradient(135deg, #065f46, #047857);
+            color: #d1fae5; border-color: #4ade80;
+        }
+        .diff-btn.active[data-diff="hard"] {
+            background: linear-gradient(135deg, #7c2d12, #9a3412);
+            color: #fed7aa; border-color: #f97316;
+        }
+
         /* ── Character ── */
         .character-section {
             width: 100%;
@@ -415,9 +449,16 @@
     <div class="currency currency-dollars">$ <span id="usd-display">5.00</span></div>
 </div>
 
+<!-- Difficulty selector -->
+<div class="difficulty-bar" id="difficulty-bar">
+    <button class="diff-btn" data-diff="easy"   onclick="setDifficulty('easy')">😊 Easy</button>
+    <button class="diff-btn" data-diff="medium" onclick="setDifficulty('medium')">😎 Medium</button>
+    <button class="diff-btn" data-diff="hard"   onclick="setDifficulty('hard')">🔥 Hard</button>
+</div>
+
 <!-- Character + HP -->
 <div class="character-section">
-    <div class="character" id="char">🧑‍🌾</div>
+    <div class="character" id="char">👨‍🌾</div>
     <div class="hp-label">LIFE — drains over time · spend $ to restore</div>
     <div class="hp-bar-bg">
         <div class="hp-bar" id="hp-bar" style="width:100%;background:#4ade80;"></div>
@@ -433,10 +474,10 @@
 <!-- Main panel -->
 <div class="main-panel">
     <div class="tabs">
-        <div class="tab active"      id="tab-quiz"   onclick="switchTab('quiz')">&#x1F4DD; QUIZ</div>
-        <div class="tab"             id="tab-shop"   onclick="switchTab('shop')">&#x1F6D2; SHOP</div>
-        <div class="tab tab-market"  id="tab-market" onclick="switchTab('market')">&#x1F4B0; MARKET</div>
-        <div class="tab tab-life"    id="tab-life"   onclick="switchTab('life')">&#x2764;&#xFE0F; LIFE</div>
+        <div class="tab active"      id="tab-quiz"   onclick="switchTab('quiz')">📝 QUIZ</div>
+        <div class="tab"             id="tab-shop"   onclick="switchTab('shop')">🛒 SHOP</div>
+        <div class="tab tab-market"  id="tab-market" onclick="switchTab('market')">💰 MARKET</div>
+        <div class="tab tab-life"    id="tab-life"   onclick="switchTab('life')">❤️ LIFE</div>
     </div>
 
     <!-- QUIZ -->
@@ -487,7 +528,7 @@
     <div class="tab-content" id="content-life">
         <div class="panel-box">
             <div class="panel-label">❤️ Restore Life · Spend Dollars</div>
-            <div class="life-drain-note">HP drains –1 every 5 s · wrong answers cost –10 HP</div>
+            <div class="life-drain-note" id="life-drain-note">HP drains –1 every 5 s · wrong answers cost –10 HP</div>
             <div id="life-options"></div>
         </div>
     </div>
@@ -505,6 +546,7 @@
 </div>
 
 <script>
+// ─── Catalog ─────────────────────────────────────────────────────────────────
 const ITEMS = [
     { id:'apple',      emoji:'🍎', name:'Apple',      pts:5,  usd:2  },
     { id:'strawberry', emoji:'🍓', name:'Strawberry', pts:8,  usd:3  },
@@ -524,6 +566,56 @@ const LIFE_OPTS = [
     { id:'fullheal', emoji:'✨', name:'Full Restore', desc:'Full HP', cost:5,   hp:9999},
 ];
 
+// ─── Difficulty ───────────────────────────────────────────────────────────────
+const DIFFICULTIES = {
+    easy: {
+        label:'Easy',   tables:[1,2,3,4,5,10],
+        minMult:1, maxMult:10, drainMs:9000, wrongDmg:5,  basePts:3,
+    },
+    medium: {
+        label:'Medium', tables:[2,3,4,5,6,7,8,9,10,11,12],
+        minMult:1, maxMult:12, drainMs:5000, wrongDmg:10, basePts:5,
+    },
+    hard: {
+        label:'Hard',   tables:[6,7,8,9,11,12,13,14,15],
+        minMult:2, maxMult:15, drainMs:3000, wrongDmg:15, basePts:8,
+    },
+};
+const DIFF_KEY = 'multfarm-difficulty';
+let difficulty = loadDifficulty();
+
+function loadDifficulty() {
+    try {
+        const d = localStorage.getItem(DIFF_KEY);
+        if (d && DIFFICULTIES[d]) return d;
+    } catch(_) {}
+    return 'medium';
+}
+
+function cfg() { return DIFFICULTIES[difficulty]; }
+
+function setDifficulty(name) {
+    if (!DIFFICULTIES[name]) return;
+    difficulty = name;
+    try { localStorage.setItem(DIFF_KEY, name); } catch(_) {}
+    renderDifficulty();
+    startDrain();
+    newQuestion();
+    toast(`${cfg().label} mode`);
+}
+
+function renderDifficulty() {
+    document.querySelectorAll('.diff-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.diff === difficulty);
+    });
+    const note = document.getElementById('life-drain-note');
+    if (note) {
+        note.textContent =
+            `HP drains –1 every ${cfg().drainMs / 1000} s · wrong answers cost –${cfg().wrongDmg} HP`;
+    }
+}
+
+// ─── State ────────────────────────────────────────────────────────────────────
 const SAVE_KEY = 'multfarm-v1';
 let s = fresh();
 
@@ -542,12 +634,13 @@ function loadSave() {
     } catch(_) {}
 }
 
+// ─── Questions ────────────────────────────────────────────────────────────────
 let q = null;
 
 function newQuestion() {
-    const TABLES = [2,3,4,5,6,7,8,9,10,11,12];
-    const a = TABLES[Math.floor(Math.random() * TABLES.length)];
-    const b = Math.floor(Math.random() * 12) + 1;
+    const c = cfg();
+    const a = c.tables[Math.floor(Math.random() * c.tables.length)];
+    const b = c.minMult + Math.floor(Math.random() * (c.maxMult - c.minMult + 1));
     q = { a, b, ans: a * b };
     document.getElementById('question').textContent = `${a} × ${b} = ?`;
     const inp = document.getElementById('answer-input');
@@ -562,11 +655,14 @@ function submitAnswer() {
     const inp = document.getElementById('answer-input');
     const val = parseInt(inp.value, 10);
     if (isNaN(val) || inp.value === '') return;
+
     const fb = document.getElementById('feedback');
+
     if (val === q.ans) {
         s.streak++;
         s.bestStreak = Math.max(s.bestStreak, s.streak);
-        const earned = 5 + Math.floor(s.streak / 3) + (s.streak >= 5 ? 3 : 0);
+        // Points: difficulty base + 1 per 3 streak + bonus at 5+
+        const earned = cfg().basePts + Math.floor(s.streak / 3) + (s.streak >= 5 ? 3 : 0);
         s.pts += earned;
         s.correct++;
         inp.className = 'answer-input correct';
@@ -577,32 +673,39 @@ function submitAnswer() {
         setTimeout(newQuestion, 650);
     } else {
         s.streak = 0;
-        const dmg = 10;
+        const dmg = cfg().wrongDmg;
         s.hp = Math.max(0, s.hp - dmg);
         s.wrong++;
         inp.className = 'answer-input wrong';
-        fb.textContent = `✗ Answer was ${q.ans} · −10 HP`;
+        fb.textContent = `✗ Answer was ${q.ans} · −${dmg} HP`;
         fb.className = 'feedback wrong';
         anim('shake');
-        toast(`−10 HP`, 'dmg');
+        toast(`−${dmg} HP`, 'dmg');
         refreshHP();
         if (s.hp <= 0) { gameOver(); return; }
         setTimeout(newQuestion, 1200);
     }
+
     document.getElementById('streak-bar').textContent =
         `Streak: ${s.streak}${s.streak >= 3 ? ' 🔥' : ''}`;
     refreshAll();
     save();
 }
 
-setInterval(() => {
-    if (s.dead) return;
-    s.hp = Math.max(0, s.hp - 1);
-    refreshHP();
-    save();
-    if (s.hp <= 0) gameOver();
-}, 5000);
+// ─── HP drain (rate depends on difficulty) ────────────────────────────────────
+let drainTimer = null;
+function startDrain() {
+    if (drainTimer) clearInterval(drainTimer);
+    drainTimer = setInterval(() => {
+        if (s.dead) return;
+        s.hp = Math.max(0, s.hp - 1);
+        refreshHP();
+        save();
+        if (s.hp <= 0) gameOver();
+    }, cfg().drainMs);
+}
 
+// ─── Shop / Market / Life ─────────────────────────────────────────────────────
 function buyItem(id) {
     if (s.dead) return;
     const item = ITEMS.find(x => x.id === id);
@@ -636,6 +739,7 @@ function buyLife(id) {
     refreshAll(); renderLife(); save();
 }
 
+// ─── Render ───────────────────────────────────────────────────────────────────
 function refreshAll() {
     document.getElementById('pts-display').textContent = s.pts;
     document.getElementById('usd-display').textContent = s.usd.toFixed(2);
@@ -650,7 +754,7 @@ function refreshHP() {
     bar.style.backgroundColor = pct > 55 ? '#4ade80' : pct > 25 ? '#fbbf24' : '#ef4444';
     document.getElementById('hp-text').textContent = `${s.hp} / ${s.maxHp} HP`;
     const charEl = document.getElementById('char');
-    if (!s.dead) charEl.textContent = pct > 55 ? '🧑‍🌾' : pct > 25 ? '😰' : '😱';
+    if (!s.dead) charEl.textContent = pct > 55 ? '👨‍🌾' : pct > 25 ? '😰' : '😱';
 }
 
 function renderInventory() {
@@ -708,6 +812,7 @@ function renderLife() {
         </div>`).join('');
 }
 
+// ─── Tab switching ────────────────────────────────────────────────────────────
 function switchTab(name) {
     ['quiz','shop','market','life'].forEach(t => {
         document.getElementById(`tab-${t}`).classList.toggle('active', t === name);
@@ -718,12 +823,14 @@ function switchTab(name) {
     if (name === 'life')   renderLife();
 }
 
+// ─── Numpad ───────────────────────────────────────────────────────────────────
 function np(key) {
     const inp = document.getElementById('answer-input');
     if (key === '⌫') { inp.value = inp.value.slice(0, -1); }
     else if (inp.value.length < 4) { inp.value += key; }
 }
 
+// ─── Toast ────────────────────────────────────────────────────────────────────
 let _toastT = null;
 function toast(msg, type) {
     const el = document.getElementById('toast');
@@ -733,6 +840,7 @@ function toast(msg, type) {
     _toastT = setTimeout(() => el.classList.remove('show'), 1800);
 }
 
+// ─── Character animation ──────────────────────────────────────────────────────
 function anim(cls) {
     const el = document.getElementById('char');
     el.classList.remove('bounce','shake');
@@ -741,6 +849,7 @@ function anim(cls) {
     setTimeout(() => el.classList.remove(cls), 500);
 }
 
+// ─── Game over / restart ──────────────────────────────────────────────────────
 function gameOver() {
     s.dead = true;
     save();
@@ -760,15 +869,20 @@ function restartGame() {
     switchTab('quiz');
 }
 
+// ─── Keyboard ─────────────────────────────────────────────────────────────────
 document.getElementById('answer-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') submitAnswer();
 });
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function round2(n) { return Math.round(n * 100) / 100; }
 
+// ─── Boot ─────────────────────────────────────────────────────────────────────
 loadSave();
+renderDifficulty();
 refreshAll();
 newQuestion();
+startDrain();
 </script>
 </body>
 </html>
