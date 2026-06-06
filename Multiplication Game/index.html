@@ -441,7 +441,7 @@ function updatePlayer(dt){
   ix/=l;iy/=l;
   if(Math.abs(ix)>0.12)P.face=ix<0?-1:1;
   P.ft+=dt;if(P.ft>200){P.ft=0;P.frame^=1}
-  const SP=(touchMode?1.1:2.0)*(dt/16.67);
+  const SP=(touchMode?0.5:2.0)*(dt/16.67);
   const sx=ix*SP*8, sy=iy*SP*8;
   let dwx=(sx/HW+sy/HH)/2, dwy=(sy/HH-sx/HW)/2;
   if(passable(P.wx+dwx,P.wy))P.wx+=dwx;
@@ -690,8 +690,10 @@ function drawFarmer(sx,sy,face,moving,frame){
   cx.fillStyle='#fcd34d';cx.beginPath();cx.arc(0,-36,8,0,Math.PI*2);cx.fill();
   // rosy cheek
   cx.fillStyle='rgba(255,130,80,.35)';cx.beginPath();cx.arc(4.5,-35,3,0,Math.PI*2);cx.fill();
-  // eye (facing right — flipped for left)
-  cx.fillStyle='#1e293b';cx.beginPath();cx.arc(4,-37,1.5,0,Math.PI*2);cx.fill();
+  // two eyes — positions mirror naturally when face<0 scale kicks in
+  cx.fillStyle='#1e293b';
+  cx.beginPath();cx.arc(3.5,-37,1.5,0,Math.PI*2);cx.fill();
+  cx.beginPath();cx.arc(-2.5,-37,1.3,0,Math.PI*2);cx.fill();
   // smile
   cx.strokeStyle='#78350f';cx.lineWidth=1.5;
   cx.beginPath();cx.arc(1,-34,3,0.15,Math.PI-0.15);cx.stroke();
