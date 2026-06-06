@@ -100,13 +100,13 @@
             background: linear-gradient(180deg, #0d0d1a, #080812);
             border: 1px solid #1a1a2e;
             border-radius: 16px;
-            padding: 18px 20px 14px;
+            padding: 16px 20px;
             margin-bottom: 10px;
             text-align: center;
         }
         .character {
             font-size: 4.5rem;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             display: inline-block;
         }
         .character.bounce { animation: bounce 0.35s ease; }
@@ -121,28 +121,8 @@
             20%     { transform: translateX(-10px); }
             60%     { transform: translateX(10px); }
         }
-
-        .hp-label {
-            font-size: 0.72rem;
-            color: #666;
-            margin-bottom: 5px;
-            letter-spacing: 1px;
-        }
-        .hp-bar-bg {
-            background: #111122;
-            border-radius: 8px;
-            height: 14px;
-            width: 100%;
-            overflow: hidden;
-            border: 1px solid #222;
-            margin-bottom: 4px;
-        }
-        .hp-bar {
-            height: 100%;
-            border-radius: 8px;
-            transition: width 0.4s ease, background-color 0.4s ease;
-        }
-        .hp-text { font-size: 0.72rem; color: #555; }
+        .char-stat { font-size: 0.78rem; color: #777; }
+        .char-stat strong { color: #fbbf24; }
 
         /* ── Inventory ── */
         .inventory-bar {
@@ -185,7 +165,7 @@
             border: 1px solid #1a1a2e;
             border-radius: 8px;
             color: #555;
-            font-size: 0.7rem;
+            font-size: 0.72rem;
             font-weight: bold;
             cursor: pointer;
             text-align: center;
@@ -201,11 +181,6 @@
             background: linear-gradient(135deg, #14532d, #166534);
             color: #bbf7d0;
             border-color: #22c55e;
-        }
-        .tab-life.active {
-            background: linear-gradient(135deg, #450a0a, #7f1d1d);
-            color: #fecaca;
-            border-color: #ef4444;
         }
 
         .tab-content { display: none; }
@@ -350,40 +325,6 @@
         }
         .item-action:disabled { opacity: 0.35; cursor: not-allowed; }
 
-        /* ── Life panel ── */
-        .life-drain-note {
-            text-align: center;
-            font-size: 0.72rem;
-            color: #ef4444;
-            margin-bottom: 12px;
-            opacity: 0.8;
-        }
-        .life-opt {
-            background: #111122;
-            border: 1px solid #1e1e33;
-            border-radius: 10px;
-            padding: 12px 14px;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .life-opt-left { display: flex; align-items: center; gap: 10px; }
-        .life-opt-emoji { font-size: 1.8rem; }
-        .life-opt-name  { font-size: 0.85rem; font-weight: bold; color: #ccc; }
-        .life-opt-desc  { font-size: 0.68rem; color: #555; }
-        .life-buy-btn {
-            background: linear-gradient(135deg, #450a0a, #7f1d1d);
-            border: 1px solid #ef4444;
-            color: #fecaca;
-            border-radius: 8px;
-            padding: 7px 14px;
-            font-size: 0.78rem;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .life-buy-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
         /* ── Toast ── */
         .toast {
             position: fixed;
@@ -405,38 +346,6 @@
         .toast.show  { transform: translateX(-50%) translateY(0); }
         .toast.error { border-color: #ef4444; color: #ef4444; }
         .toast.money { border-color: #22c55e; color: #22c55e; }
-        .toast.dmg   { border-color: #ef4444; color: #ef4444; }
-
-        /* ── Game over overlay ── */
-        .gameover {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(5,5,8,0.93);
-            z-index: 200;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            gap: 12px;
-            padding: 20px;
-        }
-        .gameover.show { display: flex; }
-        .gameover-skull { font-size: 5rem; }
-        .gameover h2 { font-size: 2.2rem; color: #ef4444; letter-spacing: 3px; }
-        .gameover-stats { color: #666; font-size: 0.88rem; line-height: 1.7; }
-        .restart-btn {
-            background: linear-gradient(135deg, #065f46, #047857);
-            border: 1px solid #4ade80;
-            color: #d1fae5;
-            padding: 12px 36px;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
-            letter-spacing: 1px;
-        }
     </style>
 </head>
 <body>
@@ -446,7 +355,7 @@
 <!-- Currency row -->
 <div class="currencies">
     <div class="currency currency-points">⭐ <span id="pts-display">0</span> pts</div>
-    <div class="currency currency-dollars">$ <span id="usd-display">5.00</span></div>
+    <div class="currency currency-dollars">$ <span id="usd-display">0.00</span></div>
 </div>
 
 <!-- Difficulty selector -->
@@ -456,14 +365,10 @@
     <button class="diff-btn" data-diff="hard"   onclick="setDifficulty('hard')">🔥 Hard</button>
 </div>
 
-<!-- Character + HP -->
+<!-- Character -->
 <div class="character-section">
     <div class="character" id="char">👨‍🌾</div>
-    <div class="hp-label">LIFE — drains over time · spend $ to restore</div>
-    <div class="hp-bar-bg">
-        <div class="hp-bar" id="hp-bar" style="width:100%;background:#4ade80;"></div>
-    </div>
-    <div class="hp-text" id="hp-text">100 / 100 HP</div>
+    <div class="char-stat" id="char-stat">Best streak: <strong>0</strong></div>
 </div>
 
 <!-- Inventory -->
@@ -477,7 +382,6 @@
         <div class="tab active"      id="tab-quiz"   onclick="switchTab('quiz')">📝 QUIZ</div>
         <div class="tab"             id="tab-shop"   onclick="switchTab('shop')">🛒 SHOP</div>
         <div class="tab tab-market"  id="tab-market" onclick="switchTab('market')">💰 MARKET</div>
-        <div class="tab tab-life"    id="tab-life"   onclick="switchTab('life')">❤️ LIFE</div>
     </div>
 
     <!-- QUIZ -->
@@ -523,27 +427,10 @@
             <div class="item-grid" id="market-grid"></div>
         </div>
     </div>
-
-    <!-- LIFE -->
-    <div class="tab-content" id="content-life">
-        <div class="panel-box">
-            <div class="panel-label">❤️ Restore Life · Spend Dollars</div>
-            <div class="life-drain-note" id="life-drain-note">HP drains –1 every 5 s · wrong answers cost –10 HP</div>
-            <div id="life-options"></div>
-        </div>
-    </div>
 </div>
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
-
-<!-- Game over -->
-<div class="gameover" id="gameover">
-    <div class="gameover-skull">💀</div>
-    <h2>GAME OVER</h2>
-    <div class="gameover-stats" id="go-stats"></div>
-    <button class="restart-btn" onclick="restartGame()">Play Again</button>
-</div>
 
 <script>
 // ─── Catalog ─────────────────────────────────────────────────────────────────
@@ -559,26 +446,19 @@ const ITEMS = [
     { id:'mushroom',   emoji:'🍄', name:'Mushroom',   pts:22, usd:10 },
 ];
 
-const LIFE_OPTS = [
-    { id:'snack',    emoji:'🍞', name:'Snack',        desc:'+20 HP',  cost:1,   hp:20  },
-    { id:'meal',     emoji:'🍲', name:'Hot Meal',     desc:'+50 HP',  cost:2,   hp:50  },
-    { id:'medicine', emoji:'💊', name:'Medicine',     desc:'+80 HP',  cost:3.5, hp:80  },
-    { id:'fullheal', emoji:'✨', name:'Full Restore', desc:'Full HP', cost:5,   hp:9999},
-];
-
 // ─── Difficulty ───────────────────────────────────────────────────────────────
 const DIFFICULTIES = {
     easy: {
         label:'Easy',   tables:[1,2,3,4,5,10],
-        minMult:1, maxMult:10, drainMs:9000, wrongDmg:5,  basePts:3,
+        minMult:1, maxMult:10, basePts:3,
     },
     medium: {
         label:'Medium', tables:[2,3,4,5,6,7,8,9,10,11,12],
-        minMult:1, maxMult:12, drainMs:5000, wrongDmg:10, basePts:5,
+        minMult:1, maxMult:12, basePts:5,
     },
     hard: {
         label:'Hard',   tables:[6,7,8,9,11,12,13,14,15],
-        minMult:2, maxMult:15, drainMs:3000, wrongDmg:15, basePts:8,
+        minMult:2, maxMult:15, basePts:8,
     },
 };
 const DIFF_KEY = 'multfarm-difficulty';
@@ -599,7 +479,6 @@ function setDifficulty(name) {
     difficulty = name;
     try { localStorage.setItem(DIFF_KEY, name); } catch(_) {}
     renderDifficulty();
-    startDrain();
     newQuestion();
     toast(`${cfg().label} mode`);
 }
@@ -608,11 +487,6 @@ function renderDifficulty() {
     document.querySelectorAll('.diff-btn').forEach(b => {
         b.classList.toggle('active', b.dataset.diff === difficulty);
     });
-    const note = document.getElementById('life-drain-note');
-    if (note) {
-        note.textContent =
-            `HP drains –1 every ${cfg().drainMs / 1000} s · wrong answers cost –${cfg().wrongDmg} HP`;
-    }
 }
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -620,8 +494,7 @@ const SAVE_KEY = 'multfarm-v1';
 let s = fresh();
 
 function fresh() {
-    return { pts:0, usd:5, hp:100, maxHp:100, streak:0,
-             bestStreak:0, correct:0, wrong:0, inv:{}, dead:false };
+    return { pts:0, usd:0, streak:0, bestStreak:0, correct:0, wrong:0, inv:{} };
 }
 
 function save() {
@@ -630,7 +503,7 @@ function save() {
 function loadSave() {
     try {
         const raw = localStorage.getItem(SAVE_KEY);
-        if (raw) { const d = JSON.parse(raw); if (!d.dead) s = Object.assign(fresh(), d); }
+        if (raw) s = Object.assign(fresh(), JSON.parse(raw));
     } catch(_) {}
 }
 
@@ -651,7 +524,6 @@ function newQuestion() {
 }
 
 function submitAnswer() {
-    if (s.dead) return;
     const inp = document.getElementById('answer-input');
     const val = parseInt(inp.value, 10);
     if (isNaN(val) || inp.value === '') return;
@@ -673,16 +545,11 @@ function submitAnswer() {
         setTimeout(newQuestion, 650);
     } else {
         s.streak = 0;
-        const dmg = cfg().wrongDmg;
-        s.hp = Math.max(0, s.hp - dmg);
         s.wrong++;
         inp.className = 'answer-input wrong';
-        fb.textContent = `✗ Answer was ${q.ans} · −${dmg} HP`;
+        fb.textContent = `✗ Answer was ${q.ans}`;
         fb.className = 'feedback wrong';
         anim('shake');
-        toast(`−${dmg} HP`, 'dmg');
-        refreshHP();
-        if (s.hp <= 0) { gameOver(); return; }
         setTimeout(newQuestion, 1200);
     }
 
@@ -692,22 +559,8 @@ function submitAnswer() {
     save();
 }
 
-// ─── HP drain (rate depends on difficulty) ────────────────────────────────────
-let drainTimer = null;
-function startDrain() {
-    if (drainTimer) clearInterval(drainTimer);
-    drainTimer = setInterval(() => {
-        if (s.dead) return;
-        s.hp = Math.max(0, s.hp - 1);
-        refreshHP();
-        save();
-        if (s.hp <= 0) gameOver();
-    }, cfg().drainMs);
-}
-
-// ─── Shop / Market / Life ─────────────────────────────────────────────────────
+// ─── Shop / Market ────────────────────────────────────────────────────────────
 function buyItem(id) {
-    if (s.dead) return;
     const item = ITEMS.find(x => x.id === id);
     if (s.pts < item.pts) { toast(`Need ${item.pts} pts`, 'error'); return; }
     s.pts -= item.pts;
@@ -717,7 +570,6 @@ function buyItem(id) {
 }
 
 function sellItem(id) {
-    if (s.dead) return;
     const item = ITEMS.find(x => x.id === id);
     if (!s.inv[id] || s.inv[id] < 1) { toast('None to sell', 'error'); return; }
     s.inv[id]--;
@@ -727,34 +579,13 @@ function sellItem(id) {
     refreshAll(); renderMarket(); save();
 }
 
-function buyLife(id) {
-    if (s.dead) return;
-    const opt = LIFE_OPTS.find(x => x.id === id);
-    if (s.usd < opt.cost) { toast(`Need $${opt.cost}`, 'error'); return; }
-    s.usd = round2(s.usd - opt.cost);
-    const gained = Math.min(opt.hp, s.maxHp - s.hp);
-    s.hp = Math.min(s.maxHp, s.hp + opt.hp);
-    toast(`${opt.emoji} +${gained} HP`);
-    anim('bounce');
-    refreshAll(); renderLife(); save();
-}
-
 // ─── Render ───────────────────────────────────────────────────────────────────
 function refreshAll() {
     document.getElementById('pts-display').textContent = s.pts;
     document.getElementById('usd-display').textContent = s.usd.toFixed(2);
-    refreshHP();
+    document.getElementById('char-stat').innerHTML =
+        `Best streak: <strong>${s.bestStreak}</strong>${s.bestStreak >= 3 ? ' 🔥' : ''}`;
     renderInventory();
-}
-
-function refreshHP() {
-    const pct = Math.max(0, (s.hp / s.maxHp) * 100);
-    const bar = document.getElementById('hp-bar');
-    bar.style.width = pct + '%';
-    bar.style.backgroundColor = pct > 55 ? '#4ade80' : pct > 25 ? '#fbbf24' : '#ef4444';
-    document.getElementById('hp-text').textContent = `${s.hp} / ${s.maxHp} HP`;
-    const charEl = document.getElementById('char');
-    if (!s.dead) charEl.textContent = pct > 55 ? '👨‍🌾' : pct > 25 ? '😰' : '😱';
 }
 
 function renderInventory() {
@@ -797,30 +628,14 @@ function renderMarket() {
     }).join('');
 }
 
-function renderLife() {
-    document.getElementById('life-options').innerHTML = LIFE_OPTS.map(opt => `
-        <div class="life-opt">
-            <div class="life-opt-left">
-                <div class="life-opt-emoji">${opt.emoji}</div>
-                <div>
-                    <div class="life-opt-name">${opt.name}</div>
-                    <div class="life-opt-desc">${opt.desc}</div>
-                </div>
-            </div>
-            <button class="life-buy-btn" onclick="buyLife('${opt.id}')"
-                ${s.usd < opt.cost ? 'disabled' : ''}>$${opt.cost}</button>
-        </div>`).join('');
-}
-
 // ─── Tab switching ────────────────────────────────────────────────────────────
 function switchTab(name) {
-    ['quiz','shop','market','life'].forEach(t => {
+    ['quiz','shop','market'].forEach(t => {
         document.getElementById(`tab-${t}`).classList.toggle('active', t === name);
         document.getElementById(`content-${t}`).classList.toggle('active', t === name);
     });
     if (name === 'shop')   renderShop();
     if (name === 'market') renderMarket();
-    if (name === 'life')   renderLife();
 }
 
 // ─── Numpad ───────────────────────────────────────────────────────────────────
@@ -849,26 +664,6 @@ function anim(cls) {
     setTimeout(() => el.classList.remove(cls), 500);
 }
 
-// ─── Game over / restart ──────────────────────────────────────────────────────
-function gameOver() {
-    s.dead = true;
-    save();
-    document.getElementById('char').textContent = '💀';
-    document.getElementById('go-stats').innerHTML =
-        `Correct: ${s.correct} &nbsp;|&nbsp; Wrong: ${s.wrong}<br>Best Streak: ${s.bestStreak} 🔥`;
-    document.getElementById('gameover').classList.add('show');
-}
-
-function restartGame() {
-    s = fresh();
-    save();
-    document.getElementById('gameover').classList.remove('show');
-    document.getElementById('streak-bar').textContent = 'Streak: 0';
-    refreshAll();
-    newQuestion();
-    switchTab('quiz');
-}
-
 // ─── Keyboard ─────────────────────────────────────────────────────────────────
 document.getElementById('answer-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') submitAnswer();
@@ -882,7 +677,6 @@ loadSave();
 renderDifficulty();
 refreshAll();
 newQuestion();
-startDrain();
 </script>
 </body>
 </html>
