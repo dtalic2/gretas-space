@@ -16,19 +16,31 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
 /* HUD */
 #hud{position:fixed;top:0;left:0;right:0;
   padding:calc(env(safe-area-inset-top) + 6px) 12px 6px;
-  background:linear-gradient(180deg,rgba(5,10,5,.92),rgba(5,10,5,.55) 70%,transparent);
-  display:flex;align-items:center;justify-content:space-between;z-index:20;gap:8px}
+  background:linear-gradient(180deg,rgba(5,10,5,.92),rgba(5,10,5,.55) 80%,transparent);
+  display:flex;flex-direction:column;gap:6px;z-index:20}
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .hcur{display:flex;align-items:center;gap:5px;font-weight:800;font-size:.95rem;
   padding:5px 12px;border-radius:20px;backdrop-filter:blur(4px)}
 .hpts{color:#fde68a;background:rgba(120,80,10,.45);border:1px solid #fbbf2466;
   text-shadow:0 1px 2px #000}
 .husd{color:#bbf7d0;background:rgba(10,60,25,.45);border:1px solid #22c55e66;
   text-shadow:0 1px 2px #000}
-.dwrap{display:flex;gap:4px}
-.tblbtn{padding:6px 12px;border-radius:20px;background:rgba(13,13,26,.7);
-  border:1px solid #4ade8066;color:#dcfce7;font-size:.78rem;font-weight:800;
+.dwrap{display:flex;gap:5px}
+.tblbtn{padding:6px 11px;border-radius:20px;background:rgba(13,13,26,.7);
+  border:1px solid #4ade8066;color:#dcfce7;font-size:1rem;font-weight:800;
   cursor:pointer;backdrop-filter:blur(4px);-webkit-tap-highlight-color:transparent}
 .tblbtn:active{background:#1a2e1a;border-color:#4ade80}
+.snakebtn{border-color:#86efac99}
+/* Mastery score bar */
+#scorebar{display:flex;align-items:center;gap:8px;
+  background:rgba(5,10,5,.55);border:1px solid #fbbf2444;border-radius:20px;
+  padding:4px 12px;backdrop-filter:blur(4px);max-width:420px;margin:0 auto;width:100%}
+.sblabel{color:#fde68a;font-size:.72rem;font-weight:800;white-space:nowrap;text-shadow:0 1px 2px #000}
+.sbwrap{flex:1;height:8px;background:rgba(0,0,0,.45);border-radius:5px;overflow:hidden;
+  border:1px solid #ffffff22}
+#sbfill{height:100%;width:0%;border-radius:5px;
+  background:linear-gradient(90deg,#22c55e,#fbbf24,#f97316);transition:width .4s}
+.sbnum{color:#dcfce7;font-size:.68rem;font-weight:800;white-space:nowrap;text-shadow:0 1px 2px #000}
 
 /* Inventory bar */
 #inv{position:fixed;left:0;right:0;
@@ -206,6 +218,17 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
 .sbox.carp .sitem{border-color:#15803d;background:linear-gradient(180deg,#123018,#0b1d0f)}
 .sbox.carp .sbuy{background:linear-gradient(135deg,#22c55e,#15803d);border-color:#86efac;box-shadow:0 2px 0 #0f5132}
 .sback.carp{background:linear-gradient(135deg,#15803d,#0f5132);border-color:#86efac;box-shadow:0 3px 0 #0a3823}
+/* Snake skin shop */
+.sbox.skin{border-color:#4ade80}
+.sbox.skin .stitle{color:#bbf7d0;text-shadow:0 0 18px #4ade8088}
+.sbox.skin .ssub{color:#a7f0c0}
+.sbox.skin .sitem{border-color:#2c4a30;background:linear-gradient(180deg,#142b18,#0b1d0f)}
+.sbox.skin .sitem.equipped{border-color:#4ade80;box-shadow:0 0 10px #4ade8044}
+.sbox.skin .snm{color:#eafff0}.sbox.skin .sds{color:#9cc7a6;min-height:16px}
+.sbox.skin .sbuy{background:linear-gradient(135deg,#22c55e,#15803d);border-color:#86efac;box-shadow:0 2px 0 #0f5132}
+.sback.skin{background:linear-gradient(135deg,#15803d,#0f5132);border-color:#86efac;box-shadow:0 3px 0 #0a3823}
+.kswatch{width:44px;height:44px;border-radius:50%;margin:2px auto 7px;
+  border:2px solid #ffffff44;box-shadow:inset 0 2px 6px #0006,0 2px 6px #0007}
 
 /* Toast */
 #toast{position:fixed;top:calc(env(safe-area-inset-top) + 50px);left:50%;
@@ -231,11 +254,19 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
 <canvas id="c"></canvas>
 
 <div id="hud">
-  <div class="hcur hpts">⭐ <span id="hpts">0</span></div>
-  <div class="dwrap">
-    <button class="tblbtn" onclick="openTables()">🔢 Tables</button>
+  <div class="hrow">
+    <div class="hcur hpts">⭐ <span id="hpts">0</span></div>
+    <div class="dwrap">
+      <button class="tblbtn" onclick="openTables()">🔢</button>
+      <button class="tblbtn snakebtn" onclick="openSkins()">🐍</button>
+    </div>
+    <div class="hcur husd">$ <span id="husd">0.00</span></div>
   </div>
-  <div class="hcur husd">$ <span id="husd">0.00</span></div>
+  <div id="scorebar">
+    <span class="sblabel">🏆 <span id="scoreRank">Sprout 🌱</span></span>
+    <div class="sbwrap"><div id="sbfill"></div></div>
+    <span class="sbnum"><span id="scoreN">0</span>/1000 ⭐</span>
+  </div>
 </div>
 
 <div id="zoom">
@@ -318,6 +349,18 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
   </div>
 </div>
 
+<!-- Snake Skin Shop -->
+<div id="km" class="modal">
+  <div class="sbox skin">
+    <span class="sclose" onclick="closeSkins()">✕</span>
+    <div class="stitle">🐍 SNAKE SKIN SHOP 🐍</div>
+    <div class="ssub">Answer multiplication questions to earn ⭐, then unlock skins!<br>
+      You have <b><span id="kstars">0</span> ⭐</b></div>
+    <div class="sgrid" id="kgrid"></div>
+    <button class="sback skin" onclick="closeSkins()">← Back to Farm</button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <div id="splash">
@@ -343,6 +386,11 @@ const MMIN=1,MMAX=12;       // multiplier range
 let activeTables=[];        // tables the player is currently practising
 const tableEarned={};       // {table: total ⭐ earned answering it}
 function isLocked(t){return (tableEarned[t]||0)>=LOCK_AT}
+// Mastery score out of 1000 = how far through all 12 tables (200⭐ each) you are
+function masteryScore(){let s=0;for(let t=1;t<=12;t++)s+=Math.min(LOCK_AT,tableEarned[t]||0);
+  return Math.round(s/(12*LOCK_AT)*1000);}
+function scoreRank(v){return v>=1000?'Grand Master 🏆':v>=850?'Master 🐍':v>=600?'Expert':
+  v>=350?'Skilled':v>=150?'Grower':'Sprout 🌱';}
 function saveTables(){try{
   localStorage.setItem('tfarm-tbl',JSON.stringify({sel:activeTables,earn:tableEarned}));
 }catch(_){}}
@@ -400,6 +448,27 @@ const DECOR_SLOTS=[
   [29.5,16.5],[29.5,19],[29.5,21.5],[29.5,24],
   [20,26.8],[22.5,26.8],[25,26.8],[27,26.8],
 ];
+
+// ── Snake skins (unlocked with ⭐ earned from multiplication) ────────────────
+const SKINS=[
+  {id:'green',  n:'Garden Green', color:'#4ea83a',color2:'#2f7a24',pattern:'plain',  price:0},
+  {id:'coral',  n:'Coral Pink',   color:'#fb7185',color2:'#be123c',pattern:'plain',  price:60},
+  {id:'ocean',  n:'Ocean Blue',   color:'#3b82d6',color2:'#245a9e',pattern:'stripes',price:80},
+  {id:'sunset', n:'Sunset',       color:'#f97316',color2:'#c2410c',pattern:'stripes',price:100},
+  {id:'toxic',  n:'Toxic Lime',   color:'#84cc16',color2:'#4d7c0f',pattern:'spots',  price:120},
+  {id:'ice',    n:'Ice Serpent',  color:'#67e8f9',color2:'#0891b2',pattern:'plain',  price:140},
+  {id:'purple', n:'Royal Purple', color:'#9333ea',color2:'#6b21a8',pattern:'spots',  price:160},
+  {id:'shadow', n:'Shadow',       color:'#4b5563',color2:'#1f2937',pattern:'spots',  price:200},
+  {id:'gold',   n:'Golden',       color:'#f59e0b',color2:'#b45309',pattern:'stripes',price:280},
+  {id:'rainbow',n:'Rainbow',      color:'rainbow',color2:'rainbow',pattern:'rainbow',price:400},
+];
+let ownedSkins=['green'];
+let equippedSkin='green';
+function skinById(id){return SKINS.find(s=>s.id===id)||SKINS[0]}
+function saveSkins(){try{localStorage.setItem('tfarm-skin',JSON.stringify({owned:ownedSkins,eq:equippedSkin}))}catch(_){}}
+function loadSkins(){try{const d=JSON.parse(localStorage.getItem('tfarm-skin'));if(!d)return;
+  if(Array.isArray(d.owned))ownedSkins=Array.from(new Set(['green',...d.owned]));
+  if(d.eq&&ownedSkins.includes(d.eq))equippedSkin=d.eq;}catch(_){}}
 
 // ── State ────────────────────────────────────────────────────────────────────
 let pts=0,usd=0,inv={};
@@ -485,9 +554,9 @@ function buildWorld(){
   }
   P.wx=23.5;P.wy=21.5;
 
-  makeFarm(18,3,12,9,'👩‍🌾 Mia',{fx:18,fy:3,fw:12,fh:9});
-  makeFarm(3,16,11,11,'🧑‍🌾 Leo',{fx:3,fy:16,fw:11,fh:11});
-  makeFarm(36,16,11,11,'👴 Zoe',{fx:36,fy:16,fw:11,fh:11});
+  makeFarm(18,3,12,9,'🐍 Mia',{fx:18,fy:3,fw:12,fh:9,c1:'#9333ea',c2:'#6b21a8'});
+  makeFarm(3,16,11,11,'🐍 Leo',{fx:3,fy:16,fw:11,fh:11,c1:'#3b82d6',c2:'#245a9e'});
+  makeFarm(36,16,11,11,'🐍 Zoe',{fx:36,fy:16,fw:11,fh:11,c1:'#e0803a',c2:'#a1521f'});
 
   // Mythic shop footprint
   for(let x=20;x<=30;x++)for(let y=33;y<=40;y++)setT(x,y,T_SHOP);
@@ -529,7 +598,8 @@ function makeFarm(fx,fy,fw,fh,label,npcDef){
     plots[`${tx},${ty}`]={stage:st,at:now-age,fruit:fr};np2.push(`${tx},${ty}`);
   }
   npcs.push({wx:fx+2.5,wy:fy+2.5,twx:fx+2.5,twy:fy+2.5,
-    farm:npcDef,emoji:label.split(' ')[0],label,plots:np2,timer:0,frame:0,ft:0});
+    farm:npcDef,emoji:label.split(' ')[0],label,plots:np2,timer:0,frame:0,ft:0,
+    skin:{color:npcDef.c1||'#4ea83a',color2:npcDef.c2||'#2f7a24',pattern:'plain'}});
 }
 function randFruit(){return FRUITS[Math.floor(Math.random()*FRUITS.length)]}
 
@@ -693,6 +763,36 @@ function buyDecor(id){const d=DECOS.find(x=>x.id===id);
   if(!d||usd<d.p){toast('Not enough $','e');return}
   usd=r2(usd-d.p);placeDecor(id);
   toast(`${d.e} ${d.n} built on your farm!`,'m');refreshHUD();openCarpenter();save();}
+
+// ── Snake skin shop (unlock with ⭐ earned from multiplication) ──────────────
+function skinSwatch(s){
+  if(s.color==='rainbow')return'background:conic-gradient(#f87171,#fbbf24,#4ade80,#38bdf8,#a78bfa,#f87171)';
+  return`background:radial-gradient(circle at 38% 34%,${s.color},${s.color2})`;
+}
+function openSkins(){
+  document.getElementById('kgrid').innerHTML=SKINS.map(s=>{
+    const owned=ownedSkins.includes(s.id),eq=equippedSkin===s.id;
+    let btn;
+    if(eq)btn=`<button class="sbuy" disabled>Equipped ✓</button>`;
+    else if(owned)btn=`<button class="sbuy" onclick="equipSkin('${s.id}')">Equip</button>`;
+    else btn=`<button class="sbuy" onclick="buySkin('${s.id}')"${pts<s.price?' disabled':''}>${s.price} ⭐</button>`;
+    return`<div class="sitem${eq?' equipped':''}">
+      <div class="kswatch" style="${skinSwatch(s)}"></div>
+      <div class="snm">${s.n}</div>
+      <div class="sds">${owned?(eq?'Now slithering!':'Owned'):'Unlock with ⭐'}</div>
+      ${btn}
+    </div>`}).join('');
+  document.getElementById('kstars').textContent=pts;
+  document.getElementById('km').classList.add('show');
+}
+function closeSkins(){document.getElementById('km').classList.remove('show')}
+function buySkin(id){const s=skinById(id);
+  if(ownedSkins.includes(id))return;
+  if(pts<s.price){toast('Not enough ⭐ — answer more questions!','e');return}
+  pts-=s.price;ownedSkins.push(id);equippedSkin=id;
+  toast(`Unlocked ${s.n}! 🐍`,'m');refreshHUD();saveSkins();save();openSkins();}
+function equipSkin(id){if(!ownedSkins.includes(id))return;
+  equippedSkin=id;saveSkins();openSkins();}
 
 // ── Harvest / sell ───────────────────────────────────────────────────────────
 function harvest(k){const p=plots[k];if(!p||p.stage!=='fruit')return;
@@ -1029,58 +1129,57 @@ function drawDecor(id,cxp,cyp){
 }
 
 // Canvas-drawn farmer character (foot-centre = origin after translate)
-function drawFarmer(sx,sy,face,moving,frame){
-  const bob=moving?(frame?-2:0):0;
-  cx.save();cx.translate(sx,sy+bob);if(face<0)cx.scale(-1,1);
+// darken/lighten a hex colour by amt (-255..255)
+function shade(hex,amt){
+  if(hex==='rainbow')return hex;
+  const n=parseInt(hex.slice(1),16);
+  let r=(n>>16)+amt,g=((n>>8)&255)+amt,b=(n&255)+amt;
+  r=Math.max(0,Math.min(255,r));g=Math.max(0,Math.min(255,g));b=Math.max(0,Math.min(255,b));
+  return`rgb(${r},${g},${b})`;
+}
+// Canvas-drawn snake character coiled on the ground with a raised head.
+function drawSnake(sx,sy,skin,face,moving,frame){
+  let col=skin.color,col2=skin.color2,pat=skin.pattern;
+  if(col==='rainbow'){col=`hsl(${(anim*55)%360},80%,55%)`;col2=`hsl(${(anim*55+40)%360},75%,42%)`;pat='rainbow';}
+  cx.save();cx.translate(sx,sy);if(face<0)cx.scale(-1,1);
+  const slith=moving?Math.sin(anim*10)*3:Math.sin(anim*2.2)*1.4;
 
-  // legs
-  cx.fillStyle='#1e3a8a';
-  if(moving&&frame){
-    cx.fillRect(-7,-14,5,14);cx.fillRect(2,-14,5,11);
-  }else{
-    cx.fillRect(-7,-14,5,11);cx.fillRect(2,-14,5,14);
+  // ── coiled body (two stacked loops) ──
+  function loop(cy,rx,ry){
+    cx.fillStyle=col2;cx.beginPath();cx.ellipse(0,cy,rx,ry,0,0,Math.PI*2);cx.fill();
+    cx.fillStyle=col;cx.beginPath();cx.ellipse(0,cy-1.5,rx-2.5,ry-2.5,0,0,Math.PI*2);cx.fill();
   }
-  // boots
-  cx.fillStyle='#2c1001';cx.fillRect(-9,-1,8,4);cx.fillRect(0,-1,9,4);
+  loop(-3,17,8);
+  loop(-8,12,6);
+  // pattern on the coil
+  if(pat==='stripes'){cx.strokeStyle=col2;cx.lineWidth=2.4;
+    for(let i=-2;i<=2;i++){cx.beginPath();cx.moveTo(i*6,-1);cx.lineTo(i*6+3,-7);cx.stroke();}}
+  else if(pat==='spots'){cx.fillStyle=col2;
+    [[-9,-3],[0,-1],[9,-3],[-4,-8],[5,-8]].forEach(([x,y])=>{
+      cx.beginPath();cx.arc(x,y,2,0,Math.PI*2);cx.fill();});}
+  else if(pat==='rainbow'){cx.fillStyle='rgba(255,255,255,.25)';
+    [[-8,-3],[2,-2],[8,-4]].forEach(([x,y])=>{cx.beginPath();cx.arc(x,y,2,0,Math.PI*2);cx.fill();});}
 
-  // overalls body
-  cx.fillStyle='#2563eb';cx.fillRect(-9,-28,18,16);
-  // shirt bib (red plaid peek)
-  cx.fillStyle='#b91c1c';cx.fillRect(-5,-28,10,9);
-  // strap left
-  cx.fillStyle='#1d4ed8';cx.fillRect(-7,-29,4,7);
-  // strap right
-  cx.fillRect(3,-29,4,7);
+  // ── neck curving up to head ──
+  cx.strokeStyle=col;cx.lineWidth=9;cx.lineCap='round';
+  cx.beginPath();cx.moveTo(0,-10);
+  cx.quadraticCurveTo(7+slith,-20,3+slith,-30);cx.stroke();
+  cx.strokeStyle=col2;cx.lineWidth=3.5;
+  cx.beginPath();cx.moveTo(0,-10);cx.quadraticCurveTo(7+slith,-20,3+slith,-30);cx.stroke();
 
-  // arms (skin)
-  cx.fillStyle='#fcd34d';
-  if(moving){
-    const sw=frame?3:-3;
-    cx.fillRect(-12,-27+sw,4,11);cx.fillRect(8,-27-sw,4,11);
-  }else{
-    cx.fillRect(-12,-27,4,11);cx.fillRect(8,-27,4,11);
-  }
-
-  // head
-  cx.fillStyle='#fcd34d';cx.beginPath();cx.arc(0,-36,8,0,Math.PI*2);cx.fill();
-  // rosy cheek
-  cx.fillStyle='rgba(255,130,80,.35)';cx.beginPath();cx.arc(4.5,-35,3,0,Math.PI*2);cx.fill();
-  // two eyes — positions mirror naturally when face<0 scale kicks in
-  cx.fillStyle='#1e293b';
-  cx.beginPath();cx.arc(3.5,-37,1.5,0,Math.PI*2);cx.fill();
-  cx.beginPath();cx.arc(-2.5,-37,1.3,0,Math.PI*2);cx.fill();
-  // smile
-  cx.strokeStyle='#78350f';cx.lineWidth=1.5;
-  cx.beginPath();cx.arc(1,-34,3,0.15,Math.PI-0.15);cx.stroke();
-
-  // hat brim
-  cx.fillStyle='#ca8a04';cx.fillRect(-12,-44,24,4);
-  // hat crown
-  cx.fillStyle='#a16207';cx.fillRect(-7,-56,14,13);
-  // hat band
-  cx.fillStyle='#7c2d12';cx.fillRect(-7,-45,14,3);
-  // crown highlight
-  cx.fillStyle='rgba(255,255,160,.18)';cx.fillRect(-7,-56,5,5);
+  // ── head ──
+  const hx=3+slith,hy=-32;
+  cx.fillStyle=col;cx.beginPath();cx.ellipse(hx,hy,8,7,0,0,Math.PI*2);cx.fill();
+  cx.fillStyle='rgba(255,255,255,.18)';cx.beginPath();cx.ellipse(hx-2,hy-2,4,3,0,0,Math.PI*2);cx.fill();
+  // forked tongue (flicks)
+  if(Math.sin(anim*8)>0.3){cx.strokeStyle='#e23b3b';cx.lineWidth=1.4;cx.lineCap='round';
+    cx.beginPath();cx.moveTo(hx+6,hy);cx.lineTo(hx+12,hy-1);
+    cx.moveTo(hx+12,hy-1);cx.lineTo(hx+15,hy-3);cx.moveTo(hx+12,hy-1);cx.lineTo(hx+15,hy+1);cx.stroke();}
+  // eyes
+  cx.fillStyle='#fff';cx.beginPath();cx.arc(hx+3,hy-2,2.2,0,Math.PI*2);cx.fill();
+  cx.beginPath();cx.arc(hx-2,hy-2.5,1.8,0,Math.PI*2);cx.fill();
+  cx.fillStyle='#111';cx.beginPath();cx.arc(hx+3.6,hy-2,1.1,0,Math.PI*2);cx.fill();
+  cx.beginPath();cx.arc(hx-1.6,hy-2.5,1,0,Math.PI*2);cx.fill();
 
   cx.restore();
 }
@@ -1181,25 +1280,26 @@ function render(){
     const[sx,sy]=scr(a.wx,a.wy);const bob=a.frame?-1.5:0;
     shadowAt(sx,sy+HH+2,10,4);emojiAt(a.e,sx,sy+HH-10+bob,22,1);
   }});});
-  // npcs
+  // npcs (snakes)
   npcs.forEach(n=>{ents.push({d:n.wx+n.wy,z:3,fn:()=>{
-    const[sx,sy]=scr(n.wx,n.wy);const bob=n.frame?-1.5:0;
-    shadowAt(sx,sy+HH+2,12,5);emojiAt(n.emoji,sx,sy+HH-12+bob,26,1);
+    const[sx,sy]=scr(n.wx,n.wy);
+    shadowAt(sx,sy+HH+2,13,5);
+    drawSnake(sx,sy+HH,n.skin,1,n.frame,n.frame);
     cx.font='bold 9px sans-serif';cx.textAlign='center';
     cx.fillStyle='rgba(5,10,5,.7)';
     const w=cx.measureText(n.label).width+8;
-    cx.fillRect(sx-w/2,sy+HH-36,w,14);
-    cx.fillStyle='#fde68a';cx.fillText(n.label,sx,sy+HH-26);cx.textAlign='left';
+    cx.fillRect(sx-w/2,sy+HH-48,w,14);
+    cx.fillStyle='#fde68a';cx.fillText(n.label,sx,sy+HH-38);cx.textAlign='left';
   }});});
-  // player
+  // player (snake with equipped skin)
   ents.push({d:P.wx+P.wy,z:3,fn:()=>{
     const[sx,sy]=scr(P.wx,P.wy);
-    shadowAt(sx,sy+HH+2,14,5);
-    drawFarmer(sx,sy+HH,P.face,P.moving,P.frame);
-    // label above hat (drawn without flip)
+    shadowAt(sx,sy+HH+2,15,5);
+    drawSnake(sx,sy+HH,skinById(equippedSkin),P.face,P.moving,P.frame);
+    // label above head
     cx.font='bold 9px sans-serif';cx.textAlign='center';
-    cx.fillStyle='rgba(5,10,5,.82)';cx.fillRect(sx-15,sy+HH-74,30,14);
-    cx.fillStyle='#86efac';cx.fillText('YOU',sx,sy+HH-64);cx.textAlign='left';
+    cx.fillStyle='rgba(5,10,5,.82)';cx.fillRect(sx-15,sy+HH-58,30,14);
+    cx.fillStyle='#86efac';cx.fillText('YOU',sx,sy+HH-48);cx.textAlign='left';
   }});
 
   ents.sort((a,b)=>a.d-b.d||a.z-b.z);
@@ -1254,7 +1354,11 @@ function drawControls(){
 
 // ── HUD / inventory / toast ──────────────────────────────────────────────────
 function refreshHUD(){document.getElementById('hpts').textContent=pts;
-  document.getElementById('husd').textContent=usd.toFixed(2)}
+  document.getElementById('husd').textContent=usd.toFixed(2);
+  const v=masteryScore();
+  document.getElementById('scoreN').textContent=v;
+  document.getElementById('scoreRank').textContent=scoreRank(v);
+  document.getElementById('sbfill').style.width=(v/10)+'%';}
 function renderInv(){const el=document.getElementById('inv');
   const en=Object.entries(inv).filter(([,n])=>n>0);
   if(!en.length){el.innerHTML='<span class="iempty">Harvest fruits to fill your basket!</span>';return}
@@ -1317,7 +1421,8 @@ function loop(t){const dt=Math.min(t-last||16,60);last=t;
              document.getElementById('sm').classList.contains('show')||
              document.getElementById('tm').classList.contains('show')||
              document.getElementById('am').classList.contains('show')||
-             document.getElementById('cm').classList.contains('show');
+             document.getElementById('cm').classList.contains('show')||
+             document.getElementById('km').classList.contains('show');
   if(!open)updatePlayer(dt);else{P.moving=false}
   updateNPCs(dt);updateAnimals(dt);updateGrowth();render();requestAnimationFrame(loop);}
 
@@ -1328,7 +1433,7 @@ function start(){if(started)return;started=true;
 function init(){
   resize();addEventListener('resize',resize);addEventListener('orientationchange',()=>setTimeout(resize,200));
   if(window.visualViewport){visualViewport.addEventListener('resize',resize);visualViewport.addEventListener('scroll',resize);}
-  buildWorld();load();loadTables();
+  buildWorld();load();loadTables();loadSkins();
   if(!activeTables.length){activeTables=[2,5,10].filter(t=>!isLocked(t));
     if(!activeTables.length)for(let t=1;t<=12;t++)if(!isLocked(t)){activeTables=[t];break}}
   if('ontouchstart'in window){touchMode=true;document.getElementById('qi').readOnly=true;}
