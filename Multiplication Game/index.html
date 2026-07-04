@@ -45,13 +45,19 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
   border:1px solid #4ade80;color:#fff;border-radius:10px;padding:7px 16px;
   font-size:.78rem;font-weight:800;cursor:pointer;box-shadow:0 2px 6px #0006}
 
-/* Hint */
+/* Hint — also the primary tap-to-act button on mobile */
 #hint{position:fixed;left:50%;transform:translateX(-50%);
-  bottom:calc(env(safe-area-inset-bottom) + 70px);
-  background:rgba(5,10,5,.85);border:1px solid #fde68a99;
-  color:#fde68a;padding:7px 18px;border-radius:22px;font-size:.8rem;
-  font-weight:800;z-index:19;display:none;pointer-events:none;
-  text-shadow:0 1px 2px #000;box-shadow:0 2px 10px #0007;white-space:nowrap}
+  bottom:calc(env(safe-area-inset-bottom) + 92px);
+  background:linear-gradient(180deg,rgba(20,45,20,.95),rgba(8,20,8,.95));
+  border:2px solid #fde68a;
+  color:#fde68a;padding:13px 30px;border-radius:26px;font-size:1rem;
+  font-weight:800;z-index:30;display:none;cursor:pointer;
+  pointer-events:auto;-webkit-tap-highlight-color:transparent;
+  text-shadow:0 1px 2px #000;box-shadow:0 4px 16px #000a,0 0 0 4px #fde68a22;
+  white-space:nowrap;animation:hintpulse 1.4s ease-in-out infinite}
+#hint:active{transform:translateX(-50%) scale(.94);background:linear-gradient(180deg,#2a5a2a,#15301a)}
+@keyframes hintpulse{0%,100%{box-shadow:0 4px 16px #000a,0 0 0 4px #fde68a22}
+  50%{box-shadow:0 4px 20px #000a,0 0 0 8px #fde68a33}}
 
 /* Modals shared */
 .modal{display:none;position:fixed;inset:0;z-index:50;
@@ -473,8 +479,8 @@ function checkInteract(){
   if(ptx>=20&&ptx<=30&&pty>=31&&pty<=41)nearShop=true;
   const h=document.getElementById('hint');
   if(nearPlot){h.style.display='block';
-    h.textContent=plots[nearPlot].stage==='empty'?'⊙ Plant a seed 🌱':'⊙ Harvest! 🧺';}
-  else if(nearShop){h.style.display='block';h.textContent='⊙ Enter Mythic Shop ✨';}
+    h.textContent=plots[nearPlot].stage==='empty'?'👆 Tap to Plant 🌱':'👆 Tap to Harvest 🧺';}
+  else if(nearShop){h.style.display='block';h.textContent='👆 Enter Mythic Shop ✨';}
   else h.style.display='none';
 }
 function interact(){
@@ -837,9 +843,15 @@ function render(){
   drawControls();
 }
 
+// Control anchors — shared by draw + hit-test so they can never drift.
+// Raised well above the inventory bar / iOS bottom UI.
+function safeBottom(){return 40}
+function joyC(){return [80,VH-130-safeBottom()]}
+function actC(){return [VW-80,VH-130-safeBottom()]}
+
 function drawControls(){
   if(!touchMode)return;
-  const jcx=72,jcy=VH-100-(safeBottom());
+  const[jcx,jcy]=joyC();
   cx.beginPath();cx.arc(jcx,jcy,46,0,Math.PI*2);
   cx.fillStyle='rgba(255,255,255,.08)';cx.fill();
   cx.strokeStyle='rgba(255,255,255,.22)';cx.lineWidth=2;cx.stroke();
@@ -848,16 +860,15 @@ function drawControls(){
   cx.fillStyle='rgba(134,239,172,.45)';cx.fill();
   cx.strokeStyle='rgba(134,239,172,.8)';cx.lineWidth=2;cx.stroke();
 
-  const ibx=VW-74,iby=VH-100-(safeBottom());
+  const[ibx,iby]=actC();
   const act=nearPlot||nearShop;
-  cx.beginPath();cx.arc(ibx,iby,34,0,Math.PI*2);
-  cx.fillStyle=act?'rgba(134,239,172,.4)':'rgba(255,255,255,.08)';cx.fill();
-  cx.strokeStyle=act?'rgba(134,239,172,.85)':'rgba(255,255,255,.22)';cx.lineWidth=2;cx.stroke();
-  cx.font='bold 15px sans-serif';cx.fillStyle='#fff';
+  cx.beginPath();cx.arc(ibx,iby,40,0,Math.PI*2);
+  cx.fillStyle=act?'rgba(134,239,172,.45)':'rgba(255,255,255,.08)';cx.fill();
+  cx.strokeStyle=act?'rgba(134,239,172,.9)':'rgba(255,255,255,.22)';cx.lineWidth=2;cx.stroke();
+  cx.font='bold 16px sans-serif';cx.fillStyle='#fff';
   cx.textAlign='center';cx.textBaseline='middle';cx.fillText('E',ibx,iby);
   cx.textAlign='left';cx.textBaseline='alphabetic';
 }
-function safeBottom(){return 0}
 
 // ── HUD / inventory / toast ──────────────────────────────────────────────────
 function refreshHUD(){document.getElementById('hpts').textContent=pts;
@@ -878,8 +889,8 @@ function r2(n){return Math.round(n*100)/100}
 let touchMode=false;
 cv.addEventListener('touchstart',e=>{e.preventDefault();touchMode=true;
   for(const t of e.changedTouches){
-    const ibx=VW-74,iby=VH-100;
-    if(Math.hypot(t.clientX-ibx,t.clientY-iby)<50){interact();continue}
+    const[ibx,iby]=actC();
+    if(Math.hypot(t.clientX-ibx,t.clientY-iby)<58){interact();continue}
     if(t.clientX<VW/2&&joy.id<0){joy.on=true;joy.id=t.identifier;
       joy.bx=t.clientX;joy.by=t.clientY;joy.dx=0;joy.dy=0;}
   }},{passive:false});
@@ -915,6 +926,10 @@ function init(){
   buildWorld();load();
   setDiff(localStorage.getItem('tfarm-d')||'medium');
   if('ontouchstart'in window){touchMode=true;document.getElementById('qi').readOnly=true;}
+  // Hint pill doubles as the primary tap-to-act button (reliable on iOS)
+  const hintEl=document.getElementById('hint');
+  hintEl.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();interact();},{passive:false});
+  hintEl.addEventListener('click',()=>interact());
   refreshHUD();renderInv();
   document.getElementById('splash').addEventListener('click',start);
   document.getElementById('splash').addEventListener('touchstart',e=>{e.preventDefault();start()},{passive:false});
