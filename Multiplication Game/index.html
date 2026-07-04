@@ -307,9 +307,13 @@ const cx=cv.getContext('2d');
 
 function resize(){
   DPR=Math.min(devicePixelRatio||1,2.5);
-  VW=innerWidth;VH=innerHeight;
-  cv.width=Math.floor(VW*DPR);cv.height=Math.floor(VH*DPR);
-  cv.style.width=VW+'px';cv.style.height=VH+'px';
+  // Use the canvas's ACTUAL rendered box (from CSS inset:0) rather than
+  // innerWidth/innerHeight, which can be stale on iOS as the toolbar toggles.
+  const vv=window.visualViewport;
+  VW=cv.clientWidth||(vv?vv.width:innerWidth);
+  VH=cv.clientHeight||(vv?vv.height:innerHeight);
+  cv.width=Math.round(VW*DPR);cv.height=Math.round(VH*DPR);
+  // no inline style width/height — let CSS inset:0 fill the viewport exactly
   cx.setTransform(DPR,0,0,DPR,0,0);
   cx.imageSmoothingEnabled=true;
 }
@@ -993,6 +997,8 @@ document.getElementById('qi').addEventListener('keydown',e=>{if(e.key==='Enter')
 // ── Loop / init ──────────────────────────────────────────────────────────────
 let last=0,started=false;
 function loop(t){const dt=Math.min(t-last||16,60);last=t;
+  // self-correct if the viewport changed (iOS toolbar show/hide, rotation…)
+  if(cv.clientWidth!==VW||cv.clientHeight!==VH)resize();
   const open=document.getElementById('qm').classList.contains('show')||
              document.getElementById('sm').classList.contains('show');
   if(!open)updatePlayer(dt);else{P.moving=false}
@@ -1003,6 +1009,7 @@ function start(){if(started)return;started=true;
 
 function init(){
   resize();addEventListener('resize',resize);addEventListener('orientationchange',()=>setTimeout(resize,200));
+  if(window.visualViewport){visualViewport.addEventListener('resize',resize);visualViewport.addEventListener('scroll',resize);}
   buildWorld();load();
   setDiff(localStorage.getItem('tfarm-d')||'medium');
   if('ontouchstart'in window){touchMode=true;document.getElementById('qi').readOnly=true;}
