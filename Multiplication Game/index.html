@@ -193,6 +193,19 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
   letter-spacing:1px;cursor:pointer;box-shadow:0 3px 0 #3f1266;
   -webkit-tap-highlight-color:transparent}
 .sback:active{transform:translateY(2px);box-shadow:0 1px 0 #3f1266}
+/* Animal / Carpenter shop accents */
+.sbox.animal{border-color:#f59e0b}
+.sbox.animal .stitle{color:#fde68a;text-shadow:0 0 18px #f59e0b88}
+.sbox.animal .ssub,.sbox.animal .snm,.sbox.animal .sds{color:#fde9c2}
+.sbox.animal .sitem{border-color:#a16207;background:linear-gradient(180deg,#3a2a12,#241a0c)}
+.sbox.animal .sbuy{background:linear-gradient(135deg,#f59e0b,#c2740a);border-color:#fde68a;box-shadow:0 2px 0 #8a5208}
+.sback.animal{background:linear-gradient(135deg,#c2740a,#8a5208);border-color:#fde68a;box-shadow:0 3px 0 #5e3806}
+.sbox.carp{border-color:#22c55e}
+.sbox.carp .stitle{color:#dcfce7;text-shadow:0 0 18px #22c55e88}
+.sbox.carp .ssub,.sbox.carp .snm,.sbox.carp .sds{color:#c8f3d5}
+.sbox.carp .sitem{border-color:#15803d;background:linear-gradient(180deg,#123018,#0b1d0f)}
+.sbox.carp .sbuy{background:linear-gradient(135deg,#22c55e,#15803d);border-color:#86efac;box-shadow:0 2px 0 #0f5132}
+.sback.carp{background:linear-gradient(135deg,#15803d,#0f5132);border-color:#86efac;box-shadow:0 3px 0 #0a3823}
 
 /* Toast */
 #toast{position:fixed;top:calc(env(safe-area-inset-top) + 50px);left:50%;
@@ -283,6 +296,28 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
   </div>
 </div>
 
+<!-- Animal Shop -->
+<div id="am" class="modal">
+  <div class="sbox animal">
+    <span class="sclose" onclick="closeAnimals()">✕</span>
+    <div class="stitle">🐾 ANIMAL SHOP 🐾</div>
+    <div class="ssub">Buy animals to roam your farm · pay with $</div>
+    <div class="sgrid" id="agrid"></div>
+    <button class="sback animal" onclick="closeAnimals()">← Back to Farm</button>
+  </div>
+</div>
+
+<!-- Carpenter Shop -->
+<div id="cm" class="modal">
+  <div class="sbox carp">
+    <span class="sclose" onclick="closeCarpenter()">✕</span>
+    <div class="stitle">🔨 CARPENTER SHOP 🔨</div>
+    <div class="ssub">Build decorations around your farm · pay with $</div>
+    <div class="sgrid" id="cgrid"></div>
+    <button class="sback carp" onclick="closeCarpenter()">← Back to Farm</button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <div id="splash">
@@ -337,12 +372,43 @@ const MYTHIC=[
 ];
 const GROW=[12000,25000,42000]; // seed→sprout→plant→fruit (ms)
 
+// ── Animals (buy with $, roam your farm) ─────────────────────────────────────
+const ANIMALS=[
+  {id:'chicken',e:'🐔',n:'Chicken',d:'Pecks happily about',p:5},
+  {id:'duck',   e:'🦆',n:'Duck',    d:'Waddles by the pond',p:6},
+  {id:'rabbit', e:'🐰',n:'Rabbit',  d:'Hops through the rows',p:7},
+  {id:'sheep',  e:'🐑',n:'Sheep',   d:'Fluffy lawn-mower',p:9},
+  {id:'pig',    e:'🐷',n:'Pig',     d:'Roots around the mud',p:10},
+  {id:'goat',   e:'🐐',n:'Goat',    d:'Nibbles everything',p:11},
+  {id:'cow',    e:'🐄',n:'Cow',     d:'Moo-ves in slowly',p:14},
+  {id:'dog',    e:'🐕',n:'Farm Dog',d:'Loyal companion',p:12},
+  {id:'cat',    e:'🐈',n:'Barn Cat',d:'Naps and prowls',p:8},
+  {id:'horse',  e:'🐴',n:'Horse',   d:'Trots with pride',p:18},
+];
+// ── Carpenter decorations (buy with $, placed around your farm) ───────────────
+const DECOS=[
+  {id:'sign',    e:'🪧',n:'"My Farm" Sign',d:'Proudly names your farm',p:8},
+  {id:'pond',    e:'🪷',n:'Pond',          d:'A calm little water pond',p:14},
+  {id:'bench',   e:'🪑',n:'Wooden Bench',  d:'Rest between harvests',p:9},
+  {id:'mailbox', e:'📫',n:'Mailbox',       d:'For letters from friends',p:7},
+  {id:'fountain',e:'⛲',n:'Fountain',       d:'Bubbling centrepiece',p:20},
+  {id:'flowers', e:'🌷',n:'Flower Bed',    d:'A burst of colour',p:6},
+];
+// spots around your farm where bought decorations appear (outside the fence)
+const DECOR_SLOTS=[
+  [17,16.5],[17,19],[17,21.5],[17,24],
+  [29.5,16.5],[29.5,19],[29.5,21.5],[29.5,24],
+  [20,26.8],[22.5,26.8],[25,26.8],[27,26.8],
+];
+
 // ── State ────────────────────────────────────────────────────────────────────
 let pts=0,usd=0,inv={};
 const plots={};
 const myPlots=[];
 const map=new Uint8Array(WW*WH);
 const npcs=[];
+const animals=[];      // owned roaming animals {id,e,wx,wy,twx,twy,timer,frame,ft}
+const builtDecor=[];   // placed decorations {id,e,wx,wy}
 const decor=[];        // {tx,ty,kind}
 const P={wx:0,wy:0,frame:0,ft:0,moving:false,face:1};
 const cam={x:0,y:0};
@@ -427,6 +493,10 @@ function buildWorld(){
   for(let x=20;x<=30;x++)for(let y=33;y<=40;y++)setT(x,y,T_SHOP);
   for(let y=30;y<=32;y++){setT(24,y,T_PATH);setT(25,y,T_PATH)}
 
+  // Carpenter shop (west) & Animal shop (east) footprints — cleared dirt yards
+  for(let x=6;x<=11;x++)for(let y=34;y<=39;y++)setT(x,y,T_PATH);
+  for(let x=39;x<=44;x++)for(let y=34;y<=39;y++)setT(x,y,T_PATH);
+
   // Decoration scatter (trees / bushes / flowers / rocks on open grass)
   const rnd=lcg(1337);
   for(let y=2;y<WH-2;y++)for(let x=2;x<WW-2;x++){
@@ -463,6 +533,22 @@ function makeFarm(fx,fy,fw,fh,label,npcDef){
 }
 function randFruit(){return FRUITS[Math.floor(Math.random()*FRUITS.length)]}
 
+// ── Animals & decorations ────────────────────────────────────────────────────
+// My-farm interior bounds where animals wander (inside the fence)
+const AMINX=19.4,AMAXX=27.6,AMINY=15.4,AMAXY=24.6;
+function spawnAnimal(id){
+  const a=ANIMALS.find(x=>x.id===id);if(!a)return;
+  const wx=AMINX+Math.random()*(AMAXX-AMINX),wy=AMINY+Math.random()*(AMAXY-AMINY);
+  animals.push({id:a.id,e:a.e,wx,wy,twx:wx,twy:wy,timer:Math.random()*2000,frame:0,ft:0});
+}
+function placeDecor(id){
+  const d=DECOS.find(x=>x.id===id);if(!d)return;
+  const slot=DECOR_SLOTS[builtDecor.length%DECOR_SLOTS.length];
+  // stack a little extra offset once slots wrap so pieces don't perfectly overlap
+  const ring=Math.floor(builtDecor.length/DECOR_SLOTS.length);
+  builtDecor.push({id:d.id,e:d.e,wx:slot[0]+ring*0.35,wy:slot[1]+ring*0.35});
+}
+
 // ── Times-table picker ───────────────────────────────────────────────────────
 function toggleTable(t){if(isLocked(t))return;
   const i=activeTables.indexOf(t);
@@ -489,13 +575,18 @@ function startTables(){
 // ── Save ─────────────────────────────────────────────────────────────────────
 function save(){try{
   const pd={};myPlots.forEach(k=>{const p=plots[k];pd[k]={stage:p.stage,at:p.at,fid:p.fruit?.id||null}});
-  localStorage.setItem('tfarm3',JSON.stringify({pts,usd,inv,plots:pd}));
+  localStorage.setItem('tfarm3',JSON.stringify({pts,usd,inv,plots:pd,
+    animals:animals.map(a=>a.id),
+    decor:builtDecor.map(o=>({id:o.id,wx:o.wx,wy:o.wy}))}));
 }catch(_){}}
 function load(){try{
   const raw=localStorage.getItem('tfarm3');if(!raw)return;
   const d=JSON.parse(raw);pts=d.pts||0;usd=d.usd||0;inv=d.inv||{};
   myPlots.forEach(k=>{const p=d.plots?.[k];
     if(p)plots[k]={stage:p.stage,at:p.at,fruit:p.fid?FRUITS.find(f=>f.id===p.fid)||null:null}});
+  if(Array.isArray(d.animals))d.animals.forEach(id=>spawnAnimal(id));
+  if(Array.isArray(d.decor))d.decor.forEach(o=>{
+    const dd=DECOS.find(x=>x.id===o.id);if(dd)builtDecor.push({id:dd.id,e:dd.e,wx:o.wx,wy:o.wy})});
 }catch(_){}}
 
 // ── Quiz ─────────────────────────────────────────────────────────────────────
@@ -567,6 +658,42 @@ function buyM(id){const f=MYTHIC.find(x=>x.id===id);
   usd=r2(usd-f.p);inv[id]=(inv[id]||0)+1;
   toast(`Got ${f.e} ${f.n}!`);refreshHUD();openSh();renderInv();save();}
 
+// ── Animal shop ──────────────────────────────────────────────────────────────
+function animalCount(id){return animals.filter(a=>a.id===id).length}
+function openAnimals(){
+  document.getElementById('agrid').innerHTML=ANIMALS.map(a=>{const c=animalCount(a.id);return`
+    <div class="sitem">
+      <div class="semwrap"><div class="sem">${a.e}</div></div>
+      <div class="snm">${a.n}${c?` ×${c}`:''}</div><div class="sds">${a.d}</div>
+      <div class="spr">$${a.p}</div>
+      <button class="sbuy" onclick="buyAnimal('${a.id}')"${usd<a.p?' disabled':''}>Buy</button>
+    </div>`}).join('');
+  document.getElementById('am').classList.add('show');
+}
+function closeAnimals(){document.getElementById('am').classList.remove('show')}
+function buyAnimal(id){const a=ANIMALS.find(x=>x.id===id);
+  if(!a||usd<a.p){toast('Not enough $','e');return}
+  usd=r2(usd-a.p);spawnAnimal(id);
+  toast(`${a.e} ${a.n} joined your farm!`,'m');refreshHUD();openAnimals();save();}
+
+// ── Carpenter shop ───────────────────────────────────────────────────────────
+function decorCount(id){return builtDecor.filter(d=>d.id===id).length}
+function openCarpenter(){
+  document.getElementById('cgrid').innerHTML=DECOS.map(d=>{const c=decorCount(d.id);return`
+    <div class="sitem">
+      <div class="semwrap"><div class="sem">${d.e}</div></div>
+      <div class="snm">${d.n}${c?` ×${c}`:''}</div><div class="sds">${d.d}</div>
+      <div class="spr">$${d.p}</div>
+      <button class="sbuy" onclick="buyDecor('${d.id}')"${usd<d.p?' disabled':''}>Build</button>
+    </div>`}).join('');
+  document.getElementById('cm').classList.add('show');
+}
+function closeCarpenter(){document.getElementById('cm').classList.remove('show')}
+function buyDecor(id){const d=DECOS.find(x=>x.id===id);
+  if(!d||usd<d.p){toast('Not enough $','e');return}
+  usd=r2(usd-d.p);placeDecor(id);
+  toast(`${d.e} ${d.n} built on your farm!`,'m');refreshHUD();openCarpenter();save();}
+
 // ── Harvest / sell ───────────────────────────────────────────────────────────
 function harvest(k){const p=plots[k];if(!p||p.stage!=='fruit')return;
   inv[p.fruit.id]=(inv[p.fruit.id]||0)+1;plots[k]={stage:'empty',at:0,fruit:null};
@@ -595,11 +722,21 @@ function updateNPCs(dt){const now=Date.now();
     const dx=n.twx-n.wx,dy=n.twy-n.wy,d=Math.hypot(dx,dy);
     if(d>0.04){const sp=0.022;n.wx+=dx/d*sp;n.wy+=dy/d*sp;
       n.ft+=dt;if(n.ft>260){n.ft=0;n.frame^=1}}else n.frame=0;});}
+function updateAnimals(dt){
+  animals.forEach(a=>{
+    a.timer-=dt;
+    if(a.timer<=0){
+      a.twx=AMINX+Math.random()*(AMAXX-AMINX);
+      a.twy=AMINY+Math.random()*(AMAXY-AMINY);
+      a.timer=1400+Math.random()*3000;}
+    const dx=a.twx-a.wx,dy=a.twy-a.wy,d=Math.hypot(dx,dy);
+    if(d>0.04){const sp=0.018;a.wx+=dx/d*sp;a.wy+=dy/d*sp;
+      a.ft+=dt;if(a.ft>240){a.ft=0;a.frame^=1}}else a.frame=0;});}
 
 // ── Player ───────────────────────────────────────────────────────────────────
 const keys={};
 const joy={on:false,id:-1,bx:0,by:0,dx:0,dy:0,lx:0,ly:0};
-let nearPlot=null,nearShop=false;
+let nearPlot=null,nearShop=false,nearAnimal=false,nearCarp=false;
 
 function passable(wx,wy){return PASSABLE.has(getT(Math.floor(wx),Math.floor(wy)))}
 
@@ -631,24 +768,32 @@ function updatePlayer(dt){
 
 function checkInteract(){
   const ptx=Math.floor(P.wx),pty=Math.floor(P.wy);
-  nearPlot=null;nearShop=false;
+  nearPlot=null;nearShop=false;nearAnimal=false;nearCarp=false;
   outer:for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
     const k=`${ptx+dx},${pty+dy}`;
     if(myPlots.includes(k)){const p=plots[k];
       if(p&&(p.stage==='empty'||p.stage==='fruit')){nearPlot=k;break outer}}}
   if(ptx>=20&&ptx<=30&&pty>=31&&pty<=41)nearShop=true;
+  if(ptx>=5&&ptx<=12&&pty>=32&&pty<=40)nearCarp=true;    // carpenter (west)
+  if(ptx>=38&&ptx<=45&&pty>=32&&pty<=40)nearAnimal=true;  // animal shop (east)
   const h=document.getElementById('hint');
   if(nearPlot){h.style.display='block';
     h.textContent=plots[nearPlot].stage==='empty'?'👆 Tap to Plant 🌱':'👆 Tap to Harvest 🧺';}
   else if(nearShop){h.style.display='block';h.textContent='👆 Enter Mythic Shop ✨';}
+  else if(nearAnimal){h.style.display='block';h.textContent='👆 Enter Animal Shop 🐾';}
+  else if(nearCarp){h.style.display='block';h.textContent='👆 Enter Carpenter Shop 🔨';}
   else h.style.display='none';
 }
 function interact(){
   if(document.getElementById('qm').classList.contains('show')){closeQ();return}
   if(document.getElementById('sm').classList.contains('show')){closeSh();return}
+  if(document.getElementById('am').classList.contains('show')){closeAnimals();return}
+  if(document.getElementById('cm').classList.contains('show')){closeCarpenter();return}
   if(nearPlot){const p=plots[nearPlot];
     if(p.stage==='empty')openQ(nearPlot);else if(p.stage==='fruit')harvest(nearPlot);}
   else if(nearShop)openSh();
+  else if(nearAnimal)openAnimals();
+  else if(nearCarp)openCarpenter();
 }
 
 // ── Rendering ────────────────────────────────────────────────────────────────
@@ -831,6 +976,58 @@ function emojiAt(em,sx,sy,size,flip){
   cx.fillText(em,0,0);cx.restore();
 }
 
+// ── Carpenter decorations (canvas-drawn, foot-centre = cxp,cyp) ───────────────
+function drawDecor(id,cxp,cyp){
+  if(id==='pond'){
+    shadowAt(cxp,cyp+2,26,11);
+    cx.fillStyle='#4b3826';cx.beginPath();cx.ellipse(cxp,cyp,26,12,0,0,Math.PI*2);cx.fill();
+    const wg=cx.createLinearGradient(cxp,cyp-10,cxp,cyp+10);
+    wg.addColorStop(0,'#5bb6f0');wg.addColorStop(1,'#1f5aa8');
+    cx.fillStyle=wg;cx.beginPath();cx.ellipse(cxp,cyp,22,9,0,0,Math.PI*2);cx.fill();
+    cx.fillStyle='rgba(255,255,255,.35)';cx.beginPath();cx.ellipse(cxp-7,cyp-3,7,2.4,-.3,0,Math.PI*2);cx.fill();
+    cx.font='11px serif';cx.textAlign='center';cx.textBaseline='middle';
+    cx.fillStyle='#000';cx.fillText('🪷',cxp+9,cyp+1);
+  }else if(id==='bench'){
+    shadowAt(cxp,cyp+3,18,6);
+    cx.fillStyle='#5a3a1c';cx.fillRect(cxp-16,cyp-2,32,4);      // seat
+    cx.fillStyle='#6b4a26';cx.fillRect(cxp-16,cyp-14,32,4);     // backrest top
+    cx.fillStyle='#4a2e14';
+    cx.fillRect(cxp-14,cyp-14,3,16);cx.fillRect(cxp+11,cyp-14,3,16); // back posts
+    cx.fillRect(cxp-13,cyp+2,3,7);cx.fillRect(cxp+10,cyp+2,3,7); // legs
+    cx.fillStyle='rgba(255,255,255,.12)';cx.fillRect(cxp-16,cyp-2,32,1.4);
+  }else if(id==='mailbox'){
+    shadowAt(cxp,cyp+3,10,4);
+    cx.fillStyle='#5a3a1c';cx.fillRect(cxp-2,cyp-14,4,17);      // post
+    cx.fillStyle='#3f6fb0';cx.fillRect(cxp-9,cyp-26,18,13);     // box body
+    cx.fillStyle='#2f568a';cx.beginPath();
+    cx.moveTo(cxp-9,cyp-26);cx.lineTo(cxp,cyp-31);cx.lineTo(cxp+9,cyp-26);cx.closePath();cx.fill(); // rounded top
+    cx.fillStyle='#e23b3b';cx.fillRect(cxp+9,cyp-26,3,8);       // red flag
+    cx.fillStyle='rgba(255,255,255,.2)';cx.fillRect(cxp-9,cyp-26,18,1.5);
+  }else if(id==='sign'){
+    shadowAt(cxp,cyp+3,20,6);
+    cx.fillStyle='#5a3a1c';cx.fillRect(cxp-17,cyp-6,3,10);cx.fillRect(cxp+14,cyp-6,3,10); // posts
+    cx.fillStyle='#7a5228';cx.fillRect(cxp-19,cyp-22,38,17);    // board
+    cx.strokeStyle='#4a2e14';cx.lineWidth=2;cx.strokeRect(cxp-19,cyp-22,38,17);
+    cx.fillStyle='#fff3d6';cx.font='bold 6.5px sans-serif';cx.textAlign='center';cx.textBaseline='middle';
+    cx.fillText('MY',cxp,cyp-16);cx.fillText('FARM',cxp,cyp-9);
+  }else if(id==='fountain'){
+    shadowAt(cxp,cyp+3,20,8);
+    cx.fillStyle='#9aa2ad';cx.beginPath();cx.ellipse(cxp,cyp,20,9,0,0,Math.PI*2);cx.fill();
+    cx.fillStyle='#3f8fd8';cx.beginPath();cx.ellipse(cxp,cyp-1,15,6,0,0,Math.PI*2);cx.fill();
+    cx.fillStyle='#c7ced6';cx.fillRect(cxp-3,cyp-16,6,14);      // centre column
+    cx.fillStyle='#6fbdf0';cx.beginPath();cx.ellipse(cxp,cyp-16,7,3,0,0,Math.PI*2);cx.fill();
+    cx.strokeStyle='rgba(150,210,255,.7)';cx.lineWidth=1.5;
+    cx.beginPath();cx.moveTo(cxp,cyp-16);cx.quadraticCurveTo(cxp-9,cyp-22,cxp-11,cyp-8);
+    cx.moveTo(cxp,cyp-16);cx.quadraticCurveTo(cxp+9,cyp-22,cxp+11,cyp-8);cx.stroke();
+  }else if(id==='flowers'){
+    shadowAt(cxp,cyp+2,15,5);
+    cx.fillStyle='#4a3018';cx.beginPath();cx.ellipse(cxp,cyp,15,6,0,0,Math.PI*2);cx.fill();
+    cx.font='12px serif';cx.textAlign='center';cx.textBaseline='middle';cx.fillStyle='#000';
+    cx.fillText('🌷',cxp-7,cyp-2);cx.fillText('🌸',cxp+2,cyp-4);cx.fillText('🌼',cxp+9,cyp);
+  }else{emojiAt('🪧',cxp,cyp-6,18,1);}
+  cx.textAlign='left';cx.textBaseline='alphabetic'; // reset for later draws
+}
+
 // Canvas-drawn farmer character (foot-centre = origin after translate)
 function drawFarmer(sx,sy,face,moving,frame){
   const bob=moving?(frame?-2:0):0;
@@ -964,12 +1161,26 @@ function render(){
       cx.fillStyle='#9898a8';cx.beginPath();cx.ellipse(cxp-3,cyp-7,4.5,3.5,-.3,0,Math.PI*2);cx.fill();
       cx.fillStyle='rgba(255,255,255,.12)';cx.beginPath();cx.ellipse(cxp-3,cyp-7,2,1.5,-.3,0,Math.PI*2);cx.fill();}
   }});});
+  // placed carpenter decorations
+  builtDecor.forEach(o=>{ents.push({d:o.wx+o.wy,z:1,fn:()=>{
+    const[sx,sy]=scr(o.wx,o.wy);drawDecor(o.id,sx,sy+HH);
+  }});});
   // shop building (depth = front-bottom corner)
   ents.push({d:(20+11)+(33+8),z:2,fn:()=>drawBuilding(20,33,11,8,64,'#6d3fa8','#4a2877','#9333ea',true)});
+  // carpenter shop (west) & animal shop (east) + floating signs
+  ents.push({d:(6+4)+(34+4),z:2,fn:()=>{drawBuilding(6,34,4,4,46,'#a07a44','#7a5a30','#8a5228',true);
+    const[lx,ly]=scr(8,36);emojiAt('🔨',lx,ly-72,24,1);}});
+  ents.push({d:(40+4)+(34+4),z:2,fn:()=>{drawBuilding(40,34,4,4,46,'#b04a36','#8a3a2a','#7a2c20',true);
+    const[lx,ly]=scr(42,36);emojiAt('🐾',lx,ly-72,24,1);}});
   // barns at NPC farms (depth = front-bottom corner so sprites sort correctly)
   [[18,3,'#b04a36'],[3,16,'#b04a36'],[36,16,'#b04a36']]
     .forEach(([bx,by,rf])=>{
       ents.push({d:(bx+3)+(by+3),z:2,fn:()=>drawBuilding(bx,by,3,3,42,'#8a3a2a','#6e2c20',rf,true)});});
+  // roaming animals on your farm
+  animals.forEach(a=>{ents.push({d:a.wx+a.wy,z:3,fn:()=>{
+    const[sx,sy]=scr(a.wx,a.wy);const bob=a.frame?-1.5:0;
+    shadowAt(sx,sy+HH+2,10,4);emojiAt(a.e,sx,sy+HH-10+bob,22,1);
+  }});});
   // npcs
   npcs.forEach(n=>{ents.push({d:n.wx+n.wy,z:3,fn:()=>{
     const[sx,sy]=scr(n.wx,n.wy);const bob=n.frame?-1.5:0;
@@ -1104,9 +1315,11 @@ function loop(t){const dt=Math.min(t-last||16,60);last=t;
    if(w!==VW||h!==VH)resize();}
   const open=document.getElementById('qm').classList.contains('show')||
              document.getElementById('sm').classList.contains('show')||
-             document.getElementById('tm').classList.contains('show');
+             document.getElementById('tm').classList.contains('show')||
+             document.getElementById('am').classList.contains('show')||
+             document.getElementById('cm').classList.contains('show');
   if(!open)updatePlayer(dt);else{P.moving=false}
-  updateNPCs(dt);updateGrowth();render();requestAnimationFrame(loop);}
+  updateNPCs(dt);updateAnimals(dt);updateGrowth();render();requestAnimationFrame(loop);}
 
 function start(){if(started)return;started=true;
   document.getElementById('splash').style.display='none';
