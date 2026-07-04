@@ -45,15 +45,25 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
   border:1px solid #4ade80;color:#fff;border-radius:10px;padding:7px 16px;
   font-size:.78rem;font-weight:800;cursor:pointer;box-shadow:0 2px 6px #0006}
 
-/* Zoom control */
-#zoom{position:fixed;right:10px;top:50%;transform:translateY(-50%);
-  display:flex;flex-direction:column;gap:8px;z-index:25}
-.zbtn{width:46px;height:46px;border-radius:12px;background:rgba(13,13,26,.72);
-  border:1px solid #ffffff2e;color:#dcfce7;font-size:1.6rem;font-weight:800;
-  display:flex;align-items:center;justify-content:center;cursor:pointer;
-  backdrop-filter:blur(4px);box-shadow:0 2px 8px #0006;
-  -webkit-tap-highlight-color:transparent;user-select:none}
-.zbtn:active{background:#1a2e1a;border-color:#4ade80}
+/* Zoom scroll bar */
+#zoom{position:fixed;right:12px;top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:6px;z-index:25;
+  touch-action:none;-webkit-user-select:none;user-select:none}
+#zlabel{font-size:.72rem;font-weight:800;color:#dcfce7;
+  background:rgba(13,13,26,.8);border:1px solid #ffffff2e;border-radius:8px;
+  padding:3px 6px;min-width:52px;text-align:center;backdrop-filter:blur(4px);
+  box-shadow:0 2px 8px #0006}
+.zsign{color:#dcfce7;font-weight:800;font-size:1.05rem;line-height:1;
+  text-shadow:0 1px 2px #000}
+#ztrack{position:relative;width:12px;height:180px;border-radius:8px;
+  background:rgba(13,13,26,.72);border:1px solid #ffffff2e;cursor:pointer;
+  backdrop-filter:blur(4px);box-shadow:0 2px 8px #0006,inset 0 0 6px #0006}
+#zfill{position:absolute;left:0;right:0;bottom:0;height:90px;border-radius:8px;
+  background:linear-gradient(to top,#15803d,#4ade80)}
+#zthumb{position:absolute;left:50%;top:90px;width:28px;height:28px;border-radius:50%;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle at 40% 35%,#eafff0,#4ade80);
+  border:2px solid #fff;box-shadow:0 2px 8px #0009}
 
 /* Hint — also the primary tap-to-act button on mobile */
 #hint{position:fixed;left:50%;transform:translateX(-50%);
@@ -192,8 +202,10 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
 </div>
 
 <div id="zoom">
-  <div class="zbtn" id="zin">+</div>
-  <div class="zbtn" id="zout">&minus;</div>
+  <div id="zlabel">100%</div>
+  <div class="zsign">+</div>
+  <div id="ztrack"><div id="zfill"></div><div id="zthumb"></div></div>
+  <div class="zsign">&minus;</div>
 </div>
 
 <div id="hint"></div>
@@ -296,8 +308,25 @@ let zoom=1;                          // 1 = default, <1 = zoomed out
 let cullL=0,cullR=0,cullT=0,cullB=0; // per-frame visible bounds (zoom aware)
 const ZMIN=0.5,ZMAX=1.4;
 function setZoom(z){zoom=Math.max(ZMIN,Math.min(ZMAX,z));
-  try{localStorage.setItem('tfarm-z',zoom)}catch(_){}}
+  try{localStorage.setItem('tfarm-z',zoom)}catch(_){}
+  updateZoomUI();}
 function zoomBy(dir){setZoom(zoom+dir*0.15)}
+// Sync the scroll bar to the current zoom (top = zoom in, bottom = zoom out)
+function updateZoomUI(){
+  const tr=document.getElementById('ztrack');if(!tr)return;
+  const f=(zoom-ZMIN)/(ZMAX-ZMIN),H=tr.clientHeight||180;
+  const th=document.getElementById('zthumb'),fl=document.getElementById('zfill'),
+        lb=document.getElementById('zlabel');
+  if(th)th.style.top=((1-f)*H)+'px';
+  if(fl)fl.style.height=(f*H)+'px';
+  if(lb)lb.textContent=Math.round(zoom*100)+'%';
+}
+function zoomFromClientY(cy){
+  const tr=document.getElementById('ztrack');if(!tr)return;
+  const r=tr.getBoundingClientRect();
+  let f=1-(cy-r.top)/r.height;f=Math.max(0,Math.min(1,f));
+  setZoom(ZMIN+f*(ZMAX-ZMIN));
+}
 
 function setT(x,y,t){if(x>=0&&x<WW&&y>=0&&y<WH)map[y*WW+x]=t}
 function getT(x,y){if(x<0||x>=WW||y<0||y>=WH)return T_WATER;return map[y*WW+x]}
@@ -1017,12 +1046,19 @@ function init(){
   const hintEl=document.getElementById('hint');
   hintEl.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();interact();},{passive:false});
   hintEl.addEventListener('click',()=>interact());
-  // Zoom buttons — touchstart (mobile) + click (desktop); preventDefault blocks the ghost click
-  const bindTap=(id,fn)=>{const el=document.getElementById(id);
-    el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();fn()},{passive:false});
-    el.addEventListener('click',fn);};
-  bindTap('zin',()=>zoomBy(1));bindTap('zout',()=>zoomBy(-1));
+  // Zoom scroll bar — drag or tap the track to set zoom
+  let zdrag=false;
+  const zt=document.getElementById('ztrack');
+  const zStart=e=>{zdrag=true;zoomFromClientY(e.touches?e.touches[0].clientY:e.clientY);e.preventDefault();};
+  zt.addEventListener('touchstart',zStart,{passive:false});
+  zt.addEventListener('mousedown',zStart);
+  window.addEventListener('touchmove',e=>{if(zdrag){zoomFromClientY(e.touches[0].clientY);e.preventDefault();}},{passive:false});
+  window.addEventListener('mousemove',e=>{if(zdrag)zoomFromClientY(e.clientY);});
+  window.addEventListener('touchend',()=>{zdrag=false;});
+  window.addEventListener('touchcancel',()=>{zdrag=false;});
+  window.addEventListener('mouseup',()=>{zdrag=false;});
   const sz=parseFloat(localStorage.getItem('tfarm-z'));if(!isNaN(sz))setZoom(sz);
+  updateZoomUI();
   refreshHUD();renderInv();
   document.getElementById('splash').addEventListener('click',start);
   document.getElementById('splash').addEventListener('touchstart',e=>{e.preventDefault();start()},{passive:false});
