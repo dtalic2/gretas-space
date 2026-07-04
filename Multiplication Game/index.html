@@ -63,6 +63,7 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
 .qbox{background:linear-gradient(180deg,#15301a,#0c1d10);
   border:2px solid #4ade80;border-radius:20px;
   padding:26px 22px 20px;text-align:center;width:320px;max-width:92vw;
+  max-height:92vh;overflow-y:auto;touch-action:pan-y;
   position:relative;box-shadow:0 12px 40px #000a,inset 0 1px 0 #ffffff22}
 .qclose,.sclose{position:absolute;top:10px;right:14px;color:#9aa;
   font-size:1.2rem;cursor:pointer;width:30px;height:30px;line-height:30px}
@@ -86,11 +87,22 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
 .qnpb:active{background:#1c3a26}
 .qnpb.cl{background:#2a1010;border-color:#7f1d1d;color:#fca5a5}
 .qnpb.ok{background:linear-gradient(135deg,#22c55e,#15803d);border-color:#86efac;color:#fff}
+/* Compact quiz on short screens so the numpad always fits */
+@media (max-height:720px){
+  .qbox{padding:16px 18px 14px}
+  .qlabel{margin-bottom:6px}
+  .qq{font-size:1.9rem;margin-bottom:10px}
+  .qi{font-size:1.4rem;padding:9px;margin-bottom:8px}
+  .qbtn{padding:10px;font-size:1rem}
+  .qfb{min-height:18px;margin-top:7px}
+  .qnp{gap:5px;margin-top:9px}
+  .qnpb{padding:10px 0;font-size:1.1rem}
+}
 
 /* Shop */
 .sbox{background:linear-gradient(180deg,#241338,#150a24);
   border:2px solid #c084fc;border-radius:20px;padding:22px 18px;
-  width:420px;max-width:95vw;max-height:82vh;overflow-y:auto;position:relative;
+  width:420px;max-width:95vw;max-height:82vh;overflow-y:auto;touch-action:pan-y;position:relative;
   box-shadow:0 12px 50px #000a,inset 0 1px 0 #ffffff22}
 .stitle{text-align:center;font-size:1.2rem;font-weight:900;
   color:#e9d5ff;letter-spacing:2px;margin-bottom:6px;
@@ -441,7 +453,7 @@ function updatePlayer(dt){
   ix/=l;iy/=l;
   if(Math.abs(ix)>0.12)P.face=ix<0?-1:1;
   P.ft+=dt;if(P.ft>200){P.ft=0;P.frame^=1}
-  const SP=(touchMode?0.5:2.0)*(dt/16.67);
+  const SP=(touchMode?0.25:2.0)*(dt/16.67);
   const sx=ix*SP*8, sy=iy*SP*8;
   let dwx=(sx/HW+sy/HH)/2, dwy=(sy/HH-sx/HW)/2;
   if(passable(P.wx+dwx,P.wy))P.wx+=dwx;
