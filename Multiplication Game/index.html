@@ -45,6 +45,16 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
   border:1px solid #4ade80;color:#fff;border-radius:10px;padding:7px 16px;
   font-size:.78rem;font-weight:800;cursor:pointer;box-shadow:0 2px 6px #0006}
 
+/* Zoom control */
+#zoom{position:fixed;right:10px;top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:8px;z-index:25}
+.zbtn{width:46px;height:46px;border-radius:12px;background:rgba(13,13,26,.72);
+  border:1px solid #ffffff2e;color:#dcfce7;font-size:1.6rem;font-weight:800;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  backdrop-filter:blur(4px);box-shadow:0 2px 8px #0006;
+  -webkit-tap-highlight-color:transparent;user-select:none}
+.zbtn:active{background:#1a2e1a;border-color:#4ade80}
+
 /* Hint — also the primary tap-to-act button on mobile */
 #hint{position:fixed;left:50%;transform:translateX(-50%);
   bottom:calc(env(safe-area-inset-bottom) + 92px);
@@ -181,6 +191,11 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
   <div class="hcur husd">$ <span id="husd">0.00</span></div>
 </div>
 
+<div id="zoom">
+  <div class="zbtn" id="zin">+</div>
+  <div class="zbtn" id="zout">&minus;</div>
+</div>
+
 <div id="hint"></div>
 <div id="inv"><span class="iempty">Harvest fruits to fill your basket!</span></div>
 
@@ -277,6 +292,12 @@ const decor=[];        // {tx,ty,kind}
 const P={wx:0,wy:0,frame:0,ft:0,moving:false,face:1};
 const cam={x:0,y:0};
 let VW=0,VH=0,DPR=1;
+let zoom=1;                          // 1 = default, <1 = zoomed out
+let cullL=0,cullR=0,cullT=0,cullB=0; // per-frame visible bounds (zoom aware)
+const ZMIN=0.5,ZMAX=1.4;
+function setZoom(z){zoom=Math.max(ZMIN,Math.min(ZMAX,z));
+  try{localStorage.setItem('tfarm-z',zoom)}catch(_){}}
+function zoomBy(dir){setZoom(zoom+dir*0.15)}
 
 function setT(x,y,t){if(x>=0&&x<WW&&y>=0&&y<WH)map[y*WW+x]=t}
 function getT(x,y){if(x<0||x>=WW||y<0||y>=WH)return T_WATER;return map[y*WW+x]}
@@ -542,8 +563,8 @@ const SOIL=['#8a5a32','#7d4f2a'],SOIL_D='#5e3a1f';
 
 function tileFill(tx,ty){
   const[sx,sy]=scr(tx,ty);
-  // cull
-  if(sx<-HW-4||sx>VW+HW+4||sy<-8||sy>VH+HH*3)return;
+  // cull (zoom-aware bounds)
+  if(sx<cullL||sx>cullR||sy<cullT||sy>cullB)return;
   const t=getT(tx,ty),ck=(tx+ty)&1,top=sy;
   if(t===T_WATER){
     diamond(sx,sy);
@@ -595,7 +616,7 @@ function tileFill(tx,ty){
 // Raised iso block (fence post / wall) – drawn as an entity for depth sorting
 function drawBlock(tx,ty,h,topC,lC,rC){
   const[sx,sy]=scr(tx,ty);
-  if(sx<-HW-40||sx>VW+HW+40||sy<-h-40||sy>VH+HH*3+40)return;
+  if(sx<cullL-40||sx>cullR+40||sy<cullT-h-40||sy>cullB+40)return;
   // base corners
   const bT=[sx,sy],bR=[sx+HW,sy+HH],bB=[sx,sy+HH*2],bL=[sx-HW,sy+HH];
   // top corners (raised)
@@ -769,10 +790,19 @@ function render(){
   const[psx,psy]=proj(P.wx,P.wy);
   cam.x=psx-VW/2;cam.y=psy-VH/2;
 
-  // sky / water backdrop
+  // sky / water backdrop (drawn unscaled so it always fills the screen)
   const g=cx.createLinearGradient(0,0,0,VH);
   g.addColorStop(0,'#2a6ab0');g.addColorStop(1,'#1f5596');
   cx.fillStyle=g;cx.fillRect(0,0,VW,VH);
+
+  // zoom-aware visible bounds (in unscaled screen space) for culling
+  const hvw=VW/(2*zoom),hvh=VH/(2*zoom);
+  cullL=VW/2-hvw-HW-8;cullR=VW/2+hvw+HW+8;
+  cullT=VH/2-hvh-HH*5;cullB=VH/2+hvh+HH*5;
+
+  // apply zoom for the whole world pass (scale around screen centre)
+  cx.save();
+  cx.translate(VW/2,VH/2);cx.scale(zoom,zoom);cx.translate(-VW/2,-VH/2);
 
   // ground pass (flat tiles)
   for(let ty=0;ty<WH;ty++)for(let tx=0;tx<WW;tx++)tileFill(tx,ty);
@@ -867,6 +897,8 @@ function render(){
       ?`rgba(253,230,138,${0.5+pulse*0.5})`:`rgba(134,239,172,${0.5+pulse*0.5})`;
     cx.lineWidth=3;cx.stroke();cx.lineWidth=1;}
 
+  cx.restore(); // end zoomed world pass — UI below draws unscaled
+
   // lighting: warm sun + vignette
   const vg=cx.createRadialGradient(VW*0.5,VH*0.42,VH*0.2,VW*0.5,VH*0.5,VH*0.85);
   vg.addColorStop(0,'rgba(255,240,200,0.10)');
@@ -921,7 +953,12 @@ function r2(n){return Math.round(n*100)/100}
 
 // ── Touch / keyboard ─────────────────────────────────────────────────────────
 let touchMode=false;
+const pinch={on:false,d0:0,z0:1};
+function dist2(a,b){return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)}
 cv.addEventListener('touchstart',e=>{e.preventDefault();touchMode=true;
+  if(e.touches.length>=2){ // two fingers → pinch zoom (cancel joystick)
+    pinch.on=true;pinch.d0=dist2(e.touches[0],e.touches[1]);pinch.z0=zoom;
+    joy.on=false;joy.id=-1;joy.dx=0;joy.dy=0;return;}
   for(const t of e.changedTouches){
     const[ibx,iby]=actC();
     if(Math.hypot(t.clientX-ibx,t.clientY-iby)<58){interact();continue}
@@ -929,18 +966,27 @@ cv.addEventListener('touchstart',e=>{e.preventDefault();touchMode=true;
       joy.bx=t.clientX;joy.by=t.clientY;joy.dx=0;joy.dy=0;}
   }},{passive:false});
 cv.addEventListener('touchmove',e=>{e.preventDefault();
+  if(pinch.on&&e.touches.length>=2){
+    const d=dist2(e.touches[0],e.touches[1]);
+    if(pinch.d0>0)setZoom(pinch.z0*d/pinch.d0);return;}
   for(const t of e.changedTouches)if(t.identifier===joy.id){
     const dx=t.clientX-joy.bx,dy=t.clientY-joy.by,r=42;
     joy.dx=Math.max(-1,Math.min(1,dx/r));joy.dy=Math.max(-1,Math.min(1,dy/r));}
   },{passive:false});
 function endTouch(e){e.preventDefault();
+  if(pinch.on&&e.touches.length<2)pinch.on=false;
   for(const t of e.changedTouches)if(t.identifier===joy.id){
     joy.on=false;joy.dx=0;joy.dy=0;joy.id=-1;}}
 cv.addEventListener('touchend',endTouch,{passive:false});
 cv.addEventListener('touchcancel',endTouch,{passive:false});
 
+// wheel zoom (desktop)
+cv.addEventListener('wheel',e=>{e.preventDefault();setZoom(zoom-Math.sign(e.deltaY)*0.1)},{passive:false});
+
 window.addEventListener('keydown',e=>{keys[e.key]=true;
-  if(e.key==='e'||e.key==='E'||e.key===' ')interact();});
+  if(e.key==='e'||e.key==='E'||e.key===' ')interact();
+  if(e.key==='='||e.key==='+')zoomBy(1);
+  if(e.key==='-'||e.key==='_')zoomBy(-1);});
 window.addEventListener('keyup',e=>{keys[e.key]=false});
 document.getElementById('qi').addEventListener('keydown',e=>{if(e.key==='Enter')submitQ()});
 
@@ -964,6 +1010,12 @@ function init(){
   const hintEl=document.getElementById('hint');
   hintEl.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();interact();},{passive:false});
   hintEl.addEventListener('click',()=>interact());
+  // Zoom buttons — touchstart (mobile) + click (desktop); preventDefault blocks the ghost click
+  const bindTap=(id,fn)=>{const el=document.getElementById(id);
+    el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();fn()},{passive:false});
+    el.addEventListener('click',fn);};
+  bindTap('zin',()=>zoomBy(1));bindTap('zout',()=>zoomBy(-1));
+  const sz=parseFloat(localStorage.getItem('tfarm-z'));if(!isNaN(sz))setZoom(sz);
   refreshHUD();renderInv();
   document.getElementById('splash').addEventListener('click',start);
   document.getElementById('splash').addEventListener('touchstart',e=>{e.preventDefault();start()},{passive:false});
