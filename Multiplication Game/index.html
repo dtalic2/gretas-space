@@ -379,13 +379,13 @@ const cx=cv.getContext('2d');
 
 function resize(){
   DPR=Math.min(devicePixelRatio||1,2.5);
-  // Use the canvas's ACTUAL rendered box (from CSS inset:0) rather than
-  // innerWidth/innerHeight, which can be stale on iOS as the toolbar toggles.
+  // visualViewport = the actually-visible area on iOS (updates with the toolbar);
+  // fall back to innerWidth/Height. Set explicit style so the canvas fills the screen.
   const vv=window.visualViewport;
-  VW=cv.clientWidth||(vv?vv.width:innerWidth);
-  VH=cv.clientHeight||(vv?vv.height:innerHeight);
+  VW=Math.round(vv?vv.width:innerWidth);
+  VH=Math.round(vv?vv.height:innerHeight);
   cv.width=Math.round(VW*DPR);cv.height=Math.round(VH*DPR);
-  // no inline style width/height — let CSS inset:0 fill the viewport exactly
+  cv.style.width=VW+'px';cv.style.height=VH+'px';
   cx.setTransform(DPR,0,0,DPR,0,0);
   cx.imageSmoothingEnabled=true;
 }
@@ -1099,7 +1099,9 @@ document.getElementById('qi').addEventListener('keydown',e=>{if(e.key==='Enter')
 let last=0,started=false;
 function loop(t){const dt=Math.min(t-last||16,60);last=t;
   // self-correct if the viewport changed (iOS toolbar show/hide, rotation…)
-  if(cv.clientWidth!==VW||cv.clientHeight!==VH)resize();
+  {const vv=window.visualViewport;
+   const w=Math.round(vv?vv.width:innerWidth),h=Math.round(vv?vv.height:innerHeight);
+   if(w!==VW||h!==VH)resize();}
   const open=document.getElementById('qm').classList.contains('show')||
              document.getElementById('sm').classList.contains('show')||
              document.getElementById('tm').classList.contains('show');
