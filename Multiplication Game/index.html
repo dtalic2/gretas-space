@@ -71,8 +71,10 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
   padding:26px 22px 20px;text-align:center;width:320px;max-width:92vw;
   max-height:92vh;overflow-y:auto;touch-action:pan-y;
   position:relative;box-shadow:0 12px 40px #000a,inset 0 1px 0 #ffffff22}
-.qclose,.sclose{position:absolute;top:10px;right:14px;color:#9aa;
-  font-size:1.2rem;cursor:pointer;width:30px;height:30px;line-height:30px}
+.qclose,.sclose{position:absolute;top:6px;right:8px;color:#cbd;
+  font-size:1.4rem;cursor:pointer;width:44px;height:44px;line-height:44px;
+  text-align:center;-webkit-tap-highlight-color:transparent}
+.qclose:active,.sclose:active{color:#fff}
 .qlabel{font-size:.74rem;color:#86efac;margin-bottom:10px;font-weight:600}
 .qq{font-size:2.4rem;font-weight:900;color:#fff;margin-bottom:16px;
   letter-spacing:2px;text-shadow:0 2px 12px #4ade8055}
@@ -127,6 +129,12 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
   font-weight:800;cursor:pointer;box-shadow:0 2px 0 #5b1a8a}
 .sbuy:active{transform:translateY(1px)}
 .sbuy:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+.sback{display:block;width:100%;margin-top:16px;
+  background:linear-gradient(135deg,#7e22ce,#5b1a8a);border:1px solid #d8b4fe;
+  color:#fff;border-radius:12px;padding:14px;font-size:1rem;font-weight:800;
+  letter-spacing:1px;cursor:pointer;box-shadow:0 3px 0 #3f1266;
+  -webkit-tap-highlight-color:transparent}
+.sback:active{transform:translateY(2px);box-shadow:0 1px 0 #3f1266}
 
 /* Toast */
 #toast{position:fixed;top:calc(env(safe-area-inset-top) + 50px);left:50%;
@@ -197,6 +205,7 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
     <div class="stitle">✨ MYTHIC FRUITS SHOP ✨</div>
     <div class="ssub">Legendary fruits from far-off realms · pay with $</div>
     <div class="sgrid" id="sgrid"></div>
+    <button class="sback" onclick="closeSh()">← Back to Farm</button>
   </div>
 </div>
 
