@@ -25,12 +25,10 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
 .husd{color:#bbf7d0;background:rgba(10,60,25,.45);border:1px solid #22c55e66;
   text-shadow:0 1px 2px #000}
 .dwrap{display:flex;gap:4px}
-.dbtn{padding:6px 9px;border-radius:9px;background:rgba(13,13,26,.7);
-  border:1px solid #ffffff22;color:#aaa;font-size:.72rem;font-weight:bold;
-  cursor:pointer;backdrop-filter:blur(4px)}
-.dbtn.on[data-d=easy]{background:#0f766e;color:#ccfbf1;border-color:#2dd4bf}
-.dbtn.on[data-d=medium]{background:#15803d;color:#dcfce7;border-color:#4ade80}
-.dbtn.on[data-d=hard]{background:#c2410c;color:#ffedd5;border-color:#f97316}
+.tblbtn{padding:6px 12px;border-radius:20px;background:rgba(13,13,26,.7);
+  border:1px solid #4ade8066;color:#dcfce7;font-size:.78rem;font-weight:800;
+  cursor:pointer;backdrop-filter:blur(4px);-webkit-tap-highlight-color:transparent}
+.tblbtn:active{background:#1a2e1a;border-color:#4ade80}
 
 /* Inventory bar */
 #inv{position:fixed;left:0;right:0;
@@ -95,6 +93,34 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
   font-size:1.4rem;cursor:pointer;width:44px;height:44px;line-height:44px;
   text-align:center;-webkit-tap-highlight-color:transparent}
 .qclose:active,.sclose:active{color:#fff}
+
+/* Times-table picker */
+.tbox{background:linear-gradient(180deg,#15301a,#0c1d10);
+  border:2px solid #4ade80;border-radius:20px;padding:22px 18px 18px;
+  width:400px;max-width:94vw;max-height:92vh;overflow-y:auto;touch-action:pan-y;
+  position:relative;box-shadow:0 12px 40px #000a,inset 0 1px 0 #ffffff22}
+.ttitle{text-align:center;font-size:1.2rem;font-weight:900;color:#dcfce7;
+  letter-spacing:1px;margin-bottom:6px;text-shadow:0 0 16px #4ade8066}
+.tsub{text-align:center;font-size:.7rem;color:#86efac;margin-bottom:16px;line-height:1.4}
+.tgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.tcell{background:#111f13;border:2px solid #2c4a30;border-radius:12px;
+  padding:9px 6px 8px;text-align:center;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;transition:transform .08s}
+.tcell:active{transform:scale(.95)}
+.tcell.sel{border-color:#4ade80;background:linear-gradient(180deg,#1c3a26,#123019);
+  box-shadow:0 0 10px #4ade8033,inset 0 1px 0 #ffffff1a}
+.tcell.locked{opacity:.55;cursor:not-allowed;border-color:#a16207;background:#241b09}
+.tnum{font-size:1.15rem;font-weight:900;color:#fff;margin-bottom:5px}
+.tbar{height:5px;background:#0a160c;border-radius:3px;overflow:hidden;margin-bottom:4px}
+.tbarf{height:100%;background:linear-gradient(90deg,#22c55e,#fde68a);border-radius:3px}
+.tcell.locked .tbarf{background:#a16207}
+.tprog{font-size:.58rem;color:#9cc7a6;font-weight:700}
+.tcell.locked .tprog{color:#fbbf24}
+.tstart{display:block;width:100%;margin-top:16px;
+  background:linear-gradient(135deg,#22c55e,#15803d);border:1px solid #86efac;
+  color:#fff;border-radius:12px;padding:14px;font-size:1.05rem;font-weight:800;
+  cursor:pointer;box-shadow:0 3px 0 #0f5132;-webkit-tap-highlight-color:transparent}
+.tstart:active{transform:translateY(2px);box-shadow:0 1px 0 #0f5132}
 .qlabel{font-size:.74rem;color:#86efac;margin-bottom:10px;font-weight:600}
 .qq{font-size:2.4rem;font-weight:900;color:#fff;margin-bottom:16px;
   letter-spacing:2px;text-shadow:0 2px 12px #4ade8055}
@@ -194,9 +220,7 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
 <div id="hud">
   <div class="hcur hpts">⭐ <span id="hpts">0</span></div>
   <div class="dwrap">
-    <button class="dbtn" data-d="easy"   onclick="setDiff('easy')">😊</button>
-    <button class="dbtn" data-d="medium" onclick="setDiff('medium')">😎</button>
-    <button class="dbtn" data-d="hard"   onclick="setDiff('hard')">🔥</button>
+    <button class="tblbtn" onclick="openTables()">🔢 Tables</button>
   </div>
   <div class="hcur husd">$ <span id="husd">0.00</span></div>
 </div>
@@ -237,6 +261,17 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
   </div>
 </div>
 
+<!-- Times-table picker -->
+<div id="tm" class="modal">
+  <div class="tbox">
+    <div class="ttitle">🔢 Choose Times Tables</div>
+    <div class="tsub">Only these tables will appear in your questions.<br>
+      Earn 3 ⭐ per correct answer — reach 200 ⭐ on a table to master &amp; lock it 🔒</div>
+    <div class="tgrid" id="tgrid"></div>
+    <button class="tstart" onclick="startTables()">Start Farming 🌱</button>
+  </div>
+</div>
+
 <!-- Mythic Shop -->
 <div id="sm" class="modal">
   <div class="sbox">
@@ -266,13 +301,21 @@ const PASSABLE=new Set([T_GRASS,T_PATH,T_PLOT,T_SHOP]);
 const WW=52,WH=44;            // world size (tiles)
 const HW=34,HH=17;            // iso half-width / half-height (tile = 68×34)
 
-// ── Difficulty ───────────────────────────────────────────────────────────────
-const DIFFS={
-  easy:  {tables:[1,2,3,4,5,10],            minM:1,maxM:10,pts:3},
-  medium:{tables:[2,3,4,5,6,7,8,9,10,11,12],minM:1,maxM:12,pts:5},
-  hard:  {tables:[6,7,8,9,11,12,13,14,15],  minM:2,maxM:15,pts:8},
-};
-let diff='medium';
+// ── Times tables ─────────────────────────────────────────────────────────────
+const PTS_PER=3;            // ⭐ earned per correct answer
+const LOCK_AT=200;         // ⭐ earned on one table → table mastered & locked
+const MMIN=1,MMAX=12;       // multiplier range
+let activeTables=[];        // tables the player is currently practising
+const tableEarned={};       // {table: total ⭐ earned answering it}
+function isLocked(t){return (tableEarned[t]||0)>=LOCK_AT}
+function saveTables(){try{
+  localStorage.setItem('tfarm-tbl',JSON.stringify({sel:activeTables,earn:tableEarned}));
+}catch(_){}}
+function loadTables(){try{
+  const d=JSON.parse(localStorage.getItem('tfarm-tbl'));if(!d)return;
+  if(d.earn)Object.assign(tableEarned,d.earn);
+  if(Array.isArray(d.sel))activeTables=d.sel.filter(t=>!isLocked(t));
+}catch(_){}}
 
 // ── Fruits ───────────────────────────────────────────────────────────────────
 const FRUITS=[
@@ -420,9 +463,30 @@ function makeFarm(fx,fy,fw,fh,label,npcDef){
 }
 function randFruit(){return FRUITS[Math.floor(Math.random()*FRUITS.length)]}
 
-// ── Difficulty / save ────────────────────────────────────────────────────────
-function setDiff(d){diff=d;try{localStorage.setItem('tfarm-d',d)}catch(_){}
-  document.querySelectorAll('.dbtn').forEach(b=>b.classList.toggle('on',b.dataset.d===d))}
+// ── Times-table picker ───────────────────────────────────────────────────────
+function toggleTable(t){if(isLocked(t))return;
+  const i=activeTables.indexOf(t);
+  if(i>=0)activeTables.splice(i,1);else activeTables.push(t);
+  renderTables();}
+function renderTables(){
+  const g=document.getElementById('tgrid');let h='';
+  for(let t=1;t<=12;t++){
+    const earned=Math.min(LOCK_AT,tableEarned[t]||0),locked=isLocked(t);
+    const sel=activeTables.includes(t)&&!locked;
+    const pct=Math.round(earned/LOCK_AT*100);
+    h+=`<div class="tcell${sel?' sel':''}${locked?' locked':''}" onclick="${locked?'':`toggleTable(${t})`}">
+      <div class="tnum">×${t}${locked?' 🔒':''}</div>
+      <div class="tbar"><div class="tbarf" style="width:${pct}%"></div></div>
+      <div class="tprog">${locked?'Mastered!':earned+'/'+LOCK_AT+' ⭐'}</div>
+    </div>`;
+  }
+  g.innerHTML=h;}
+function openTables(){renderTables();document.getElementById('tm').classList.add('show')}
+function startTables(){
+  if(!activeTables.filter(t=>!isLocked(t)).length){toast('Pick at least one table!','e');return}
+  saveTables();document.getElementById('tm').classList.remove('show')}
+
+// ── Save ─────────────────────────────────────────────────────────────────────
 function save(){try{
   const pd={};myPlots.forEach(k=>{const p=plots[k];pd[k]={stage:p.stage,at:p.at,fid:p.fruit?.id||null}});
   localStorage.setItem('tfarm3',JSON.stringify({pts,usd,inv,plots:pd}));
@@ -437,9 +501,10 @@ function load(){try{
 // ── Quiz ─────────────────────────────────────────────────────────────────────
 let quiz=null;
 function openQ(k){
-  const c=DIFFS[diff];
-  const a=c.tables[Math.floor(Math.random()*c.tables.length)];
-  const b=c.minM+Math.floor(Math.random()*(c.maxM-c.minM+1));
+  const avail=activeTables.filter(t=>!isLocked(t));
+  if(!avail.length){toast('Pick a times table to practise!','e');openTables();return}
+  const a=avail[Math.floor(Math.random()*avail.length)];
+  const b=MMIN+Math.floor(Math.random()*(MMAX-MMIN+1));
   quiz={k,a,b,ans:a*b};
   document.getElementById('qq').textContent=`${a} × ${b} = ?`;
   document.getElementById('qi').value='';
@@ -455,9 +520,16 @@ function submitQ(){
   if(v===quiz.ans){
     const fr=randFruit();
     plots[quiz.k]={stage:'seed',at:Date.now(),fruit:fr};
-    pts+=DIFFS[diff].pts;
-    fb.textContent=`✓ Planted ${fr.e} ${fr.n}!`;fb.className='qfb ok';
-    refreshHUD();save();setTimeout(closeQ,650);
+    const a=quiz.a;
+    pts+=PTS_PER;
+    tableEarned[a]=(tableEarned[a]||0)+PTS_PER;
+    let locked=false;
+    if(tableEarned[a]>=LOCK_AT&&activeTables.includes(a)){
+      activeTables=activeTables.filter(t=>t!==a);locked=true;}
+    fb.textContent=locked?`🔒 Table ${a} mastered — locked!`:`✓ +${PTS_PER} ⭐  Planted ${fr.e} ${fr.n}!`;
+    fb.className='qfb ok';
+    if(locked)toast(`Table ${a} mastered! 🔒`,'m');
+    refreshHUD();save();saveTables();setTimeout(closeQ,locked?1200:650);
   }else{
     fb.textContent=`✗ Not quite — try again!`;fb.className='qfb err';
     document.getElementById('qi').value='';
@@ -1029,18 +1101,21 @@ function loop(t){const dt=Math.min(t-last||16,60);last=t;
   // self-correct if the viewport changed (iOS toolbar show/hide, rotation…)
   if(cv.clientWidth!==VW||cv.clientHeight!==VH)resize();
   const open=document.getElementById('qm').classList.contains('show')||
-             document.getElementById('sm').classList.contains('show');
+             document.getElementById('sm').classList.contains('show')||
+             document.getElementById('tm').classList.contains('show');
   if(!open)updatePlayer(dt);else{P.moving=false}
   updateNPCs(dt);updateGrowth();render();requestAnimationFrame(loop);}
 
 function start(){if(started)return;started=true;
-  document.getElementById('splash').style.display='none';}
+  document.getElementById('splash').style.display='none';
+  openTables();} // ask which times tables to practise
 
 function init(){
   resize();addEventListener('resize',resize);addEventListener('orientationchange',()=>setTimeout(resize,200));
   if(window.visualViewport){visualViewport.addEventListener('resize',resize);visualViewport.addEventListener('scroll',resize);}
-  buildWorld();load();
-  setDiff(localStorage.getItem('tfarm-d')||'medium');
+  buildWorld();load();loadTables();
+  if(!activeTables.length){activeTables=[2,5,10].filter(t=>!isLocked(t));
+    if(!activeTables.length)for(let t=1;t<=12;t++)if(!isLocked(t)){activeTables=[t];break}}
   if('ontouchstart'in window){touchMode=true;document.getElementById('qi').readOnly=true;}
   // Hint pill doubles as the primary tap-to-act button (reliable on iOS)
   const hintEl=document.getElementById('hint');
