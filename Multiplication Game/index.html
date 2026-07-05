@@ -366,7 +366,7 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
   <div class="sbox animal">
     <span class="sclose" onclick="closeAnimals()">✕</span>
     <div class="stitle">🐾 ANIMAL SHOP 🐾</div>
-    <div class="ssub">Buy animals to roam your farm · pay with $</div>
+    <div class="ssub">Each animal roams your farm AND grants a perk · pay with $</div>
     <div class="sgrid" id="agrid"></div>
     <button class="sback animal" onclick="closeAnimals()">← Back to Farm</button>
   </div>
@@ -475,18 +475,29 @@ const MYTHIC=[
 const GROW=[12000,25000,42000]; // seed→sprout→plant→fruit (ms)
 
 // ── Animals (buy with $, roam your farm) ─────────────────────────────────────
-const ANIMALS=[
-  {id:'chicken',e:'🐔',n:'Chicken',d:'Pecks happily about',p:45},
-  {id:'duck',   e:'🦆',n:'Duck',    d:'Waddles by the pond',p:55},
-  {id:'rabbit', e:'🐰',n:'Rabbit',  d:'Hops through the rows',p:70},
-  {id:'sheep',  e:'🐑',n:'Sheep',   d:'Fluffy lawn-mower',p:95},
-  {id:'pig',    e:'🐷',n:'Pig',     d:'Roots around the mud',p:120},
-  {id:'goat',   e:'🐐',n:'Goat',    d:'Nibbles everything',p:140},
-  {id:'cow',    e:'🐄',n:'Cow',     d:'Moo-ves in slowly',p:190},
-  {id:'dog',    e:'🐕',n:'Farm Dog',d:'Loyal companion',p:160},
-  {id:'cat',    e:'🐈',n:'Barn Cat',d:'Naps and prowls',p:80},
-  {id:'horse',  e:'🐴',n:'Horse',   d:'Trots with pride',p:260},
+const ANIMALS=[  // each animal grants a passive perk while you own it
+  {id:'duck',   e:'🦆',n:'Duck',    d:'🪙 +10% on all fruit sales',      p:130,sell:.10},
+  {id:'chicken',e:'🐔',n:'Chicken', d:'🥚 +15% on all fruit sales',      p:170,sell:.15},
+  {id:'sheep',  e:'🐑',n:'Sheep',   d:'🧶 +20% on all fruit sales',      p:280,sell:.20},
+  {id:'cat',    e:'🐈',n:'Barn Cat',d:'🐾 Crops grow 15% faster',        p:320,grow:.15},
+  {id:'goat',   e:'🐐',n:'Goat',    d:'🌿 Crops grow 20% faster',        p:360,grow:.20},
+  {id:'dog',    e:'🐕',n:'Farm Dog',d:'⭐ +2 stars per correct answer',   p:420,star:2},
+  {id:'pig',    e:'🐷',n:'Pig',     d:'🌰 Truffle snout: finds a seed every 5 min',p:450,finder:true},
+  {id:'cow',    e:'🐄',n:'Cow',     d:'💰 Rich harvest: +35% on fruit sales',p:520,sell:.35},
+  {id:'rabbit', e:'🐰',n:'Rabbit',  d:'🌱 Split Seeds: found seeds split into 2',p:600,split:true},
+  {id:'horse',  e:'🐴',n:'Horse',   d:'🐴 Plough: crops grow 30% faster',  p:750,grow:.30},
 ];
+// aggregate animal perks (per-type; duplicates just add more roamers)
+function hasAnimal(id){return animals.some(a=>a.id===id)}
+function animalFlag(key){return animals.some(a=>{const A=ANIMALS.find(x=>x.id===a.id);return A&&A[key]})}
+function animalSum(key){let s=0;const seen=new Set();
+  animals.forEach(a=>{if(seen.has(a.id))return;seen.add(a.id);
+    const A=ANIMALS.find(x=>x.id===a.id);if(A&&A[key])s+=A[key];});return s;}
+function hasFinder(){return upgrades.finder||animalFlag('finder')}
+function hasSplit(){return upgrades.split||animalFlag('split')}
+function sellMult(){return 1+animalSum('sell')}
+function growMult(){return Math.max(0.4,1-animalSum('grow'))} // cap at 60% faster
+function ptsGain(){return PTS_PER+animalSum('star')}
 // ── Carpenter decorations (buy with $, placed around your farm) ───────────────
 const DECOS=[
   {id:'sign',    e:'🪧',n:'"My Farm" Sign',d:'Proudly names your farm',p:55},
@@ -777,11 +788,12 @@ function submitQ(){
     const fr=randFruit();
     plots[quiz.k]={stage:'seed',at:Date.now(),fruit:fr};
     const a=quiz.a;
-    pts+=PTS_PER;
+    const gain=ptsGain(); // +2 with Farm Dog
+    pts+=gain;
     const wasMastered=isMastered(a);
-    tableEarned[a]=(tableEarned[a]||0)+PTS_PER;
+    tableEarned[a]=(tableEarned[a]||0)+gain;
     const justMastered=!wasMastered&&isMastered(a);
-    fb.textContent=justMastered?`⭐ Table ${a} mastered!`:`✓ +${PTS_PER} ⭐  Planted ${fr.e} ${fr.n}!`;
+    fb.textContent=justMastered?`⭐ Table ${a} mastered!`:`✓ +${gain} ⭐  Planted ${fr.e} ${fr.n}!`;
     fb.className='qfb ok';
     if(justMastered)toast(`Table ${a} mastered! ⭐ (keep going!)`,'m');
     refreshHUD();save();saveTables();setTimeout(closeQ,justMastered?1100:650);
@@ -826,10 +838,10 @@ function buyM(id){const f=MYTHIC.find(x=>x.id===id);
 function animalCount(id){return animals.filter(a=>a.id===id).length}
 function openAnimals(){
   document.getElementById('agrid').innerHTML=ANIMALS.map(a=>{const c=animalCount(a.id);return`
-    <div class="sitem">
+    <div class="sitem${c?' equipped':''}">
       <div class="semwrap"><div class="sem">${a.e}</div></div>
       <div class="snm">${a.n}${c?` ×${c}`:''}</div><div class="sds">${a.d}</div>
-      <div class="spr">$${a.p}</div>
+      <div class="spr">${c?'✓ Perk active · ':''}$${a.p}</div>
       <button class="sbuy" onclick="buyAnimal('${a.id}')"${usd<a.p?' disabled':''}>Buy</button>
     </div>`}).join('');
   document.getElementById('am').classList.add('show');
@@ -860,12 +872,13 @@ function buyDecor(id){const d=DECOS.find(x=>x.id===id);
 
 // ── Upgrades: Seed Finder + Split Seed ───────────────────────────────────────
 function updateSeeds(){
-  if(!upgrades.finder)return;
+  if(!hasFinder())return;
   const now=Date.now();
+  if(!lastSeedAt){lastSeedAt=now;return;} // just gained the finder — start the clock
   const n=Math.floor((now-lastSeedAt)/SEED_MS);
   if(n>0){
     lastSeedAt+=n*SEED_MS;
-    const gain=n*(upgrades.split?2:1);
+    const gain=n*(hasSplit()?2:1);
     const before=seeds;seeds=Math.min(SEED_CAP,seeds+gain);
     if(seeds>before){renderInv();save();
       toast(`🌰 Found ${seeds-before} seed${seeds-before>1?'s':''}!`);}
@@ -880,9 +893,9 @@ function plantFoundSeed(k){
   renderInv();save();checkInteract();
 }
 function openUpgrades(){
-  const status=upgrades.finder
+  const status=hasFinder()
     ?`You have <b>${seeds} 🌰</b> · next seed in ${nextSeedText()}`
-    :`Buy Seed Finder to start finding seeds!`;
+    :`Buy Seed Finder (or a 🐷 Pig!) to start finding seeds!`;
   document.getElementById('ustat').innerHTML=status;
   document.getElementById('ugrid').innerHTML=UPGRADES.map(u=>{
     const owned=upgrades[u.id];
@@ -946,17 +959,19 @@ function harvest(k){const p=plots[k];if(!p||p.stage!=='fruit')return;
 function sellAll(){let g=0;
   Object.entries(inv).forEach(([id,n])=>{if(n<=0)return;
     const f=[...FRUITS,...MYTHIC].find(x=>x.id===id);if(f){g+=f.s*n;delete inv[id]}});
+  g=r2(g*sellMult()); // animal sell-bonus perks
   if(g>0){usd=r2(usd+g);lifetimeUsd=r2(lifetimeUsd+g);
     toast(`Sold all for $${fmtUsd(g)}`,'m');refreshHUD();renderInv();
     checkMilestones(false);save();}
   else toast('Nothing to sell','e');}
 
 // ── Growth / NPC ─────────────────────────────────────────────────────────────
-function updateGrowth(){const now=Date.now();
+function updateGrowth(){const now=Date.now();const gm=growMult(); // <1 = faster
+  const g0=GROW[0]*gm,g1=GROW[1]*gm,g2=GROW[2]*gm;
   for(const k in plots){const p=plots[k];
     if(!p||p.stage==='empty'||p.stage==='fruit')continue;
     const a=now-p.at;let s=p.stage;
-    if(a>=GROW[2])s='fruit';else if(a>=GROW[1])s='plant';else if(a>=GROW[0])s='sprout';
+    if(a>=g2)s='fruit';else if(a>=g1)s='plant';else if(a>=g0)s='sprout';
     if(s!==p.stage){p.stage=s;if(myPlots.includes(k))save()}}}
 function updateNPCs(dt){const now=Date.now();
   npcs.forEach(n=>{
