@@ -534,6 +534,15 @@ const SKINS=[
   {id:'chrome',  n:'Chrome',      color:'#94a3b8',color2:'#475569',pattern:'plain',  price:1400},
   {id:'galaxy',  n:'Galaxy',      color:'galaxy', color2:'galaxy', pattern:'spots',  price:1800},
   {id:'cosmic',  n:'Cosmic',      color:'cosmic', color2:'cosmic', pattern:'rainbow',price:2500},
+  // extra shop-only skins (buy with ⭐)
+  {id:'bubblegum',n:'Bubblegum',  color:'#f472b6',color2:'#db2777',pattern:'spots',  price:450},
+  {id:'forest',   n:'Forest',     color:'#22a34a',color2:'#14532d',pattern:'stripes',price:500},
+  {id:'candy',    n:'Candy Cane',  color:'#ef4444',color2:'#fef2f2',pattern:'stripes',price:550},
+  {id:'aqua',     n:'Aqua',       color:'#2dd4bf',color2:'#0f766e',pattern:'plain',  price:600},
+  {id:'sunfire',  n:'Sunfire',    color:'#facc15',color2:'#ea580c',pattern:'stripes',price:700},
+  {id:'berry',    n:'Berry',      color:'#c026d3',color2:'#701a75',pattern:'spots',  price:750},
+  {id:'zebra',    n:'Zebra',      color:'#f1f5f9',color2:'#1e293b',pattern:'stripes',price:850},
+  {id:'neon',     n:'Neon',       color:'#22d3ee',color2:'#e879f9',pattern:'spots',  price:950},
 ];
 let ownedSkins=['green'];
 let equippedSkin='green';
@@ -1304,50 +1313,63 @@ function shade(hex,amt){
   return`rgb(${r},${g},${b})`;
 }
 // Canvas-drawn snake character coiled on the ground with a raised head.
+// Cute, segmented snake that slithers with an undulating body + big wide eyes
 function drawSnake(sx,sy,skin,face,moving,frame){
-  let col=skin.color,col2=skin.color2,pat=skin.pattern;
-  if(col==='rainbow'){col=`hsl(${(anim*55)%360},80%,55%)`;col2=`hsl(${(anim*55+40)%360},75%,42%)`;pat='rainbow';}
-  else if(col==='galaxy'){const hu=225+Math.sin(anim*0.9)*45;col=`hsl(${hu},72%,58%)`;col2=`hsl(${hu+25},68%,36%)`;}
-  else if(col==='cosmic'){col=`hsl(${(anim*85)%360},92%,62%)`;col2=`hsl(${(anim*85+150)%360},82%,45%)`;pat='rainbow';}
+  let col=skin.color,col2=skin.color2,pat=skin.pattern,rainbowBody=false;
+  if(col==='rainbow'){pat='rainbow';rainbowBody=true;col='#4ade80';col2='#166534';}
+  else if(col==='cosmic'){pat='rainbow';rainbowBody=true;col='#a855f7';col2='#4c1d95';}
+  else if(col==='galaxy'){col=`hsl(${225+Math.sin(anim*0.9)*40},72%,58%)`;col2='#2b1d6b';}
   cx.save();cx.translate(sx,sy);if(face<0)cx.scale(-1,1);
-  const slith=moving?Math.sin(anim*10)*3:Math.sin(anim*2.2)*1.4;
 
-  // ── coiled body (two stacked loops) ──
-  function loop(cy,rx,ry){
-    cx.fillStyle=col2;cx.beginPath();cx.ellipse(0,cy,rx,ry,0,0,Math.PI*2);cx.fill();
-    cx.fillStyle=col;cx.beginPath();cx.ellipse(0,cy-1.5,rx-2.5,ry-2.5,0,0,Math.PI*2);cx.fill();
+  // undulating spine, tail(0) → head(1); wave travels over time = slither
+  const phase=anim*(moving?9:3),amp=moving?7:4.2,N=12;
+  const pts=[];
+  for(let i=0;i<N;i++){const f=i/(N-1);
+    const y=4-f*34, x=Math.sin(f*Math.PI*2.0-phase)*amp*(0.4+0.6*f);
+    pts.push([x,y,f]);}
+
+  // segmented body (each a rounded bead with an outline ring)
+  for(let i=0;i<N-1;i++){const[x,y,f]=pts[i];
+    const r=3+4.6*Math.sin(Math.min(1,f*1.05)*Math.PI);
+    let sc=col;
+    if(rainbowBody)sc=`hsl(${(anim*60+f*300)%360},82%,56%)`;
+    else if(pat==='stripes'&&i%2===0)sc=col2;
+    cx.fillStyle=col2;cx.beginPath();cx.arc(x,y,r+1.6,0,Math.PI*2);cx.fill();
+    cx.fillStyle=sc;cx.beginPath();cx.arc(x,y,r,0,Math.PI*2);cx.fill();
+    cx.fillStyle='rgba(255,255,255,.16)';cx.beginPath();cx.arc(x-r*0.3,y-r*0.42,r*0.42,0,Math.PI*2);cx.fill();
+    if(pat==='spots'&&i%2===1){cx.fillStyle=col2;cx.beginPath();cx.arc(x,y+r*0.2,r*0.4,0,Math.PI*2);cx.fill();}
   }
-  loop(-3,17,8);
-  loop(-8,12,6);
-  // pattern on the coil
-  if(pat==='stripes'){cx.strokeStyle=col2;cx.lineWidth=2.4;
-    for(let i=-2;i<=2;i++){cx.beginPath();cx.moveTo(i*6,-1);cx.lineTo(i*6+3,-7);cx.stroke();}}
-  else if(pat==='spots'){cx.fillStyle=col2;
-    [[-9,-3],[0,-1],[9,-3],[-4,-8],[5,-8]].forEach(([x,y])=>{
-      cx.beginPath();cx.arc(x,y,2,0,Math.PI*2);cx.fill();});}
-  else if(pat==='rainbow'){cx.fillStyle='rgba(255,255,255,.25)';
-    [[-8,-3],[2,-2],[8,-4]].forEach(([x,y])=>{cx.beginPath();cx.arc(x,y,2,0,Math.PI*2);cx.fill();});}
 
-  // ── neck curving up to head ──
-  cx.strokeStyle=col;cx.lineWidth=9;cx.lineCap='round';
-  cx.beginPath();cx.moveTo(0,-10);
-  cx.quadraticCurveTo(7+slith,-20,3+slith,-30);cx.stroke();
-  cx.strokeStyle=col2;cx.lineWidth=3.5;
-  cx.beginPath();cx.moveTo(0,-10);cx.quadraticCurveTo(7+slith,-20,3+slith,-30);cx.stroke();
-
-  // ── head ──
-  const hx=3+slith,hy=-32;
-  cx.fillStyle=col;cx.beginPath();cx.ellipse(hx,hy,8,7,0,0,Math.PI*2);cx.fill();
-  cx.fillStyle='rgba(255,255,255,.18)';cx.beginPath();cx.ellipse(hx-2,hy-2,4,3,0,0,Math.PI*2);cx.fill();
-  // forked tongue (flicks)
-  if(Math.sin(anim*8)>0.3){cx.strokeStyle='#e23b3b';cx.lineWidth=1.4;cx.lineCap='round';
-    cx.beginPath();cx.moveTo(hx+6,hy);cx.lineTo(hx+12,hy-1);
-    cx.moveTo(hx+12,hy-1);cx.lineTo(hx+15,hy-3);cx.moveTo(hx+12,hy-1);cx.lineTo(hx+15,hy+1);cx.stroke();}
-  // eyes
-  cx.fillStyle='#fff';cx.beginPath();cx.arc(hx+3,hy-2,2.2,0,Math.PI*2);cx.fill();
-  cx.beginPath();cx.arc(hx-2,hy-2.5,1.8,0,Math.PI*2);cx.fill();
-  cx.fillStyle='#111';cx.beginPath();cx.arc(hx+3.6,hy-2,1.1,0,Math.PI*2);cx.fill();
-  cx.beginPath();cx.arc(hx-1.6,hy-2.5,1,0,Math.PI*2);cx.fill();
+  // ── cute head ──
+  const[hx,hy]=pts[N-1];
+  let hc=col;if(rainbowBody)hc=`hsl(${(anim*60+300)%360},82%,58%)`;
+  const bob=moving?Math.sin(anim*9):0,HX=hx,HY=hy-2+bob,HR=10;
+  cx.fillStyle=col2;cx.beginPath();cx.ellipse(HX,HY,HR+1.7,HR-0.5,0,0,Math.PI*2);cx.fill();
+  cx.fillStyle=hc;cx.beginPath();cx.ellipse(HX,HY,HR,HR-1.5,0,0,Math.PI*2);cx.fill();
+  cx.fillStyle='rgba(255,255,255,.16)';cx.beginPath();cx.ellipse(HX-3,HY-4,4.5,3,0,0,Math.PI*2);cx.fill();
+  // little forked tongue flicking from the mouth
+  const tf=Math.sin(anim*7);
+  if(tf>0.3){cx.strokeStyle='#f43f5e';cx.lineWidth=1.5;cx.lineCap='round';
+    const ty=HY+HR-2,tl=3+tf*2;
+    cx.beginPath();cx.moveTo(HX,ty);cx.lineTo(HX,ty+tl);
+    cx.moveTo(HX,ty+tl);cx.lineTo(HX-2,ty+tl+2);cx.moveTo(HX,ty+tl);cx.lineTo(HX+2,ty+tl+2);cx.stroke();}
+  // BIG wide cute eyes
+  const ex=4,ey=-1.5,er=3.9,blink=Math.sin(anim*0.7)>0.985;
+  for(const s of[-1,1]){
+    cx.fillStyle='#fff';cx.beginPath();cx.arc(HX+s*ex,HY+ey,er,0,Math.PI*2);cx.fill();
+    cx.strokeStyle='rgba(0,0,0,.22)';cx.lineWidth=1;cx.stroke();
+    if(blink){cx.strokeStyle='#3a2a10';cx.lineWidth=1.7;
+      cx.beginPath();cx.moveTo(HX+s*ex-er,HY+ey);cx.lineTo(HX+s*ex+er,HY+ey);cx.stroke();}
+    else{const px=HX+s*ex+0.6,py=HY+ey+0.7;
+      cx.fillStyle='#181818';cx.beginPath();cx.arc(px,py,2.5,0,Math.PI*2);cx.fill();
+      cx.fillStyle='#fff';cx.beginPath();cx.arc(px-0.9,py-1,1.1,0,Math.PI*2);cx.fill();}
+  }
+  // rosy cheeks + tiny smile
+  cx.fillStyle='rgba(255,120,120,.35)';
+  cx.beginPath();cx.arc(HX-6.5,HY+3,2.2,0,Math.PI*2);cx.fill();
+  cx.beginPath();cx.arc(HX+6.5,HY+3,2.2,0,Math.PI*2);cx.fill();
+  cx.strokeStyle='rgba(50,25,8,.55)';cx.lineWidth=1.3;cx.lineCap='round';
+  cx.beginPath();cx.arc(HX,HY+2,3,0.15*Math.PI,0.85*Math.PI);cx.stroke();
 
   cx.restore();
 }
