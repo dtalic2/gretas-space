@@ -229,6 +229,18 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
 .sback.skin{background:linear-gradient(135deg,#15803d,#0f5132);border-color:#86efac;box-shadow:0 3px 0 #0a3823}
 .kswatch{width:44px;height:44px;border-radius:50%;margin:2px auto 7px;
   border:2px solid #ffffff44;box-shadow:inset 0 2px 6px #0006,0 2px 6px #0007}
+/* Upgrades shop */
+.sbox.up{border-color:#fbbf24}
+.sbox.up .stitle{color:#fde68a;text-shadow:0 0 18px #fbbf2488}
+.sbox.up .ssub{color:#fde9c2}
+.sbox.up .sitem{border-color:#a16207;background:linear-gradient(180deg,#332612,#20180a)}
+.sbox.up .sitem.equipped{border-color:#fbbf24;box-shadow:0 0 10px #fbbf2444}
+.sbox.up .snm{color:#fff6df}.sbox.up .sds{color:#e6d3a8;min-height:34px}
+.sbox.up .sbuy{background:linear-gradient(135deg,#f59e0b,#c2740a);border-color:#fde68a;box-shadow:0 2px 0 #8a5208}
+.sback.up{background:linear-gradient(135deg,#c2740a,#8a5208);border-color:#fde68a;box-shadow:0 3px 0 #5e3806}
+.ustat{text-align:center;font-size:.74rem;color:#fde68a;margin-bottom:14px;
+  background:rgba(0,0,0,.25);border:1px solid #fbbf2433;border-radius:10px;padding:8px}
+.seedslot{border-color:#fbbf2466 !important;color:#fde68a}
 
 /* Toast */
 #toast{position:fixed;top:calc(env(safe-area-inset-top) + 50px);left:50%;
@@ -259,6 +271,7 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
     <div class="dwrap">
       <button class="tblbtn" onclick="openTables()">🔢</button>
       <button class="tblbtn snakebtn" onclick="openSkins()">🐍</button>
+      <button class="tblbtn upbtn" onclick="openUpgrades()">⬆️</button>
     </div>
     <div class="hcur husd">$ <span id="husd">0.00</span></div>
   </div>
@@ -349,6 +362,18 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
   </div>
 </div>
 
+<!-- Upgrades Shop -->
+<div id="um" class="modal">
+  <div class="sbox up">
+    <span class="sclose" onclick="closeUpgrades()">✕</span>
+    <div class="stitle">⬆️ UPGRADES ⬆️</div>
+    <div class="ssub">Boost your farm · pay with $</div>
+    <div class="ustat" id="ustat"></div>
+    <div class="sgrid" id="ugrid"></div>
+    <button class="sback up" onclick="closeUpgrades()">← Back to Farm</button>
+  </div>
+</div>
+
 <!-- Snake Skin Shop -->
 <div id="km" class="modal">
   <div class="sbox skin">
@@ -401,12 +426,12 @@ function loadTables(){try{
 }catch(_){}}
 
 // ── Fruits ───────────────────────────────────────────────────────────────────
-const FRUITS=[
-  {id:'apple',e:'🍎',n:'Apple',s:2},{id:'berry',e:'🍓',n:'Strawberry',s:3},
-  {id:'grapes',e:'🍇',n:'Grapes',s:5},{id:'melon',e:'🍉',n:'Watermelon',s:8},
-  {id:'sunflower',e:'🌻',n:'Sunflower',s:4},{id:'corn',e:'🌽',n:'Corn',s:3},
-  {id:'carrot',e:'🥕',n:'Carrot',s:2},{id:'pumpkin',e:'🎃',n:'Pumpkin',s:6},
-  {id:'cherry',e:'🍒',n:'Cherry',s:4},
+const FRUITS=[  // sell values reduced — fruit now earns less
+  {id:'apple',e:'🍎',n:'Apple',s:1},{id:'berry',e:'🍓',n:'Strawberry',s:1},
+  {id:'grapes',e:'🍇',n:'Grapes',s:2},{id:'melon',e:'🍉',n:'Watermelon',s:4},
+  {id:'sunflower',e:'🌻',n:'Sunflower',s:2},{id:'corn',e:'🌽',n:'Corn',s:1},
+  {id:'carrot',e:'🥕',n:'Carrot',s:1},{id:'pumpkin',e:'🎃',n:'Pumpkin',s:3},
+  {id:'cherry',e:'🍒',n:'Cherry',s:2},
 ];
 const MYTHIC=[
   {id:'dragon',e:'🐉',n:'Dragon Fruit',d:'Crystallised dragon breath',p:10,s:25,c:'#ff4fa3',glow:true},
@@ -465,6 +490,16 @@ const SKINS=[
 let ownedSkins=['green'];
 let equippedSkin='green';
 function skinById(id){return SKINS.find(s=>s.id===id)||SKINS[0]}
+
+// ── Upgrades (bought with $) ─────────────────────────────────────────────────
+const UPGRADES=[
+  {id:'finder',e:'🌰',n:'Seed Finder',d:'Find a seed every 5 minutes. Plant found seeds on empty plots for free — no question needed!',p:30},
+  {id:'split', e:'🌱',n:'Split Seed', d:'Every seed you find splits into 2 before you plant it.',p:70},
+];
+const SEED_MS=300000;   // find a seed every 5 minutes
+const SEED_CAP=15;      // most seeds you can hold
+const upgrades={finder:false,split:false};
+let seeds=0,lastSeedAt=0;
 function saveSkins(){try{localStorage.setItem('tfarm-skin',JSON.stringify({owned:ownedSkins,eq:equippedSkin}))}catch(_){}}
 function loadSkins(){try{const d=JSON.parse(localStorage.getItem('tfarm-skin'));if(!d)return;
   if(Array.isArray(d.owned))ownedSkins=Array.from(new Set(['green',...d.owned]));
@@ -647,7 +682,8 @@ function save(){try{
   const pd={};myPlots.forEach(k=>{const p=plots[k];pd[k]={stage:p.stage,at:p.at,fid:p.fruit?.id||null}});
   localStorage.setItem('tfarm3',JSON.stringify({pts,usd,inv,plots:pd,
     animals:animals.map(a=>a.id),
-    decor:builtDecor.map(o=>({id:o.id,wx:o.wx,wy:o.wy}))}));
+    decor:builtDecor.map(o=>({id:o.id,wx:o.wx,wy:o.wy})),
+    up:upgrades,seeds,lastSeedAt}));
 }catch(_){}}
 function load(){try{
   const raw=localStorage.getItem('tfarm3');if(!raw)return;
@@ -657,6 +693,9 @@ function load(){try{
   if(Array.isArray(d.animals))d.animals.forEach(id=>spawnAnimal(id));
   if(Array.isArray(d.decor))d.decor.forEach(o=>{
     const dd=DECOS.find(x=>x.id===o.id);if(dd)builtDecor.push({id:dd.id,e:dd.e,wx:o.wx,wy:o.wy})});
+  if(d.up){upgrades.finder=!!d.up.finder;upgrades.split=!!d.up.split;}
+  seeds=Math.min(SEED_CAP,d.seeds||0);
+  lastSeedAt=d.lastSeedAt||Date.now();
 }catch(_){}}
 
 // ── Quiz ─────────────────────────────────────────────────────────────────────
@@ -763,6 +802,56 @@ function buyDecor(id){const d=DECOS.find(x=>x.id===id);
   if(!d||usd<d.p){toast('Not enough $','e');return}
   usd=r2(usd-d.p);placeDecor(id);
   toast(`${d.e} ${d.n} built on your farm!`,'m');refreshHUD();openCarpenter();save();}
+
+// ── Upgrades: Seed Finder + Split Seed ───────────────────────────────────────
+function updateSeeds(){
+  if(!upgrades.finder)return;
+  const now=Date.now();
+  const n=Math.floor((now-lastSeedAt)/SEED_MS);
+  if(n>0){
+    lastSeedAt+=n*SEED_MS;
+    const gain=n*(upgrades.split?2:1);
+    const before=seeds;seeds=Math.min(SEED_CAP,seeds+gain);
+    if(seeds>before){renderInv();save();
+      toast(`🌰 Found ${seeds-before} seed${seeds-before>1?'s':''}!`);}
+  }
+}
+function plantFoundSeed(k){
+  if(seeds<=0)return;
+  const p=plots[k];if(!p||p.stage!=='empty')return;
+  const fr=randFruit();
+  plots[k]={stage:'seed',at:Date.now(),fruit:fr};
+  seeds--;toast(`🌰 Planted a found seed — ${fr.e} ${fr.n}!`,'m');
+  renderInv();save();checkInteract();
+}
+function openUpgrades(){
+  const status=upgrades.finder
+    ?`You have <b>${seeds} 🌰</b> · next seed in ${nextSeedText()}`
+    :`Buy Seed Finder to start finding seeds!`;
+  document.getElementById('ustat').innerHTML=status;
+  document.getElementById('ugrid').innerHTML=UPGRADES.map(u=>{
+    const owned=upgrades[u.id];
+    const btn=owned?`<button class="sbuy" disabled>Owned ✓</button>`
+      :`<button class="sbuy" onclick="buyUpgrade('${u.id}')"${usd<u.p?' disabled':''}>$${u.p}</button>`;
+    return`<div class="sitem${owned?' equipped':''}">
+      <div class="semwrap"><div class="sem">${u.e}</div></div>
+      <div class="snm">${u.n}</div><div class="sds">${u.d}</div>
+      ${btn}
+    </div>`}).join('');
+  document.getElementById('um').classList.add('show');
+}
+function nextSeedText(){
+  const ms=Math.max(0,SEED_MS-(Date.now()-lastSeedAt));
+  const m=Math.floor(ms/60000),s=Math.floor((ms%60000)/1000);
+  return`${m}m ${s}s`;
+}
+function closeUpgrades(){document.getElementById('um').classList.remove('show')}
+function buyUpgrade(id){const u=UPGRADES.find(x=>x.id===id);
+  if(!u||upgrades[id]){return}
+  if(usd<u.p){toast('Not enough $','e');return}
+  usd=r2(usd-u.p);upgrades[id]=true;
+  if(id==='finder'&&!lastSeedAt)lastSeedAt=Date.now();
+  toast(`${u.e} ${u.n} unlocked!`,'m');refreshHUD();openUpgrades();save();}
 
 // ── Snake skin shop (unlock with ⭐ earned from multiplication) ──────────────
 function skinSwatch(s){
@@ -878,7 +967,8 @@ function checkInteract(){
   if(ptx>=38&&ptx<=45&&pty>=32&&pty<=40)nearAnimal=true;  // animal shop (east)
   const h=document.getElementById('hint');
   if(nearPlot){h.style.display='block';
-    h.textContent=plots[nearPlot].stage==='empty'?'👆 Tap to Plant 🌱':'👆 Tap to Harvest 🧺';}
+    if(plots[nearPlot].stage==='fruit')h.textContent='👆 Tap to Harvest 🧺';
+    else h.textContent=seeds>0?`👆 Plant Found Seed 🌰 (${seeds})`:'👆 Tap to Plant 🌱';}
   else if(nearShop){h.style.display='block';h.textContent='👆 Enter Mythic Shop ✨';}
   else if(nearAnimal){h.style.display='block';h.textContent='👆 Enter Animal Shop 🐾';}
   else if(nearCarp){h.style.display='block';h.textContent='👆 Enter Carpenter Shop 🔨';}
@@ -889,8 +979,11 @@ function interact(){
   if(document.getElementById('sm').classList.contains('show')){closeSh();return}
   if(document.getElementById('am').classList.contains('show')){closeAnimals();return}
   if(document.getElementById('cm').classList.contains('show')){closeCarpenter();return}
+  if(document.getElementById('km').classList.contains('show')){closeSkins();return}
+  if(document.getElementById('um').classList.contains('show')){closeUpgrades();return}
   if(nearPlot){const p=plots[nearPlot];
-    if(p.stage==='empty')openQ(nearPlot);else if(p.stage==='fruit')harvest(nearPlot);}
+    if(p.stage==='fruit')harvest(nearPlot);
+    else if(p.stage==='empty'){if(seeds>0)plantFoundSeed(nearPlot);else openQ(nearPlot);}}
   else if(nearShop)openSh();
   else if(nearAnimal)openAnimals();
   else if(nearCarp)openCarpenter();
@@ -1343,7 +1436,7 @@ function drawControls(){
   cx.strokeStyle='rgba(134,239,172,.8)';cx.lineWidth=2;cx.stroke();
 
   const[ibx,iby]=actC();
-  const act=nearPlot||nearShop;
+  const act=nearPlot||nearShop||nearAnimal||nearCarp;
   cx.beginPath();cx.arc(ibx,iby,40,0,Math.PI*2);
   cx.fillStyle=act?'rgba(134,239,172,.45)':'rgba(255,255,255,.08)';cx.fill();
   cx.strokeStyle=act?'rgba(134,239,172,.9)':'rgba(255,255,255,.22)';cx.lineWidth=2;cx.stroke();
@@ -1360,9 +1453,11 @@ function refreshHUD(){document.getElementById('hpts').textContent=pts;
   document.getElementById('scoreRank').textContent=scoreRank(v);
   document.getElementById('sbfill').style.width=(v/10)+'%';}
 function renderInv(){const el=document.getElementById('inv');
+  const seedChip=seeds>0?`<span class="islot seedslot">🌰 <b>${seeds}</b></span>`:'';
   const en=Object.entries(inv).filter(([,n])=>n>0);
-  if(!en.length){el.innerHTML='<span class="iempty">Harvest fruits to fill your basket!</span>';return}
-  el.innerHTML=en.map(([id,n])=>{const f=[...FRUITS,...MYTHIC].find(x=>x.id===id);
+  if(!en.length){el.innerHTML=seedChip+
+    '<span class="iempty">Harvest fruits to fill your basket!</span>';return}
+  el.innerHTML=seedChip+en.map(([id,n])=>{const f=[...FRUITS,...MYTHIC].find(x=>x.id===id);
     return`<span class="islot">${f?.e||'?'} <b>${n}</b></span>`}).join('')
     +`<button id="sell-btn" onclick="sellAll()">Sell All 💰</button>`}
 let _tt=null;
@@ -1422,9 +1517,10 @@ function loop(t){const dt=Math.min(t-last||16,60);last=t;
              document.getElementById('tm').classList.contains('show')||
              document.getElementById('am').classList.contains('show')||
              document.getElementById('cm').classList.contains('show')||
-             document.getElementById('km').classList.contains('show');
+             document.getElementById('km').classList.contains('show')||
+             document.getElementById('um').classList.contains('show');
   if(!open)updatePlayer(dt);else{P.moving=false}
-  updateNPCs(dt);updateAnimals(dt);updateGrowth();render();requestAnimationFrame(loop);}
+  updateNPCs(dt);updateAnimals(dt);updateGrowth();updateSeeds();render();requestAnimationFrame(loop);}
 
 function start(){if(started)return;started=true;
   document.getElementById('splash').style.display='none';
