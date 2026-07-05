@@ -515,6 +515,14 @@ const SKINS=[
   {id:'shadow', n:'Shadow',       color:'#4b5563',color2:'#1f2937',pattern:'spots',  price:200},
   {id:'gold',   n:'Golden',       color:'#f59e0b',color2:'#b45309',pattern:'stripes',price:280},
   {id:'rainbow',n:'Rainbow',      color:'rainbow',color2:'rainbow',pattern:'rainbow',price:400},
+  {id:'emerald', n:'Emerald',     color:'#10b981',color2:'#065f46',pattern:'spots',  price:500},
+  {id:'crimson', n:'Crimson',     color:'#dc2626',color2:'#7f1d1d',pattern:'stripes',price:600},
+  {id:'magma',   n:'Magma',       color:'#ea580c',color2:'#7c2d12',pattern:'stripes',price:750},
+  {id:'midnight',n:'Midnight',    color:'#4338ca',color2:'#1e1b4b',pattern:'spots',  price:900},
+  {id:'venom',   n:'Venom',       color:'#4d7c0f',color2:'#14210a',pattern:'spots',  price:1100},
+  {id:'chrome',  n:'Chrome',      color:'#94a3b8',color2:'#475569',pattern:'plain',  price:1400},
+  {id:'galaxy',  n:'Galaxy',      color:'galaxy', color2:'galaxy', pattern:'spots',  price:1800},
+  {id:'cosmic',  n:'Cosmic',      color:'cosmic', color2:'cosmic', pattern:'rainbow',price:2500},
 ];
 let ownedSkins=['green'];
 let equippedSkin='green';
@@ -531,8 +539,10 @@ const upgrades={finder:false,split:false};
 let seeds=0,lastSeedAt=0;
 
 // ── $ milestones → award a new snake skin at each total-$ earned threshold ────
-const MILESTONES=[100,200,300,500,1000,2000,3000,5000,10000];
-const MILESTONE_SKINS=['coral','ocean','sunset','toxic','ice','purple','shadow','gold','rainbow'];
+const MILESTONES=[100,200,300,500,1000,2000,3000,5000,10000,
+  20000,30000,50000,100000,200000,500000,1000000,2000000];
+const MILESTONE_SKINS=['coral','ocean','sunset','toxic','ice','purple','shadow','gold','rainbow',
+  'emerald','crimson','magma','midnight','venom','chrome','galaxy','cosmic'];
 let lifetimeUsd=0;        // total $ ever earned from selling (only goes up)
 let milestonesAwarded=0;  // how many milestones already granted
 function checkMilestones(silent){
@@ -900,7 +910,8 @@ function buyUpgrade(id){const u=UPGRADES.find(x=>x.id===id);
 
 // ── Snake skin shop (unlock with ⭐ earned from multiplication) ──────────────
 function skinSwatch(s){
-  if(s.color==='rainbow')return'background:conic-gradient(#f87171,#fbbf24,#4ade80,#38bdf8,#a78bfa,#f87171)';
+  if(s.color==='rainbow'||s.color==='cosmic')return'background:conic-gradient(#f87171,#fbbf24,#4ade80,#38bdf8,#a78bfa,#f87171)';
+  if(s.color==='galaxy')return'background:radial-gradient(circle at 40% 34%,#60a5fa,#4338ca 60%,#1e1b4b)';
   return`background:radial-gradient(circle at 38% 34%,${s.color},${s.color2})`;
 }
 function openSkins(){
@@ -1281,6 +1292,8 @@ function shade(hex,amt){
 function drawSnake(sx,sy,skin,face,moving,frame){
   let col=skin.color,col2=skin.color2,pat=skin.pattern;
   if(col==='rainbow'){col=`hsl(${(anim*55)%360},80%,55%)`;col2=`hsl(${(anim*55+40)%360},75%,42%)`;pat='rainbow';}
+  else if(col==='galaxy'){const hu=225+Math.sin(anim*0.9)*45;col=`hsl(${hu},72%,58%)`;col2=`hsl(${hu+25},68%,36%)`;}
+  else if(col==='cosmic'){col=`hsl(${(anim*85)%360},92%,62%)`;col2=`hsl(${(anim*85+150)%360},82%,45%)`;pat='rainbow';}
   cx.save();cx.translate(sx,sy);if(face<0)cx.scale(-1,1);
   const slith=moving?Math.sin(anim*10)*3:Math.sin(anim*2.2)*1.4;
 
