@@ -253,6 +253,24 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
 #toast.m{border-color:#22c55e;color:#bbf7d0}
 #toast.e{border-color:#f87171;color:#fca5a5}
 
+/* Milestone award popup */
+#award{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.7);
+  z-index:70;pointer-events:none;opacity:0;transition:opacity .3s,transform .3s cubic-bezier(.2,1.5,.4,1);
+  width:280px;max-width:88vw;text-align:center;
+  background:linear-gradient(180deg,#3a2c08,#20180a);
+  border:3px solid #fbbf24;border-radius:20px;padding:22px 18px;
+  box-shadow:0 12px 50px #000c,0 0 40px #fbbf2455,inset 0 1px 0 #ffffff33}
+#award.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.awtitle{font-size:1.15rem;font-weight:900;color:#fde68a;letter-spacing:1px;
+  text-shadow:0 0 16px #fbbf24aa;margin-bottom:6px}
+.awcoins{font-size:1.5rem;font-weight:900;color:#fff;margin-bottom:12px;text-shadow:0 2px 8px #000}
+.awswatch{width:64px;height:64px;border-radius:50%;margin:0 auto 12px;
+  border:3px solid #fff;box-shadow:inset 0 2px 8px #0006,0 3px 10px #0008;
+  animation:awspin 3s linear infinite}
+@keyframes awspin{to{transform:rotate(360deg)}}
+.awskin{font-size:.85rem;color:#fde9c2;font-weight:700;line-height:1.5}
+.awskin b{color:#4ade80;font-size:1rem}
+
 /* Loading splash */
 #splash{position:fixed;inset:0;z-index:80;background:#10240f;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
@@ -323,7 +341,7 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
   <div class="tbox">
     <div class="ttitle">🔢 Choose Times Tables</div>
     <div class="tsub">Only these tables will appear in your questions.<br>
-      Earn 3 ⭐ per correct answer — reach 200 ⭐ on a table to master &amp; lock it 🔒</div>
+      Earn 3 ⭐ per correct answer — hit 200 ⭐ on a table to master it ⭐ (never locked!)</div>
     <div class="tgrid" id="tgrid"></div>
     <button class="tstart" onclick="startTables()">Start Farming 🌱</button>
   </div>
@@ -388,6 +406,13 @@ body{background:#1a2f1a;font-family:-apple-system,'Segoe UI',sans-serif;
 
 <div id="toast"></div>
 
+<div id="award">
+  <div class="awtitle">🏆 MILESTONE! 🏆</div>
+  <div class="awcoins">$<span id="awN">0</span> earned!</div>
+  <div class="awswatch" id="awSw"></div>
+  <div class="awskin">New snake skin unlocked:<br><b id="awSk"></b> 🐍</div>
+</div>
+
 <div id="splash">
   <div class="e">🚜</div>
   <h1>TIMES TABLE FARM</h1>
@@ -406,14 +431,15 @@ const HW=34,HH=17;            // iso half-width / half-height (tile = 68×34)
 
 // ── Times tables ─────────────────────────────────────────────────────────────
 const PTS_PER=3;            // ⭐ earned per correct answer
-const LOCK_AT=200;         // ⭐ earned on one table → table mastered & locked
+const MASTER_AT=200;       // ⭐ on one table = "mastered" badge (no lock)
 const MMIN=1,MMAX=12;       // multiplier range
 let activeTables=[];        // tables the player is currently practising
 const tableEarned={};       // {table: total ⭐ earned answering it}
-function isLocked(t){return (tableEarned[t]||0)>=LOCK_AT}
+function isLocked(t){return false} // tables never lock — practise as long as you like
+function isMastered(t){return (tableEarned[t]||0)>=MASTER_AT}
 // Mastery score out of 1000 = how far through all 12 tables (200⭐ each) you are
-function masteryScore(){let s=0;for(let t=1;t<=12;t++)s+=Math.min(LOCK_AT,tableEarned[t]||0);
-  return Math.round(s/(12*LOCK_AT)*1000);}
+function masteryScore(){let s=0;for(let t=1;t<=12;t++)s+=Math.min(MASTER_AT,tableEarned[t]||0);
+  return Math.round(s/(12*MASTER_AT)*1000);}
 function scoreRank(v){return v>=1000?'Grand Master 🏆':v>=850?'Master 🐍':v>=600?'Expert':
   v>=350?'Skilled':v>=150?'Grower':'Sprout 🌱';}
 function saveTables(){try{
@@ -447,25 +473,25 @@ const GROW=[12000,25000,42000]; // seed→sprout→plant→fruit (ms)
 
 // ── Animals (buy with $, roam your farm) ─────────────────────────────────────
 const ANIMALS=[
-  {id:'chicken',e:'🐔',n:'Chicken',d:'Pecks happily about',p:5},
-  {id:'duck',   e:'🦆',n:'Duck',    d:'Waddles by the pond',p:6},
-  {id:'rabbit', e:'🐰',n:'Rabbit',  d:'Hops through the rows',p:7},
-  {id:'sheep',  e:'🐑',n:'Sheep',   d:'Fluffy lawn-mower',p:9},
-  {id:'pig',    e:'🐷',n:'Pig',     d:'Roots around the mud',p:10},
-  {id:'goat',   e:'🐐',n:'Goat',    d:'Nibbles everything',p:11},
-  {id:'cow',    e:'🐄',n:'Cow',     d:'Moo-ves in slowly',p:14},
-  {id:'dog',    e:'🐕',n:'Farm Dog',d:'Loyal companion',p:12},
-  {id:'cat',    e:'🐈',n:'Barn Cat',d:'Naps and prowls',p:8},
-  {id:'horse',  e:'🐴',n:'Horse',   d:'Trots with pride',p:18},
+  {id:'chicken',e:'🐔',n:'Chicken',d:'Pecks happily about',p:45},
+  {id:'duck',   e:'🦆',n:'Duck',    d:'Waddles by the pond',p:55},
+  {id:'rabbit', e:'🐰',n:'Rabbit',  d:'Hops through the rows',p:70},
+  {id:'sheep',  e:'🐑',n:'Sheep',   d:'Fluffy lawn-mower',p:95},
+  {id:'pig',    e:'🐷',n:'Pig',     d:'Roots around the mud',p:120},
+  {id:'goat',   e:'🐐',n:'Goat',    d:'Nibbles everything',p:140},
+  {id:'cow',    e:'🐄',n:'Cow',     d:'Moo-ves in slowly',p:190},
+  {id:'dog',    e:'🐕',n:'Farm Dog',d:'Loyal companion',p:160},
+  {id:'cat',    e:'🐈',n:'Barn Cat',d:'Naps and prowls',p:80},
+  {id:'horse',  e:'🐴',n:'Horse',   d:'Trots with pride',p:260},
 ];
 // ── Carpenter decorations (buy with $, placed around your farm) ───────────────
 const DECOS=[
-  {id:'sign',    e:'🪧',n:'"My Farm" Sign',d:'Proudly names your farm',p:8},
-  {id:'pond',    e:'🪷',n:'Pond',          d:'A calm little water pond',p:14},
-  {id:'bench',   e:'🪑',n:'Wooden Bench',  d:'Rest between harvests',p:9},
-  {id:'mailbox', e:'📫',n:'Mailbox',       d:'For letters from friends',p:7},
-  {id:'fountain',e:'⛲',n:'Fountain',       d:'Bubbling centrepiece',p:20},
-  {id:'flowers', e:'🌷',n:'Flower Bed',    d:'A burst of colour',p:6},
+  {id:'sign',    e:'🪧',n:'"My Farm" Sign',d:'Proudly names your farm',p:55},
+  {id:'pond',    e:'🪷',n:'Pond',          d:'A calm little water pond',p:120},
+  {id:'bench',   e:'🪑',n:'Wooden Bench',  d:'Rest between harvests',p:70},
+  {id:'mailbox', e:'📫',n:'Mailbox',       d:'For letters from friends',p:45},
+  {id:'fountain',e:'⛲',n:'Fountain',       d:'Bubbling centrepiece',p:200},
+  {id:'flowers', e:'🌷',n:'Flower Bed',    d:'A burst of colour',p:40},
 ];
 // spots around your farm where bought decorations appear (outside the fence)
 const DECOR_SLOTS=[
@@ -493,13 +519,27 @@ function skinById(id){return SKINS.find(s=>s.id===id)||SKINS[0]}
 
 // ── Upgrades (bought with $) ─────────────────────────────────────────────────
 const UPGRADES=[
-  {id:'finder',e:'🌰',n:'Seed Finder',d:'Find a seed every 5 minutes. Plant found seeds on empty plots for free — no question needed!',p:30},
-  {id:'split', e:'🌱',n:'Split Seed', d:'Every seed you find splits into 2 before you plant it.',p:70},
+  {id:'finder',e:'🌰',n:'Seed Finder',d:'Find a seed every 5 minutes. Plant found seeds on empty plots for free — no question needed!',p:80},
+  {id:'split', e:'🌱',n:'Split Seed', d:'Every seed you find splits into 2 before you plant it.',p:160},
 ];
 const SEED_MS=300000;   // find a seed every 5 minutes
 const SEED_CAP=15;      // most seeds you can hold
 const upgrades={finder:false,split:false};
 let seeds=0,lastSeedAt=0;
+
+// ── $ milestones → award a new snake skin at each total-$ earned threshold ────
+const MILESTONES=[100,200,300,500,1000,2000,3000,5000,10000];
+const MILESTONE_SKINS=['coral','ocean','sunset','toxic','ice','purple','shadow','gold','rainbow'];
+let lifetimeUsd=0;        // total $ ever earned from selling (only goes up)
+let milestonesAwarded=0;  // how many milestones already granted
+function checkMilestones(silent){
+  while(milestonesAwarded<MILESTONES.length&&lifetimeUsd>=MILESTONES[milestonesAwarded]){
+    const idx=milestonesAwarded,sid=MILESTONE_SKINS[idx];
+    if(!ownedSkins.includes(sid))ownedSkins.push(sid);
+    if(!silent){equippedSkin=sid;showAward(MILESTONES[idx],skinById(sid));saveSkins();}
+    milestonesAwarded++;
+  }
+}
 function saveSkins(){try{localStorage.setItem('tfarm-skin',JSON.stringify({owned:ownedSkins,eq:equippedSkin}))}catch(_){}}
 function loadSkins(){try{const d=JSON.parse(localStorage.getItem('tfarm-skin'));if(!d)return;
   if(Array.isArray(d.owned))ownedSkins=Array.from(new Set(['green',...d.owned]));
@@ -662,13 +702,13 @@ function toggleTable(t){if(isLocked(t))return;
 function renderTables(){
   const g=document.getElementById('tgrid');let h='';
   for(let t=1;t<=12;t++){
-    const earned=Math.min(LOCK_AT,tableEarned[t]||0),locked=isLocked(t);
-    const sel=activeTables.includes(t)&&!locked;
-    const pct=Math.round(earned/LOCK_AT*100);
-    h+=`<div class="tcell${sel?' sel':''}${locked?' locked':''}" onclick="${locked?'':`toggleTable(${t})`}">
-      <div class="tnum">×${t}${locked?' 🔒':''}</div>
+    const total=tableEarned[t]||0,mastered=isMastered(t);
+    const sel=activeTables.includes(t);
+    const pct=Math.min(100,Math.round(total/MASTER_AT*100));
+    h+=`<div class="tcell${sel?' sel':''}${mastered?' mastered':''}" onclick="toggleTable(${t})">
+      <div class="tnum">×${t}${mastered?' ⭐':''}</div>
       <div class="tbar"><div class="tbarf" style="width:${pct}%"></div></div>
-      <div class="tprog">${locked?'Mastered!':earned+'/'+LOCK_AT+' ⭐'}</div>
+      <div class="tprog">${mastered?'Mastered! '+total+' ⭐':total+'/'+MASTER_AT+' ⭐'}</div>
     </div>`;
   }
   g.innerHTML=h;}
@@ -683,7 +723,7 @@ function save(){try{
   localStorage.setItem('tfarm3',JSON.stringify({pts,usd,inv,plots:pd,
     animals:animals.map(a=>a.id),
     decor:builtDecor.map(o=>({id:o.id,wx:o.wx,wy:o.wy})),
-    up:upgrades,seeds,lastSeedAt}));
+    up:upgrades,seeds,lastSeedAt,lifeUsd:lifetimeUsd,mAw:milestonesAwarded}));
 }catch(_){}}
 function load(){try{
   const raw=localStorage.getItem('tfarm3');if(!raw)return;
@@ -696,6 +736,9 @@ function load(){try{
   if(d.up){upgrades.finder=!!d.up.finder;upgrades.split=!!d.up.split;}
   seeds=Math.min(SEED_CAP,d.seeds||0);
   lastSeedAt=d.lastSeedAt||Date.now();
+  // lifetime $ earned; older saves: credit current balance so past earnings count
+  lifetimeUsd=d.lifeUsd!=null?d.lifeUsd:(d.usd||0);
+  milestonesAwarded=d.mAw||0;
 }catch(_){}}
 
 // ── Quiz ─────────────────────────────────────────────────────────────────────
@@ -722,14 +765,13 @@ function submitQ(){
     plots[quiz.k]={stage:'seed',at:Date.now(),fruit:fr};
     const a=quiz.a;
     pts+=PTS_PER;
+    const wasMastered=isMastered(a);
     tableEarned[a]=(tableEarned[a]||0)+PTS_PER;
-    let locked=false;
-    if(tableEarned[a]>=LOCK_AT&&activeTables.includes(a)){
-      activeTables=activeTables.filter(t=>t!==a);locked=true;}
-    fb.textContent=locked?`🔒 Table ${a} mastered — locked!`:`✓ +${PTS_PER} ⭐  Planted ${fr.e} ${fr.n}!`;
+    const justMastered=!wasMastered&&isMastered(a);
+    fb.textContent=justMastered?`⭐ Table ${a} mastered!`:`✓ +${PTS_PER} ⭐  Planted ${fr.e} ${fr.n}!`;
     fb.className='qfb ok';
-    if(locked)toast(`Table ${a} mastered! 🔒`,'m');
-    refreshHUD();save();saveTables();setTimeout(closeQ,locked?1200:650);
+    if(justMastered)toast(`Table ${a} mastered! ⭐ (keep going!)`,'m');
+    refreshHUD();save();saveTables();setTimeout(closeQ,justMastered?1100:650);
   }else{
     fb.textContent=`✗ Not quite — try again!`;fb.className='qfb err';
     document.getElementById('qi').value='';
@@ -890,7 +932,9 @@ function harvest(k){const p=plots[k];if(!p||p.stage!=='fruit')return;
 function sellAll(){let g=0;
   Object.entries(inv).forEach(([id,n])=>{if(n<=0)return;
     const f=[...FRUITS,...MYTHIC].find(x=>x.id===id);if(f){g+=f.s*n;delete inv[id]}});
-  if(g>0){usd=r2(usd+g);toast(`Sold all for $${g.toFixed(2)}`,'m');refreshHUD();renderInv();save();}
+  if(g>0){usd=r2(usd+g);lifetimeUsd=r2(lifetimeUsd+g);
+    toast(`Sold all for $${g.toFixed(2)}`,'m');refreshHUD();renderInv();
+    checkMilestones(false);save();}
   else toast('Nothing to sell','e');}
 
 // ── Growth / NPC ─────────────────────────────────────────────────────────────
@@ -1464,6 +1508,14 @@ let _tt=null;
 function toast(m,t){const el=document.getElementById('toast');
   el.textContent=m;el.className='show'+(t?' '+t:'');
   if(_tt)clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),1700)}
+let _aw=null;
+function showAward(coins,skin){
+  document.getElementById('awN').textContent=coins.toLocaleString();
+  document.getElementById('awSk').textContent=skin.n;
+  document.getElementById('awSw').style.cssText=skinSwatch(skin);
+  const el=document.getElementById('award');el.classList.add('show');
+  if(_aw)clearTimeout(_aw);_aw=setTimeout(()=>el.classList.remove('show'),4000);
+}
 function r2(n){return Math.round(n*100)/100}
 
 // ── Touch / keyboard ─────────────────────────────────────────────────────────
@@ -1530,8 +1582,8 @@ function init(){
   resize();addEventListener('resize',resize);addEventListener('orientationchange',()=>setTimeout(resize,200));
   if(window.visualViewport){visualViewport.addEventListener('resize',resize);visualViewport.addEventListener('scroll',resize);}
   buildWorld();load();loadTables();loadSkins();
-  if(!activeTables.length){activeTables=[2,5,10].filter(t=>!isLocked(t));
-    if(!activeTables.length)for(let t=1;t<=12;t++)if(!isLocked(t)){activeTables=[t];break}}
+  checkMilestones(true);saveSkins();save(); // backfill skins for already-passed $ milestones
+  if(!activeTables.length){activeTables=[2,5,10];}
   if('ontouchstart'in window){touchMode=true;document.getElementById('qi').readOnly=true;}
   // Hint pill doubles as the primary tap-to-act button (reliable on iOS)
   const hintEl=document.getElementById('hint');
