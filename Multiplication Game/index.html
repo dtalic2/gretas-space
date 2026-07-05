@@ -920,14 +920,14 @@ function openSkins(){
     let btn;
     if(eq)btn=`<button class="sbuy" disabled>Equipped ✓</button>`;
     else if(owned)btn=`<button class="sbuy" onclick="equipSkin('${s.id}')">Equip</button>`;
-    else btn=`<button class="sbuy" onclick="buySkin('${s.id}')"${pts<s.price?' disabled':''}>${s.price} ⭐</button>`;
+    else btn=`<button class="sbuy" onclick="buySkin('${s.id}')"${pts<s.price?' disabled':''}>${abbr(s.price)} ⭐</button>`;
     return`<div class="sitem${eq?' equipped':''}">
       <div class="kswatch" style="${skinSwatch(s)}"></div>
       <div class="snm">${s.n}</div>
       <div class="sds">${owned?(eq?'Now slithering!':'Owned'):'Unlock with ⭐'}</div>
       ${btn}
     </div>`}).join('');
-  document.getElementById('kstars').textContent=pts;
+  document.getElementById('kstars').textContent=abbr(pts);
   document.getElementById('km').classList.add('show');
 }
 function closeSkins(){document.getElementById('km').classList.remove('show')}
@@ -947,7 +947,7 @@ function sellAll(){let g=0;
   Object.entries(inv).forEach(([id,n])=>{if(n<=0)return;
     const f=[...FRUITS,...MYTHIC].find(x=>x.id===id);if(f){g+=f.s*n;delete inv[id]}});
   if(g>0){usd=r2(usd+g);lifetimeUsd=r2(lifetimeUsd+g);
-    toast(`Sold all for $${g.toFixed(2)}`,'m');refreshHUD();renderInv();
+    toast(`Sold all for $${fmtUsd(g)}`,'m');refreshHUD();renderInv();
     checkMilestones(false);save();}
   else toast('Nothing to sell','e');}
 
@@ -1506,8 +1506,8 @@ function drawControls(){
 }
 
 // ── HUD / inventory / toast ──────────────────────────────────────────────────
-function refreshHUD(){document.getElementById('hpts').textContent=pts;
-  document.getElementById('husd').textContent=usd.toFixed(2);
+function refreshHUD(){document.getElementById('hpts').textContent=abbr(pts);
+  document.getElementById('husd').textContent=fmtUsd(usd);
   const v=masteryScore();
   document.getElementById('scoreN').textContent=v;
   document.getElementById('scoreRank').textContent=scoreRank(v);
@@ -1526,13 +1526,20 @@ function toast(m,t){const el=document.getElementById('toast');
   if(_tt)clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),1700)}
 let _aw=null;
 function showAward(coins,skin){
-  document.getElementById('awN').textContent=coins.toLocaleString();
+  document.getElementById('awN').textContent=abbr(coins);
   document.getElementById('awSk').textContent=skin.n;
   document.getElementById('awSw').style.cssText=skinSwatch(skin);
   const el=document.getElementById('award');el.classList.add('show');
   if(_aw)clearTimeout(_aw);_aw=setTimeout(()=>el.classList.remove('show'),4000);
 }
 function r2(n){return Math.round(n*100)/100}
+// 1000 → 1k, 1500 → 1.5k, 1000000 → 1m, 2000000 → 2m
+function abbr(n){const neg=n<0?'-':'';n=Math.abs(Math.round(n));
+  if(n>=1e6)return neg+(Math.round(n/1e5)/10)+'m';
+  if(n>=1e3)return neg+(Math.round(n/100)/10)+'k';
+  return neg+n;}
+// money: keep cents under 1000, abbreviate above
+function fmtUsd(n){return Math.abs(n)>=1000?abbr(n):n.toFixed(2);}
 
 // ── Touch / keyboard ─────────────────────────────────────────────────────────
 let touchMode=false;
