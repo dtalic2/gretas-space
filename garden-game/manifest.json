@@ -1,0 +1,15 @@
+{
+  "name": "3x3 Garden 3D",
+  "short_name": "Garden 3D",
+  "description": "A fully 3D gardening game you play in the browser.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#2f7d55",
+  "theme_color": "#8ecae6",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
