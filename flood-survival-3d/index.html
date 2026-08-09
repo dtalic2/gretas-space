@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1b2733">
+<title>High Water — Flood Survival 3D</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+<div id="underwater"></div>
+<div id="flash"></div>
+<div id="vignette"></div>
+
+<!-- ============================== LOADING ============================== -->
+<div id="boot">
+  <div class="boot-inner">
+    <div class="boot-mark">🌊</div>
+    <div class="boot-title">High Water</div>
+    <div class="boot-sub">Flood Survival 3D</div>
+    <div class="boot-bar"><i></i></div>
+    <div class="boot-msg" id="bootMsg">Filling the valley…</div>
+  </div>
+</div>
+
+<!-- ============================== INTRO ============================== -->
+<div id="intro" class="overlay hidden">
+  <div class="card">
+    <h1>Ten dollars and nine days of rain</h1>
+    <p class="lede">The river came over its banks on Monday. It has not stopped
+      raining since. By the tenth night the whole valley goes under — the ridge,
+      the road, the roof of your house.</p>
+    <div class="intro-grid">
+      <div><span class="ico">💵</span><p><b>You have $10.</b> That buys a bag of nails.</p></div>
+      <div><span class="ico">🪵</span><p><b>Materials are free</b> — driftwood, scrap,
+        clay, reeds — but the water takes the low ground first.</p></div>
+      <div><span class="ico">🪧</span><p><b>Build a business.</b> Turn what you gather
+        into things your neighbours are desperate for, and sell it at your stall.</p></div>
+      <div><span class="ico">🏠</span><p><b>Then buy timber</b> and either raise your
+        house onto stilts or build a boat. You probably cannot afford both.</p></div>
+    </div>
+    <p class="warn">⚠️ Cedar Ridge is the highest ground in the valley at 8.4 m.
+      The surge comes in at <b id="introSafe">10.5</b> m. Standing still is not a plan.</p>
+    <button class="big" id="introGo">Start Day 1</button>
+    <p class="tiny" id="introControls"></p>
+    <p class="tiny">Stuck at any point? The <b>⚙️ cog</b> at the top right has the full
+      instructions, and the arrow under the objective always points at the next thing to do.</p>
+  </div>
+</div>
+
+<!-- ============================== HUD ============================== -->
+<div id="hud" class="hidden">
+
+  <div class="hud-top">
+    <div class="chips">
+      <div class="chip money"><span class="ico">💵</span><b id="money">10</b></div>
+      <div class="chip"><span class="ico">📅</span>Day <b id="dayNum">1</b><small id="clock">dawn</small></div>
+      <div class="chip"><span class="ico" id="wIco">🌧️</span><b id="wText">Rain</b></div>
+    </div>
+    <div class="chips right">
+      <button class="chip btn" id="btnPlan" title="Your plan (Tab)">📋</button>
+      <button class="chip btn" id="btnSound" title="Sound (M)">🔊</button>
+      <button class="chip btn nudge" id="btnCog" title="Instructions (H)">⚙️</button>
+    </div>
+  </div>
+
+  <div id="objective"></div>
+
+  <!-- which way to the thing the objective is talking about -->
+  <div id="guide" class="hidden"><i>▲</i><span id="guideText"></span></div>
+
+  <!-- water gauge: where the flood is, where you can stand, where it ends up -->
+  <div id="gauge">
+    <div class="tube">
+      <div class="fill" id="gaugeFill"></div>
+      <div class="mark safe" id="markSafe"><span>surge 10.5</span></div>
+      <div class="mark refuge" id="markRefuge"><span>you 6.4</span></div>
+    </div>
+    <div class="gauge-read"><b id="gaugeNum">-1.4</b>m</div>
+  </div>
+
+  <div id="satchel"></div>
+
+  <div id="staminaWrap"><div id="stamina"><i></i></div></div>
+
+  <div id="prompt" class="hidden">
+    <span class="key">E</span><span id="promptText">Gather</span>
+    <div class="hold"><i id="holdBar"></i></div>
+  </div>
+
+  <div id="toasts"></div>
+  <div id="pops"></div>
+
+  <div class="controls">
+    <div id="stick"><i></i></div>
+    <div class="btn-stack">
+      <button id="btnClimb" class="round hidden">⬆</button>
+      <button id="btnRun" class="round">RUN</button>
+      <button id="btnAct" class="round act">E</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== PANEL ============================== -->
+<div id="panel" class="overlay hidden">
+  <div class="sheet">
+    <header>
+      <h2 id="panelTitle">Panel</h2>
+      <button id="panelClose" aria-label="Close">✕</button>
+    </header>
+    <div id="panelBody"></div>
+  </div>
+</div>
+
+<!-- ============================== DAY CARD ============================== -->
+<div id="dayCard" class="overlay hidden">
+  <div class="card">
+    <div class="daymark" id="dayCardNum">Day 2</div>
+    <div id="dayCardBody"></div>
+    <button class="big" id="dayCardGo">Get to work</button>
+  </div>
+</div>
+
+<!-- ============================== ENDING ============================== -->
+<div id="ending" class="overlay hidden">
+  <div class="card">
+    <div class="ending-mark" id="endMark">⛵</div>
+    <h1 id="endTitle">You float out</h1>
+    <div id="endBody"></div>
+    <button class="big" id="endAgain">Play again</button>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "name": "High Water — Flood Survival 3D",
+  "short_name": "High Water",
+  "description": "Ten dollars, ten days of rain, and a valley that goes under. Build a business, then build your way out.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#0d1620",
+  "theme_color": "#1b2733",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "high-water",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["flood-survival-3d/serve.py", "8124"],
+      "port": 8124
+    }
+  ]
+}
