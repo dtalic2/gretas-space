@@ -196,6 +196,45 @@ export function buildCrop(type){
       fruit.add(light);
       break;
     }
+    case 'tuber': { // ginger / sweet potato — a knobbly cluster half in the soil
+      // Offsets are fixed rather than random so a plot looks the same every
+      // time its mesh is rebuilt (a save reload must not reshuffle the plant).
+      const lumps = [[0, 0.22, 0, 1.0], [-0.26, 0.17, 0.12, 0.78], [0.24, 0.18, -0.1, 0.72],
+                     [0.05, 0.2, 0.28, 0.62], [-0.1, 0.16, -0.27, 0.55]];
+      for (const [x, y, z, s] of lumps){
+        const lump = new THREE.Mesh(new THREE.SphereGeometry(0.22 * s, 8, 6), bodyMat);
+        lump.scale.set(1.35, 0.78, 1);
+        lump.position.set(x, y, z);
+        lump.rotation.y = x * 3 + z * 2;      // deterministic, from the offset itself
+        lump.castShadow = true;
+        fruit.add(lump);
+      }
+      for (let i = 0; i < 5; i++){           // a small fan of leaves on top
+        const a = (i / 5) * Math.PI * 2;
+        const blade = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.5, 4), leafMat);
+        blade.position.set(Math.cos(a) * 0.09, 0.5, Math.sin(a) * 0.09);
+        blade.rotation.set(Math.cos(a) * 0.34, 0, -Math.sin(a) * 0.34);
+        blade.castShadow = true;
+        fruit.add(blade);
+      }
+      break;
+    }
+    case 'mushroom': { // button mushroom — a plain cap and stipe, no glow
+      const stipe = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.14, 0.4, 7), lam(0xf0e6d2));
+      stipe.position.y = 0.3; stipe.castShadow = true; fruit.add(stipe);
+      const cap = new THREE.Mesh(
+        new THREE.SphereGeometry(0.32, 10, 7, 0, Math.PI*2, 0, Math.PI/2), bodyMat);
+      cap.scale.y = 0.72;
+      cap.position.y = 0.48; cap.castShadow = true; fruit.add(cap);
+      // A couple of smaller buttons alongside, so a ripe plot reads as a crop.
+      for (const [x, z, s] of [[-0.32, 0.18, 0.55], [0.3, -0.2, 0.45]]){
+        const st = new THREE.Mesh(new THREE.CylinderGeometry(0.06*s/0.5, 0.09*s/0.5, 0.24, 6), lam(0xf0e6d2));
+        st.position.set(x, 0.14, z); fruit.add(st);
+        const c = new THREE.Mesh(new THREE.SphereGeometry(0.3 * s, 8, 6, 0, Math.PI*2, 0, Math.PI/2), bodyMat);
+        c.scale.y = 0.7; c.position.set(x, 0.25, z); c.castShadow = true; fruit.add(c);
+      }
+      break;
+    }
     case 'bulb': { // onion — squat bulb half out of the soil, shoots on top
       const b = new THREE.Mesh(new THREE.SphereGeometry(0.27, 10, 8), bodyMat);
       b.scale.y = 1.15;

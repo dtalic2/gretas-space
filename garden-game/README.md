@@ -95,8 +95,12 @@ work, which makes the stick optional.
 
 ### The crops
 
-**258 varieties.** The seed shop alone stocks 30. Levels come from lifetime earnings and
-unlock a new variety at nearly every level, so there's usually something new to plant.
+**268 varieties.** The seed shop alone stocks 40 — 26 annuals and 14 perennial trees and
+vines. Levels come from lifetime earnings and unlock a new variety at nearly every level,
+so there's usually something new to plant.
+
+Alongside them: **21 animals** at the pen, **39 charms** at the magic trees, and **15
+decorations** at the carpenter.
 
 Prices climb **steeply**: each seed-shop tier costs roughly **2.4×** the one before it, and
 each magic-tree tier about **2.6×**. Sell prices track cost at a steady ~2.8× (~2.6× for

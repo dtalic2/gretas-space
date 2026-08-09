@@ -953,6 +953,9 @@ export class World {
       statue:    () => this._statue(V(-9.9, 9.9)),
       marquee:   () => this._marquee(V(9.9, 9.9)),
       fountain:  () => this._fountain(V(0, -10.6)),
+      firepit:   () => this._firePit(V(-5.4, 9.6)),
+      greenhouse:() => this._greenhouse(V(-9.9, -9.9)),
+      windmill:  () => this._windmill(V(9.3, -10.5)),
     };
     const node = build[key]?.() || null;
     if (node){ this.scene.add(node); this.decorNodes[key] = node; }
@@ -1207,7 +1210,13 @@ export class World {
     const g = new THREE.Group();
     const spec = {
       rabbit:  { body:0xe8e0d4, accent:0xd8a0a8, s:0.34 },
+      hedgehog:{ body:0x8a6a4a, accent:0x4a3524, s:0.30 },
       chicken: { body:0xfffaf0, accent:0xe0575b, s:0.45 },
+      pig:     { body:0xf2b5c0, accent:0xd98a9a, s:0.55 },
+      squirrel:{ body:0xb5703a, accent:0xe8d5b8, s:0.32 },
+      horse:   { body:0x7a5236, accent:0x2b2016, s:1.05 },
+      fox:     { body:0xd9622b, accent:0xfffaf0, s:0.5  },
+      phoenix: { body:0xff7a2b, accent:0xffd166, s:0.68 },
       duck:    { body:0xf7f3e6, accent:0xf5a623, s:0.42 },
       beehive: { body:0xe0a640, accent:0x6b4a2f, s:0.5  },
       goat:    { body:0xd9d2c4, accent:0x6b5b48, s:0.62 },
@@ -1241,6 +1250,126 @@ export class World {
   }
 
   // ---------------- loop ----------------
+  /**
+   * Ring of stones round a fire. The flames and their light are driven from
+   * _applyWeather, so it's a lamp after dark and barely smoulders at noon.
+   */
+  _firePit(pos){
+    const g = new THREE.Group();
+    g.position.copy(pos);
+
+    for (let i = 0; i < 9; i++){
+      const a = (i / 9) * Math.PI * 2;
+      const stone = new THREE.Mesh(new THREE.DodecahedronGeometry(0.26, 0), lam(0x8a857c));
+      stone.position.set(Math.cos(a) * 0.95, 0.14, Math.sin(a) * 0.95);
+      stone.rotation.set(a, a * 1.7, 0);
+      stone.castShadow = stone.receiveShadow = true;
+      g.add(stone);
+    }
+    for (const [x, z, r] of [[0, 0, 0.5], [0.22, 0.1, 0.42], [-0.18, -0.14, 0.38]]){
+      const log = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.8, 6), lam(0x5f3f22));
+      log.rotation.set(Math.PI / 2, r * 3, r);
+      log.position.set(x, 0.12, z);
+      log.castShadow = true;
+      g.add(log);
+    }
+
+    const flames = [];
+    for (let i = 0; i < 5; i++){
+      const a = (i / 5) * Math.PI * 2;
+      const f = new THREE.Mesh(
+        new THREE.ConeGeometry(0.17, 0.62, 5),
+        new THREE.MeshLambertMaterial({ color:0xff8c2b, emissive:0xff5a10, emissiveIntensity:1, flatShading:true })
+      );
+      f.position.set(Math.cos(a) * 0.14, 0.42, Math.sin(a) * 0.14);
+      g.add(f);
+      flames.push(f);
+    }
+
+    const light = new THREE.PointLight(0xff8a3c, 2.4, 12, 2);
+    light.position.y = 0.8;
+    g.add(light);
+
+    g.userData = { flames, light, night: true };
+    return g;
+  }
+
+  /** Glass house with a pitched roof; the panes catch the sun as it swings over. */
+  _greenhouse(pos){
+    const g = new THREE.Group();
+    g.position.copy(pos);
+    g.rotation.y = Math.PI * 0.18;
+
+    const glass = new THREE.MeshLambertMaterial({
+      color:0xbfe8ea, transparent:true, opacity:0.42, flatShading:true,
+      emissive:0x2f6b70, emissiveIntensity:0.18,
+    });
+    const frame = lam(0xf4efe2);
+
+    const walls = new THREE.Mesh(new THREE.BoxGeometry(3.0, 1.7, 2.2), glass);
+    walls.position.y = 0.85;
+    walls.castShadow = true;
+    g.add(walls);
+
+    const roof = new THREE.Mesh(new THREE.CylinderGeometry(1.18, 1.18, 3.0, 3), glass);
+    roof.rotation.set(0, 0, Math.PI / 2);
+    roof.position.y = 2.05;
+    roof.castShadow = true;
+    g.add(roof);
+
+    // Corner posts and a ridge, so it reads as a building and not a glass box.
+    for (const [x, z] of [[-1.5,-1.1],[1.5,-1.1],[-1.5,1.1],[1.5,1.1]]){
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.7, 0.12), frame);
+      post.position.set(x, 0.85, z); post.castShadow = true; g.add(post);
+    }
+    const ridge = new THREE.Mesh(new THREE.BoxGeometry(3.05, 0.1, 0.1), frame);
+    ridge.position.y = 2.62; g.add(ridge);
+
+    const door = new THREE.Mesh(new THREE.BoxGeometry(0.62, 1.15, 0.08), frame);
+    door.position.set(0, 0.58, 1.12); g.add(door);
+
+    // A hint of green behind the glass.
+    for (const [x, z] of [[-0.9,-0.5],[0, -0.5],[0.9,-0.5],[-0.9,0.4],[0.9,0.4]]){
+      const bush = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3, 0), lam(0x4c9a2a));
+      bush.scale.y = 0.8; bush.position.set(x, 0.32, z); g.add(bush);
+    }
+    return g;
+  }
+
+  /** Tower with sails that turn. The spin rate is read back in update(). */
+  _windmill(pos){
+    const g = new THREE.Group();
+    g.position.copy(pos);
+
+    const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 1.05, 4.2, 8), lam(0xe6dcc6));
+    tower.position.y = 2.1; tower.castShadow = tower.receiveShadow = true; g.add(tower);
+
+    const cap = new THREE.Mesh(new THREE.ConeGeometry(0.8, 0.9, 8), lam(0x8b4a34));
+    cap.position.y = 4.55; cap.castShadow = true; g.add(cap);
+
+    const door = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.9, 0.1), lam(0x5f3f22));
+    door.position.set(0, 0.45, 1.0); g.add(door);
+
+    // Sails hang off a hub on the front face, tilted so they clear the tower.
+    const hub = new THREE.Group();
+    hub.position.set(0, 4.0, 1.0);
+    for (let i = 0; i < 4; i++){
+      const arm = new THREE.Group();
+      arm.rotation.z = (i / 4) * Math.PI * 2;
+      const spar = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.6, 0.1), lam(0x6b4a2f));
+      spar.position.y = 1.3; spar.castShadow = true; arm.add(spar);
+      const sail = new THREE.Mesh(new THREE.BoxGeometry(0.42, 2.0, 0.05), lam(0xfffaf0));
+      sail.position.set(0.28, 1.45, 0.04); sail.castShadow = true; arm.add(sail);
+      hub.add(arm);
+    }
+    const boss = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.3, 8), lam(0x5f3f22));
+    boss.rotation.x = Math.PI / 2; hub.add(boss);
+    g.add(hub);
+
+    g.userData = { hub };
+    return g;
+  }
+
   // ---------------- weather ----------------
   /**
    * A column of falling streaks that stays centred on the camera, so it always
@@ -1330,6 +1459,11 @@ export class World {
     this.lanternNight = 0.4 + s.night * 1.6;
     if (this.lanternGlows) for (const l of this.lanternGlows) l.intensity = 0.2 + s.night * 3.4;
 
+    // Same for the fire pit. Read off the live node rather than a cached
+    // reference, so selling the decoration can't leave a dangling light.
+    const fire = this.decorNodes.firepit;
+    if (fire) fire.userData.light.intensity = 0.7 + s.night * 4.2;
+
     return s;
   }
 
@@ -1368,6 +1502,18 @@ export class World {
       this.motes.material.opacity = 0.9 + shake * 0.1;
       this.motes.material.size = 0.22 + shake * 0.22;
     }
+
+    const fire = this.decorNodes.firepit;
+    if (fire){
+      fire.userData.flames.forEach((f, i) => {
+        f.scale.y = 0.75 + Math.sin(t * 9 + i * 1.7) * 0.3 * ambient;
+        f.rotation.y = t * 1.4 + i;
+        f.material.emissiveIntensity = 0.8 + Math.sin(t * 11 + i) * 0.25;
+      });
+    }
+
+    const mill = this.decorNodes.windmill;
+    if (mill) mill.userData.hub.rotation.z = t * 0.55;
 
     if (this.fountainJets){
       this.fountainJets.forEach((j, i) => {
