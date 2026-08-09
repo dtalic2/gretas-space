@@ -17,6 +17,7 @@ import { CROPS, ANIMALS, DECOR, CHARMS, SHOP_UNLOCKS, MAGIC_UNLOCKS,
          TOOLS, DIG_REFUND, DRAGON_UNLOCK, MANSION_UNLOCK, VOID_UNLOCK,
          CAP_DEAL_OFF, CAP_PLOT_OFF, CAP_SEED_SAVE, CAP_DIG_BACK, CAP_LUCK } from './data.js';
 import { fmtNum, fmtTime } from './format.js';
+import { weatherLabel } from './sky.js';
 
 const HOTBAR_KEYS = 9;   // number keys 1-9; Q cycles beyond that
 
@@ -1328,6 +1329,7 @@ function frame(nowMs){
     syncAcc = 0;
     garden.sync(Date.now(), growthMult());
     updateFocus();
+    ui.setWeather(weatherLabel(Date.now()));
   }
 
   // Harvest particle bursts.

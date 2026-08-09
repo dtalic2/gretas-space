@@ -10,6 +10,7 @@ export class UI {
 
     this.el = {
       hud:$('hud'), coins:$('coinCount'), lvl:$('lvlCount'),
+      weather:$('weatherChip'), weatherIco:$('weatherIco'), weatherText:$('weatherText'),
       hotbar:$('hotbar'), prompt:$('prompt'), promptText:$('promptText'),
       toasts:$('toasts'),
       shop:$('shop'), shopTitle:$('shopTitle'), shopCoins:$('shopCoins'),
@@ -53,6 +54,21 @@ export class UI {
   }
 
   setBulk(owned){ this.el.btnBulk.classList.toggle('hidden', !owned); }
+
+  /**
+   * Time of day, and whether the rain bonus is currently running. Called often,
+   * so it bails out unless something actually changed.
+   */
+  setWeather(w){
+    if (this._weather === w.text) return;
+    this._weather = w.text;
+    this.el.weatherIco.textContent = w.ico;
+    this.el.weatherText.textContent = w.boosted ? `${w.text} +20%` : w.text;
+    this.el.weather.classList.toggle('boost', !!w.boosted);
+    this.el.weather.title = w.boosted
+      ? 'Rain — your crops are growing 20% faster'
+      : 'Time of day';
+  }
 
   showHUD(){
     this.el.hud.classList.remove('hidden');

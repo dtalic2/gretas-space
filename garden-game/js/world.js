@@ -1,6 +1,7 @@
 // ---------- Scene, terrain, props, ambience ----------
 import * as THREE from 'three';
 import { GRID } from './data.js';
+import { skyAt } from './sky.js';
 
 export const PLOT_SPACING = 2.3;
 export const GARDEN_Y = 0.32;          // top surface of the raised bed
@@ -27,6 +28,22 @@ export const STATIONS = {
 
 const lam = (color, flat = true) => new THREE.MeshLambertMaterial({ color, flatShading: flat });
 
+// The four moods the sky blends between. Grouped here so the whole look of the
+// garden is legible in one place instead of scattered through the frame loop.
+// sunI/hemiI are light intensities; everything else is a colour.
+const PALETTE = {
+  day:   { top:0x2e8bd6, mid:0x8ecae6, bottom:0xdff3f8, fog:0xbfe3f2,
+           sun:0xfff3d6, hemiSky:0xcfe8ff, hemiGround:0x5a7a3a, sunI:1.60, hemiI:0.85 },
+  dusk:  { top:0x2b3f7a, mid:0xff9e6b, bottom:0xffd7a3, fog:0xe6a079,
+           sun:0xff9a5c, hemiSky:0xffb98a, hemiGround:0x4a4030, sunI:1.15, hemiI:0.55 },
+  // Night is lifted off true black on purpose: it has to read as night without
+  // making the plots you're trying to tend guesswork.
+  night: { top:0x080d24, mid:0x141e44, bottom:0x243057, fog:0x18213c,
+           sun:0xa8c2ff, hemiSky:0x3c5090, hemiGround:0x1c2a1e, sunI:0.50, hemiI:0.44 },
+  rain:  { top:0x46525e, mid:0x78838f, bottom:0x9aa4ac, fog:0x828c95,
+           sun:0xc8d4e0, hemiSky:0x8d99a5, hemiGround:0x3d4a3a, sunI:0.55, hemiI:0.50 },
+};
+
 // Scales all background motion (clouds, butterflies, livestock, magic motes).
 let ambient = 1;
 export function setWorldMotion(style){ ambient = style?.ambient ?? 1; }
@@ -48,6 +65,8 @@ export class World {
     this._buildStations();
     this._buildScenery();
     this._buildAmbience();
+    this._buildRain();
+    this._applyWeather(Date.now(), 0);   // start on the right palette, don't fade in from noon
   }
 
   // ---------------- core ----------------
@@ -91,11 +110,13 @@ export class World {
         }`,
     });
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(180, 32, 20), skyMat);
+    this.skyUniforms = skyMat.uniforms;
     this.scene.add(this.sky);
   }
 
   _initLights(){
-    this.scene.add(new THREE.HemisphereLight(0xcfe8ff, 0x5a7a3a, 0.85));
+    this.hemi = new THREE.HemisphereLight(0xcfe8ff, 0x5a7a3a, 0.85);
+    this.scene.add(this.hemi);
 
     const sun = new THREE.DirectionalLight(0xfff3d6, 1.6);
     sun.position.set(14, 22, 10);
@@ -993,6 +1014,7 @@ export class World {
       const l = new THREE.PointLight(0xffb347, 1.5, 9, 2);
       l.position.set(x, 2.5, z); g.add(l);
       this.lanternLights.push(lamp);
+      (this.lanternGlows ||= []).push(l);
     }
     return g;
   }
@@ -1219,7 +1241,102 @@ export class World {
   }
 
   // ---------------- loop ----------------
+  // ---------------- weather ----------------
+  /**
+   * A column of falling streaks that stays centred on the camera, so it always
+   * rains where you're standing without simulating the whole meadow.
+   */
+  _buildRain(){
+    const N = 1100;
+    const pos = new Float32Array(N * 6);      // each streak is two endpoints
+    this.rainSpeed = new Float32Array(N);
+    for (let i = 0; i < N; i++){
+      const x = (Math.random() - 0.5) * 62, y = Math.random() * 30, z = (Math.random() - 0.5) * 62;
+      const len = 0.45 + Math.random() * 0.5;
+      pos[i*6]   = x; pos[i*6+1] = y;       pos[i*6+2] = z;
+      pos[i*6+3] = x; pos[i*6+4] = y + len; pos[i*6+5] = z;
+      this.rainSpeed[i] = 26 + Math.random() * 16;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    this.rain = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({
+      color:0xbdd9ee, transparent:true, opacity:0, depthWrite:false,
+    }));
+    this.rain.frustumCulled = false;   // the streaks are recycled around the camera
+    this.rain.visible = false;
+    this.scene.add(this.rain);
+  }
+
+  _updateRain(dt, amount){
+    this.rain.visible = amount > 0.01;
+    if (!this.rain.visible) return;
+    this.rain.material.opacity = 0.55 * amount;
+
+    const a = this.rain.geometry.attributes.position.array;
+    const cam = this.camera.position;
+    const top = cam.y + 22, bottom = cam.y - 6;
+    for (let i = 0; i < this.rainSpeed.length; i++){
+      const k = i * 6;
+      const fall = this.rainSpeed[i] * dt;
+      a[k+1] -= fall; a[k+4] -= fall;
+      if (a[k+1] < bottom){                       // recycle to the top, near the camera
+        const len = a[k+4] - a[k+1];
+        const x = cam.x + (Math.random() - 0.5) * 62;
+        const z = cam.z + (Math.random() - 0.5) * 62;
+        a[k] = x; a[k+2] = z; a[k+3] = x; a[k+5] = z;
+        a[k+1] = top; a[k+4] = top + len;
+      }
+    }
+    this.rain.geometry.attributes.position.needsUpdate = true;
+  }
+
+  /**
+   * Drive sky, fog and lights from the clock. Blends night -> day, warms the
+   * edges of the day, then washes the whole thing grey while it rains.
+   */
+  _applyWeather(now){
+    const s = skyAt(now);
+    const w = (this._wx ||= { c:new THREE.Color(), t:new THREE.Color() });
+
+    const col = (key) => {
+      w.c.setHex(PALETTE.night[key]).lerp(w.t.setHex(PALETTE.day[key]), s.day);
+      w.c.lerp(w.t.setHex(PALETTE.dusk[key]), s.dusk);
+      w.c.lerp(w.t.setHex(PALETTE.rain[key]), s.rain * 0.85);
+      return w.c;
+    };
+    const num = (key) => {
+      let v = PALETTE.night[key] + (PALETTE.day[key] - PALETTE.night[key]) * s.day;
+      v += (PALETTE.dusk[key] - v) * s.dusk;
+      v += (PALETTE.rain[key] - v) * s.rain * 0.85;
+      return v;
+    };
+
+    this.skyUniforms.top.value.copy(col('top'));
+    this.skyUniforms.mid.value.copy(col('mid'));
+    this.skyUniforms.bottom.value.copy(col('bottom'));
+    this.scene.fog.color.copy(col('fog'));
+    this.sun.color.copy(col('sun'));
+    this.hemi.color.copy(col('hemiSky'));
+    this.hemi.groundColor.copy(col('hemiGround'));
+    this.sun.intensity = num('sunI');
+    this.hemi.intensity = num('hemiI');
+
+    // The light swings east to west and comes from the far side after dark, so
+    // shadows keep moving rather than freezing the moment the sun dims.
+    const ang = s.phase * Math.PI * 2;
+    this.sun.position.set(Math.cos(ang) * 24, 9 + Math.abs(s.elev) * 19, 11 + Math.sin(ang) * 8);
+
+    // Lanterns earn their keep after dark. The flicker stays in update().
+    this.lanternNight = 0.4 + s.night * 1.6;
+    if (this.lanternGlows) for (const l of this.lanternGlows) l.intensity = 0.2 + s.night * 3.4;
+
+    return s;
+  }
+
   update(dt, elapsed){
+    const s = this._applyWeather(Date.now());
+    this._updateRain(dt, s.rain);
+
     const t = elapsed * ambient;
     for (const c of this.clouds.children){
       c.position.x += c.userData.speed * dt * ambient;
@@ -1262,8 +1379,9 @@ export class World {
       this.pondWater.material.color.setHSL(0.55, 0.62, 0.5 + Math.sin(elapsed * 1.1) * 0.04);
     }
     if (this.lanternLights){
+      const night = this.lanternNight ?? 1;
       for (let i = 0; i < this.lanternLights.length; i++){
-        this.lanternLights[i].material.emissiveIntensity = 0.75 + Math.sin(elapsed * 3 + i) * 0.2;
+        this.lanternLights[i].material.emissiveIntensity = (0.75 + Math.sin(elapsed * 3 + i) * 0.2) * night;
       }
     }
 

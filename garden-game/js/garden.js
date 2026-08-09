@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { CROPS, WATER_BOOST, THIRST_AT, PLOT_MAX } from './data.js';
 import { buildCrop, updateCrop, makeIcon } from './crops.js';
+import { growTime, isRaining, RAIN_BONUS } from './sky.js';
 
 // Thirsty crops crawl, they never fully stall. Charms can raise this and speed
 // up perennial regrowth, so both are settable from outside.
@@ -13,6 +14,12 @@ const CROP_LIGHT_BUDGET = 6;  // most dynamic crop lights allowed at once
 
 /**
  * Fraction 0..1 of a timed cycle, closed-form so offline time works.
+ *
+ * Every elapsed span is measured on the weather-warped axis from sky.js rather
+ * than in raw ms, which is what lets rain speed crops up without disturbing
+ * growth that already happened. Warping is monotonic, so a crop never goes
+ * backwards when a shower ends.
+ *
  * @param {number} startMs     when the cycle began
  * @param {number} durationSec its length at 1x speed
  * @param {object} plot        for the watering state
@@ -22,6 +29,8 @@ const CROP_LIGHT_BUDGET = 6;  // most dynamic crop lights allowed at once
 function cycleFraction(startMs, durationSec, plot, now, mult){
   const growMs = (durationSec * 1000) / Math.max(0.01, mult);
   const thirstMs = growMs * THIRST_AT;
+  const gStart = growTime(startMs);
+  const gNow   = growTime(now);
 
   // Progress accrued while un-watered.
   const dry = (elapsed) => elapsed <= thirstMs
@@ -29,10 +38,11 @@ function cycleFraction(startMs, durationSec, plot, now, mult){
     : (thirstMs + (elapsed - thirstMs) * unwateredSpeed) / growMs;
 
   if (!plot.watered || !plot.boostFrom){
-    return Math.min(1, dry(Math.max(0, now - startMs)));
+    return Math.min(1, dry(Math.max(0, gNow - gStart)));
   }
-  const atWater = dry(Math.max(0, plot.boostFrom - startMs));
-  const since = Math.max(0, now - plot.boostFrom) * WATER_BOOST;
+  const gWater = growTime(plot.boostFrom);
+  const atWater = dry(Math.max(0, gWater - gStart));
+  const since = Math.max(0, gNow - gWater) * WATER_BOOST;
   return Math.min(1, atWater + since / growMs);
 }
 
@@ -82,7 +92,11 @@ export function secondsLeft(plot, now, mult){
   const remaining = (1 - cyc.fraction) * growMs;
   const speed = plot.watered ? WATER_BOOST
               : (cyc.fraction >= THIRST_AT ? unwateredSpeed : 1);
-  return Math.max(0, remaining / speed / 1000);
+  // `remaining` is in grow-time; convert back to wall-clock at the rate the
+  // weather is running right now. If the sky changes mid-wait the countdown
+  // re-settles on the next frame, which is close enough for a HUD readout.
+  const weather = isRaining(now) ? 1 + RAIN_BONUS : 1;
+  return Math.max(0, remaining / speed / weather / 1000);
 }
 
 export class Garden {

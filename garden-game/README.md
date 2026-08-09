@@ -405,6 +405,49 @@ The whole thing costs well under a millisecond per frame for the whole bed, and 
 *less* work than the old approach because meshes are never rebuilt mid-life. Timings are
 all in the `addPart` calls in [`js/crops.js`](js/crops.js).
 
+## Day, night and rain
+
+The garden runs a **four-minute day/night cycle** and gets a **shower once per cycle**,
+lasting 42 seconds. Crops grow **20% faster while it's raining**, on top of watering rather
+than instead of it — a watered crop in the rain runs at 2.0 × 1.2 = 2.4×.
+
+Everything in [`js/sky.js`](js/sky.js) is a pure function of absolute epoch time, and
+nothing about the weather is saved. That's deliberate: growth is derived from timestamps so
+a garden keeps growing with the tab shut, and the weather has to be reconstructible for any
+moment — past or future — or the two disagree the instant you come back.
+
+### Why rain isn't a multiplier
+
+The obvious implementation is to fold `1.2` into the global growth multiplier while it
+rains. That's wrong here, and visibly so. Progress is computed as a function of
+`now - planted`, so raising the multiplier rewrites the **entire history** of every crop:
+the moment a shower starts, every plant in the garden jumps forward, and when it stops they
+all snap backward.
+
+Instead the *time axis* is warped. `growTime(t)` maps wall-clock to accumulated growth
+time, where a millisecond of rain is worth 1.2, and growth is measured as the difference
+between two points on that warped axis:
+
+```js
+growTime(t) = cycles × (DAY_MS + 0.2 × RAIN_MS) + into + 0.2 × wetSoFar
+```
+
+It's monotonic, so crops never run backwards; closed-form, so three days offline costs one
+multiply rather than a thousand loop iterations; and exact, because past growth is already
+baked into the earlier point and can't be retroactively changed.
+
+The shower's *timing* varies per cycle (hashed from the cycle index, so it's deterministic
+without being regular) but its *duration* is fixed — that's what keeps the closed form
+available, since any whole cycle contributes exactly `RAIN_MS` of rain.
+
+`isRaining()` deliberately keys off the same hard window that pays the bonus, while
+`rainAt()` adds soft 4-second edges used only for fading the visuals in and out, so the HUD
+can never claim a bonus the crops aren't getting.
+
+Visually: sky, fog, sun colour, sun arc and hemisphere light blend across four palettes
+(day → dusk → night, then washed grey by rain), lanterns brighten after dark, and rain is
+1,100 recycled line-segment streaks kept centred on the camera.
+
 ## Other behaviour worth knowing
 
 - **Offline growth.** Crops keep growing while the tab is closed, capped at 8 hours.
@@ -425,6 +468,7 @@ js/main.js          bootstrap, game loop, interactions, economy
 js/world.js         scene, terrain, stalls, magic tree, decor, ambience
 js/player.js        character rig, movement, third-person orbit camera
 js/garden.js        the plot grid: growth maths, fruit cycles, mesh swapping, particles
+js/sky.js           day/night cycle + rain, as pure functions of the clock
 js/crops.js         per-crop meshes + the continuous growth animation
 js/ui.js            HUD, shops, toasts, WebAudio sound
 js/save.js          persistence, offline time, levelling

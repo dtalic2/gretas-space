@@ -73,6 +73,20 @@ body{
 .chip .ico{font-size:19px; filter:saturate(1.15)}
 .chip b{font-variant-numeric:tabular-nums}
 .chip.coins b{color:#c98a12}
+/* Weather readout. Goes blue and pulses while the rain bonus is running, so a
+   glance at the HUD tells you crops are moving faster than usual. */
+.chip.weather{transition:background .6s ease, border-color .6s ease}
+.chip.weather.boost{
+  background:#dcefff; border-color:#4f8ec4;
+  box-shadow:0 4px 0 #35709f, 0 0 0 4px rgba(110,170,220,.32);
+  animation:rainpulse 2.2s ease-in-out infinite;
+}
+.chip.weather.boost b{color:#1f6ea8}
+@keyframes rainpulse{
+  0%,100%{box-shadow:0 4px 0 #35709f, 0 0 0 4px rgba(110,170,220,.32)}
+  50%    {box-shadow:0 4px 0 #35709f, 0 0 0 9px rgba(110,170,220,.10)}
+}
+@media (prefers-reduced-motion:reduce){ .chip.weather.boost{animation:none} }
 .chip.btn{
   pointer-events:auto; cursor:pointer; font-size:16px; width:44px; height:44px;
   padding:0; justify-content:center; font-weight:900;
