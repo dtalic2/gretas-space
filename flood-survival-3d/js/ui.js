@@ -120,6 +120,18 @@ export class UI {
     if (state.houseDone) return say('The roof platform is up. <b>Climb it before the surge.</b>', 'house');
     if (state.boatDone) return say('The boat floats. <b>Be aboard on the last night.</b>', 'boat');
 
+    // Before the first sale, walk them through it. $10 buys nothing at the depot,
+    // so pointing at the build site first would be advice they cannot take.
+    if (state.sales === 0){
+      if (state.carried < 3 && state.shelfCount() === 0 && state.crafts.length === 0){
+        return say('First job: follow the arrow and <b>hold E to gather</b>.', 'node');
+      }
+      if (state.shelfCount() === 0 && state.crafts.length === 0){
+        return say('Now <b>press E at your stall</b> and make something to sell.', 'stall');
+      }
+      return say('Stay near the stall — <b>a neighbour will come and buy it.</b>', 'stall');
+    }
+
     if (state.money < 6 && state.carried === 0 && state.shelfCount() === 0){
       return say('Broke. <b>Hold E at a gather site</b> to fill your satchel, then make something at your stall.', 'node');
     }
