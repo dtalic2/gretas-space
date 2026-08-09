@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#8ecae6">
+<title>3x3 Garden 3D</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+
+<!-- ============ LOADING ============ -->
+<div id="boot">
+  <div class="boot-inner">
+    <div class="boot-logo">3<span>×</span>3</div>
+    <div class="boot-title">Garden 3D</div>
+    <div class="boot-bar"><i></i></div>
+    <div class="boot-msg">Growing the world…</div>
+  </div>
+</div>
+
+<!-- ============ HUD ============ -->
+<div id="hud" class="hidden">
+
+  <div class="hud-top">
+    <div class="hud-group">
+      <div class="chip coins"><span class="ico">🪙</span><b id="coinCount">0</b></div>
+      <div class="chip lvl"><span class="ico">🌱</span>Level <b id="lvlCount">1</b></div>
+      <div class="chip weather" id="weatherChip" title="Time of day"><span class="ico" id="weatherIco">☀️</span><b id="weatherText">Day</b></div>
+    </div>
+    <div class="hud-group right">
+      <button class="chip btn hidden" id="btnBulk" title="Tend the whole garden (F)">⚡</button>
+      <button class="chip btn hidden" id="btnDig" title="Dig up a plant (G)">🪏</button>
+      <button class="chip btn" id="btnBag" title="Your things (B)">🎒</button>
+      <button class="chip btn" id="btnSettings" title="Settings">⚙️</button>
+      <button class="chip btn" id="btnHelp" title="Help">?</button>
+    </div>
+  </div>
+
+  <!-- seed hotbar -->
+  <div class="hud-hotbar" id="hotbar"></div>
+
+  <!-- contextual prompt -->
+  <div class="hud-prompt hidden" id="prompt">
+    <span class="key">E</span><span id="promptText">Plant</span>
+  </div>
+
+  <div class="hud-toasts" id="toasts"></div>
+
+  <div class="hud-controls">
+    <b>Click</b> a plot to tend it · <b>WASD</b> move · <b>Q</b>/<b>1-9</b> pick seed · <b>drag</b> look · <b>scroll</b> zoom
+  </div>
+</div>
+
+<!-- ============ SHOP MODAL ============ -->
+<div id="shop" class="overlay hidden">
+  <div class="panel shop-panel">
+    <div class="shop-head">
+      <h2 id="shopTitle">Seed Shop</h2>
+      <div class="shop-coins">🪙 <b id="shopCoins">0</b></div>
+      <button class="x" id="shopClose">✕</button>
+    </div>
+    <div class="shop-tabs" id="shopTabs"></div>
+    <div class="shop-grid" id="shopGrid"></div>
+    <div class="shop-note" id="shopNote"></div>
+  </div>
+</div>
+
+<!-- ============ HELP MODAL ============ -->
+<div id="help" class="overlay hidden">
+  <div class="panel help-panel">
+    <button class="x" id="helpClose">✕</button>
+    <h2>🌻 How to play</h2>
+    <ol>
+      <li><b>Tap or click any plot</b> to tend it — you don't have to walk over. Point at one to see how grown its fruit is.</li>
+      <li><b>Walk</b> with WASD, the arrow keys or the on-screen stick. Drag to look around; pinch with two fingers or scroll to zoom.</li>
+      <li>Pick a seed from the hotbar — click it, press <b>1</b>–<b>9</b>, or tap <b>Q</b> to cycle. Then tap a bare plot to plant it.</li>
+      <li>Crops get thirsty halfway through — a 💧 appears. Tap to <b>water</b> them and they grow twice as fast.</li>
+      <li>When a crop sparkles ✨ it's ripe. Tap to <b>harvest</b> it for coins.</li>
+      <li>The garden runs on its own <b>day and night</b> cycle — the sun arcs over, dusk turns everything gold, and after dark the lanterns and magic trees are what light the place. A full day takes four minutes.</li>
+      <li>Showers roll through, and everything grows <b>20% faster while it's raining</b> ☔ — on top of watering, not instead of it. The chip beside your level says <b>Rain +20%</b> whenever the bonus is running, and it keeps ticking over while you're away.</li>
+      <li><b>Trees and vines</b> are never dug up — you pick their fruit and the plant stays, growing more.</li>
+      <li>Spend coins at the <b>Seed Shop</b> — a new variety unlocks at nearly every level, forty in all. The <b>Animal Pen</b> stocks twenty-one animals that speed up crops, raise sale prices or improve your luck, and the <b>Carpenter</b> sells <b>extra soil plots</b> and fifteen decorations — the <b>🔥 Fire Pit</b> lights the garden after dark and the <b>🌀 Windmill</b> turns on its own.</li>
+      <li>The <b>Market</b> has one seed heavily discounted at a time. The glowing <b>Magic Tree</b> sells eleven rare seeds you can't buy anywhere else, plus permanent <b>charms</b> that speed up the whole garden.</li>
+      <li>Rich enough? Buy a <b>Magic Sapling</b> at the Magic Tree for your own free-seed tree, then move on to the <b>🔮 Magic Market</b>, the <b>🌟 Super Magic Tree</b> (100 mythic plants) and the <b>🌌 Enchanted Realm</b> the <b>🐲 Dragon Cave</b>, the <b>🏰 Magic Mansion</b> and finally the <b>♾️ Infinity Void</b>.</li>
+      <li>The <b>Carpenter</b> also sells tools: a <b>🚿 Sprinkler</b>, a <b>🧺 Harvest Basket</b> and a <b>🌾 Seed Drill</b>. Own any of them and an <b>⚡</b> button appears that tends the whole garden in one press.</li>
+      <li>Bought the <b>🪏 Shovel</b>? Toggle it (or press <b>G</b>) and tap a plant to dig it up for half its seed price — the only way to free a plot a tree is sitting on.</li>
+      <li>Press <b>B</b> or the 🎒 button to see everything you own, and <b>⚙️</b> to change the animation style.</li>
+    </ol>
+    <p class="help-foot">Your garden keeps growing while you're away, so come back to a full harvest.</p>
+    <button class="big-btn" id="helpPlay">Back to the garden</button>
+  </div>
+</div>
+
+<!-- ============ MOBILE STICK ============ -->
+<div id="stick" class="hidden"><i></i></div>
+<button id="mobileE" class="hidden" aria-label="Interact">✋</button>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

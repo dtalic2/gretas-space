@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5fb0d6"/>
+      <stop offset="1" stop-color="#8ecae6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#sky)"/>
+  <path d="M0 330h512v182H0z" fill="#6db33f"/>
+  <path d="M0 330h512v34H0z" fill="#5da032"/>
+
+  <!-- raised bed -->
+  <rect x="96" y="316" width="320" height="132" rx="16" fill="#8b5e34"/>
+  <rect x="116" y="332" width="280" height="100" rx="8" fill="#4a3320"/>
+
+  <!-- three sprouts -->
+  <g fill="#4c9a2a">
+    <rect x="172" y="352" width="12" height="56" rx="6"/>
+    <rect x="250" y="340" width="12" height="68" rx="6"/>
+    <rect x="328" y="352" width="12" height="56" rx="6"/>
+  </g>
+  <g fill="#8fd14f">
+    <ellipse cx="158" cy="356" rx="26" ry="12"/>
+    <ellipse cx="198" cy="356" rx="26" ry="12"/>
+    <ellipse cx="236" cy="344" rx="26" ry="12"/>
+    <ellipse cx="276" cy="344" rx="26" ry="12"/>
+    <ellipse cx="314" cy="356" rx="26" ry="12"/>
+    <ellipse cx="354" cy="356" rx="26" ry="12"/>
+  </g>
+  <circle cx="256" cy="330" r="16" fill="#ef7d2e"/>
+
+  <!-- sun -->
+  <circle cx="404" cy="116" r="46" fill="#f6c453"/>
+
+  <!-- 3x3 -->
+  <text x="120" y="196" font-family="Trebuchet MS, system-ui, sans-serif" font-size="132"
+        font-weight="bold" fill="#fffaf0">3<tspan fill="#f6c453">×</tspan>3</text>
+</svg>

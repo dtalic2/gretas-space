@@ -1,0 +1,302 @@
+/* ---------- 3x3 Garden 3D ---------- */
+:root{
+  --ink:#2b2016;
+  --cream:#fffaf0;
+  --panel:#fffdf7;
+  --wood:#8b5e34;
+  --wood-dark:#5f3f22;
+  --leaf:#4c9a2a;
+  --leaf-dark:#2f6b18;
+  --sun:#f6c453;
+  --berry:#e0575b;
+  --sky:#8ecae6;
+  --shadow:0 12px 30px rgba(43,32,22,.28), 0 3px 8px rgba(43,32,22,.18);
+  --round:18px;
+  font-synthesis-weight:none;
+}
+
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{height:100%; overflow:hidden}
+body{
+  background:#0d1b14;
+  overscroll-behavior:none;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-user-select:none;
+  font-family:"Baloo 2","Nunito","Trebuchet MS",system-ui,-apple-system,sans-serif;
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  user-select:none;
+  touch-action:none;
+}
+#scene{position:fixed; inset:0; width:100%; height:100%; display:block; cursor:grab}
+#scene:active{cursor:grabbing}
+.hidden{display:none !important}
+
+/* ---------- BOOT ---------- */
+#boot{
+  position:fixed; inset:0; z-index:50;
+  display:grid; place-items:center;
+  background:radial-gradient(circle at 50% 35%, #5fb0d6, #2f7d55 70%, #1d4d35);
+  transition:opacity .6s ease;
+}
+#boot.gone{opacity:0; pointer-events:none}
+.boot-inner{text-align:center; color:#fff; text-shadow:0 4px 0 rgba(0,0,0,.18)}
+.boot-logo{font-size:88px; font-weight:900; letter-spacing:-4px; line-height:1}
+.boot-logo span{color:var(--sun)}
+.boot-title{font-size:30px; font-weight:800; letter-spacing:2px; margin-top:2px; opacity:.95}
+.boot-bar{width:240px; height:10px; border-radius:99px; background:rgba(255,255,255,.25); margin:26px auto 12px; overflow:hidden}
+.boot-bar i{display:block; height:100%; width:0%; border-radius:99px; background:var(--sun); transition:width .3s ease}
+.boot-msg{font-size:14px; opacity:.85; letter-spacing:.5px}
+
+/* ---------- HUD ---------- */
+#hud{position:fixed; inset:0; z-index:10; pointer-events:none; font-weight:700}
+.hud-top{
+  position:absolute;
+  top:calc(16px + env(safe-area-inset-top));
+  left:calc(16px + env(safe-area-inset-left));
+  right:calc(16px + env(safe-area-inset-right));
+  display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
+}
+.hud-group{display:flex; gap:10px; align-items:center; flex-wrap:wrap; min-width:0}
+.hud-group.right{justify-content:flex-end}
+
+.chip{
+  background:var(--panel);
+  border:3px solid var(--wood);
+  border-radius:99px;
+  padding:8px 16px;
+  font-size:17px;
+  box-shadow:0 4px 0 var(--wood-dark), 0 8px 18px rgba(0,0,0,.22);
+  display:flex; align-items:center; gap:8px;
+  white-space:nowrap;
+}
+.chip .ico{font-size:19px; filter:saturate(1.15)}
+.chip b{font-variant-numeric:tabular-nums}
+.chip.coins b{color:#c98a12}
+/* Weather readout. Goes blue and pulses while the rain bonus is running, so a
+   glance at the HUD tells you crops are moving faster than usual. */
+.chip.weather{transition:background .6s ease, border-color .6s ease}
+.chip.weather.boost{
+  background:#dcefff; border-color:#4f8ec4;
+  box-shadow:0 4px 0 #35709f, 0 0 0 4px rgba(110,170,220,.32);
+  animation:rainpulse 2.2s ease-in-out infinite;
+}
+.chip.weather.boost b{color:#1f6ea8}
+@keyframes rainpulse{
+  0%,100%{box-shadow:0 4px 0 #35709f, 0 0 0 4px rgba(110,170,220,.32)}
+  50%    {box-shadow:0 4px 0 #35709f, 0 0 0 9px rgba(110,170,220,.10)}
+}
+@media (prefers-reduced-motion:reduce){ .chip.weather.boost{animation:none} }
+.chip.btn{
+  pointer-events:auto; cursor:pointer; font-size:16px; width:44px; height:44px;
+  padding:0; justify-content:center; font-weight:900;
+}
+.chip.btn:hover{background:#fff3d9}
+.chip.btn.on{background:var(--sun); border-color:#c79322; box-shadow:0 4px 0 #a87a17, 0 0 0 4px rgba(246,196,83,.35)}
+.chip.btn:active{transform:translateY(3px); box-shadow:0 1px 0 var(--wood-dark)}
+
+/* hotbar */
+.hud-hotbar{
+  position:absolute; left:50%; bottom:74px; transform:translateX(-50%);
+  display:flex; gap:10px; pointer-events:auto;
+  flex-wrap:wrap; justify-content:center;
+  max-width:min(92vw, 760px);
+}
+.slot{
+  width:66px; height:74px; border-radius:14px;
+  background:var(--panel); border:3px solid var(--wood);
+  box-shadow:0 4px 0 var(--wood-dark), 0 8px 18px rgba(0,0,0,.22);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  cursor:pointer; position:relative; transition:transform .12s ease, background .12s;
+}
+.slot:hover{background:#fff3d9}
+.slot.active{background:#ffeec2; transform:translateY(-8px); border-color:var(--sun)}
+.slot .emoji{font-size:30px; line-height:1}
+.slot .n{font-size:13px; opacity:.75; margin-top:2px}
+.slot .k{position:absolute; top:-9px; left:-7px; background:var(--wood); color:#fff; font-size:11px; border-radius:99px; padding:2px 7px}
+.slot.locked{opacity:.42; filter:grayscale(1)}
+
+/* prompt */
+.hud-prompt{
+  position:absolute; left:50%; bottom:170px; transform:translateX(-50%);
+  background:rgba(43,32,22,.88); color:#fff; padding:11px 20px 11px 12px;
+  border-radius:99px; font-size:19px; display:flex; align-items:center; gap:12px;
+  box-shadow:0 8px 22px rgba(0,0,0,.35); animation:pop .22s ease;
+}
+.hud-prompt .key{
+  background:var(--sun); color:var(--ink); font-weight:900;
+  width:32px; height:32px; border-radius:9px; display:grid; place-items:center;
+  box-shadow:0 3px 0 #c79322;
+}
+@keyframes pop{from{transform:translateX(-50%) scale(.85); opacity:0} to{transform:translateX(-50%) scale(1); opacity:1}}
+
+.hud-controls{
+  position:absolute; left:50%; bottom:16px; transform:translateX(-50%);
+  color:#fff; font-size:13px; font-weight:600; opacity:.72;
+  text-shadow:0 2px 6px rgba(0,0,0,.8); white-space:nowrap;
+}
+.hud-controls b{color:var(--sun)}
+
+/* toasts */
+.hud-toasts{position:absolute; right:20px; top:78px; display:flex; flex-direction:column; gap:8px; align-items:flex-end}
+.toast{
+  background:var(--panel); border:3px solid var(--wood); border-radius:14px;
+  padding:9px 16px; font-size:16px; box-shadow:var(--shadow);
+  animation:slideIn .28s cubic-bezier(.2,1.4,.4,1);
+}
+.toast.good{border-color:var(--leaf); background:#eefbe6}
+.toast.bad{border-color:var(--berry); background:#ffeceb}
+.toast.gold{border-color:var(--sun); background:#fff6df}
+.toast.out{animation:slideOut .3s ease forwards}
+@keyframes slideIn{from{transform:translateX(40px); opacity:0} to{transform:none; opacity:1}}
+@keyframes slideOut{to{transform:translateX(40px); opacity:0}}
+
+/* ---------- OVERLAYS ---------- */
+.overlay{
+  position:fixed; inset:0; z-index:30;
+  background:rgba(20,32,24,.55); backdrop-filter:blur(5px);
+  display:grid; place-items:center; padding:20px;
+  animation:fade .18s ease;
+}
+@keyframes fade{from{opacity:0} to{opacity:1}}
+.panel{
+  background:var(--panel);
+  border:5px solid var(--wood);
+  border-radius:26px;
+  box-shadow:0 8px 0 var(--wood-dark), 0 26px 60px rgba(0,0,0,.4);
+  padding:26px;
+  position:relative;
+  animation:rise .26s cubic-bezier(.2,1.3,.4,1);
+  max-height:92vh; overflow:auto;
+}
+@keyframes rise{from{transform:translateY(26px) scale(.94); opacity:0} to{transform:none; opacity:1}}
+.panel .x{
+  position:absolute; top:14px; right:14px; width:38px; height:38px; border-radius:99px;
+  border:3px solid var(--wood); background:var(--cream); font-size:16px; font-weight:900;
+  cursor:pointer; color:var(--ink);
+}
+.panel .x:hover{background:#ffe0de; border-color:var(--berry)}
+
+.big-btn{
+  width:100%; margin-top:16px; padding:15px; font-size:21px; font-weight:900;
+  font-family:inherit; color:#fff; background:var(--leaf);
+  border:none; border-radius:15px; cursor:pointer;
+  box-shadow:0 5px 0 var(--leaf-dark);
+  transition:transform .1s;
+}
+.big-btn:hover{filter:brightness(1.07)}
+.big-btn:active{transform:translateY(4px); box-shadow:0 1px 0 var(--leaf-dark)}
+
+/* ---------- SHOP ---------- */
+.shop-panel{width:min(660px,100%)}
+.shop-head{display:flex; align-items:center; gap:14px; margin-bottom:16px; padding-right:44px}
+.shop-head h2{font-size:27px; font-weight:900}
+.shop-coins{margin-left:auto; font-size:20px; background:var(--cream); border:3px solid var(--wood); border-radius:99px; padding:5px 15px}
+.shop-tabs{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap}
+.shop-tabs button{
+  padding:9px 17px; font-size:15px; font-weight:800; font-family:inherit; color:var(--ink);
+  background:var(--cream); border:3px solid var(--wood); border-radius:99px; cursor:pointer;
+}
+.shop-tabs button.on{background:var(--sun); border-color:#c79322}
+.shop-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:13px}
+.card{
+  background:var(--cream); border:3px solid var(--wood); border-radius:17px;
+  padding:14px; text-align:center; cursor:pointer; transition:transform .12s;
+  box-shadow:0 4px 0 var(--wood-dark);
+}
+.card:hover{transform:translateY(-3px); background:#fff6e4}
+.card:active{transform:translateY(2px); box-shadow:0 1px 0 var(--wood-dark)}
+.card.cant{opacity:.45; cursor:not-allowed; filter:grayscale(.7)}
+.card.cant:hover{transform:none}
+/* Owned items in the inventory: full strength, just not clickable. */
+.card.readonly{cursor:default; border-color:var(--leaf)}
+.card.readonly:hover{transform:none; background:var(--cream)}
+.card.readonly:active{transform:none; box-shadow:0 4px 0 var(--wood-dark)}
+.card .emoji{font-size:42px; line-height:1}
+.card .nm{font-size:16px; font-weight:900; margin-top:6px}
+.card .meta{font-size:12px; opacity:.7; margin-top:3px; font-weight:700}
+.card .price{margin-top:9px; font-size:17px; font-weight:900; color:#c98a12}
+.card .owned{margin-top:9px; font-size:14px; font-weight:800; color:var(--leaf-dark)}
+.shop-note{margin-top:16px; font-size:13px; opacity:.7; font-weight:600; text-align:center}
+
+/* ---------- HELP ---------- */
+.help-panel{width:min(560px,100%)}
+.help-panel h2{font-size:27px; margin-bottom:14px}
+.help-panel ol{margin-left:20px; display:flex; flex-direction:column; gap:11px; font-size:16px; font-weight:600; line-height:1.45}
+.help-panel b{color:var(--leaf-dark)}
+.help-foot{margin-top:16px; font-size:14px; opacity:.72; font-weight:600; line-height:1.5}
+
+/* ---------- MOBILE ---------- */
+#stick{
+  position:fixed; left:26px; bottom:26px; width:126px; height:126px; z-index:12;
+  border-radius:50%; background:rgba(255,250,240,.2); border:4px solid rgba(255,255,255,.5);
+  touch-action:none;
+}
+#stick i{
+  position:absolute; left:50%; top:50%; width:56px; height:56px; margin:-28px 0 0 -28px;
+  border-radius:50%; background:rgba(255,250,240,.85); box-shadow:0 4px 14px rgba(0,0,0,.35);
+}
+#mobileE{
+  position:fixed; right:26px; bottom:34px; width:88px; height:88px; z-index:12;
+  border-radius:50%; font-size:30px; font-weight:900; font-family:inherit; color:var(--ink);
+  background:var(--sun); border:5px solid #fffaf0; box-shadow:0 6px 0 #c79322;
+}
+#mobileE:active{transform:translateY(4px); box-shadow:0 2px 0 #c79322}
+
+/* ---------- TOUCH / MOBILE ---------- */
+/* Gated on `body.touch` (set from a coarse-pointer check) as well as width, so a
+   narrow desktop window keeps the desktop layout and never grows thumb-sized
+   controls it has no use for. */
+body.touch .hud-controls{display:none}
+
+body.touch #stick,
+body.touch #mobileE{display:block}
+
+body.touch .chip.btn{width:48px; height:48px; font-size:19px}
+body.touch .slot{width:60px; height:66px}
+body.touch .card{padding:18px 14px}
+body.touch .shop-tabs button{padding:12px 20px; font-size:16px}
+body.touch .panel .x{width:46px; height:46px; font-size:19px}
+body.touch .big-btn{padding:18px}
+/* On touch the prompt is a status readout, not a key hint. */
+body.touch .hud-prompt .key{display:none}
+body.touch .hud-prompt{padding-left:18px}
+
+#stick{
+  left:calc(24px + env(safe-area-inset-left));
+  bottom:calc(24px + env(safe-area-inset-bottom));
+}
+#mobileE{
+  right:calc(24px + env(safe-area-inset-right));
+  bottom:calc(32px + env(safe-area-inset-bottom));
+}
+.overlay{
+  padding:calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right))
+          calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+}
+
+@media (max-width:760px){
+  .hud-controls{display:none}
+  /* Keep the top bar to a single row so it never collides with the hotbar. */
+  .chip{font-size:14px; padding:6px 11px; gap:6px}
+  .chip .ico{font-size:16px}
+  .chip.btn{width:38px; height:38px}
+  .hud-top{top:12px; left:12px; right:12px; gap:6px}
+  .hud-group{gap:6px}
+  .hud-hotbar{bottom:auto; top:64px; left:12px; right:12px; transform:none; gap:7px;
+              max-width:none; justify-content:flex-start}
+  .slot{width:52px; height:58px}
+  .slot .emoji{font-size:23px}
+  .slot .n{font-size:11px}
+  .slot .k{font-size:10px; padding:1px 6px}
+  .hud-prompt{
+    bottom:calc(168px + env(safe-area-inset-bottom));
+    font-size:16px; padding:9px 16px 9px 10px;
+    max-width:calc(100vw - 40px); text-align:center;
+  }
+  .hud-toasts{top:auto; bottom:calc(168px + env(safe-area-inset-bottom)); right:12px; left:12px; align-items:center}
+  .panel{padding:20px; border-radius:22px}
+  .shop-grid{grid-template-columns:repeat(auto-fill,minmax(132px,1fr)); gap:10px}
+  .shop-head h2{font-size:22px}
+  .toast{font-size:14px; padding:7px 12px}
+}
