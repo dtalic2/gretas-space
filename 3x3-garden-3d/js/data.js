@@ -405,6 +405,39 @@ export const TOOLS = {
 export const SHOVEL = TOOLS.shovel;
 export const DIG_REFUND = 0.5;   // fraction of the seed price handed back
 
+// ---------------- stock ----------------
+// Shops occasionally run out of things. Like the market deal, availability is
+// derived from the clock rather than stored, so it rotates on its own, survives
+// a reload, and keeps turning over while you're away.
+export const STOCK_ROTATE_SEC = 150;
+export const STOCK_OUT_RATE   = 0.25;   // roughly a quarter of a shelf at a time
+
+/** murmur3 finalizer — mixes high bits down so `% n` isn't reading raw low bits. */
+export function hash32(n){
+  let h = n | 0;
+  h ^= h >>> 16; h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13; h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+  return h >>> 0;
+}
+
+/** FNV-1a, so an item's id maps to a stable number. */
+function hashId(s){
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+
+export const stockBucket = (now = Date.now()) => Math.floor(now / (STOCK_ROTATE_SEC * 1000));
+export const stockSecsLeft = (now = Date.now()) =>
+  Math.ceil((STOCK_ROTATE_SEC * 1000 - (now % (STOCK_ROTATE_SEC * 1000))) / 1000);
+
+/** Is this item off the shelf in the current window? Pure function of id + clock. */
+export function isOutOfStock(id, bucket = stockBucket()){
+  const h = hash32(hashId(id) ^ Math.imul(bucket + 1, 0x9e3779b1));
+  return (h % 1000) < STOCK_OUT_RATE * 1000;
+}
+
 // ---- soil plots ----
 // The bed is 7x7 — 49 plots. You start with the middle 3x3 and buy the other 40
 // outward at the carpenter, each costing ~1.75x the one before.
@@ -438,8 +471,9 @@ export const WATER_BOOST = 2.0;   // growth multiplier once a crop has been wate
 export const THIRST_AT   = 0.40;  // crop becomes thirsty at 40% grown
 
 // Market: one seed type is discounted at a time, rotating on the clock.
-export const MARKET_DISCOUNT   = 0.40;
-export const MARKET_ROTATE_SEC = 180;
+// The markets don't rotate a single deal any more — the whole shelf is half off,
+// all the time. Charms stack on top, up to CAP_DEAL_OFF.
+export const MARKET_DISCOUNT   = 0.50;
 
 // ---- your own magic tree ----
 // A one-off purchase from the Magic Tree. Once planted in your garden it stocks

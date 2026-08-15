@@ -8,14 +8,15 @@ import { setCropMotion } from './crops.js';
 import { UI } from './ui.js';
 import * as Save from './save.js';
 import { CROPS, ANIMALS, DECOR, CHARMS, SHOP_UNLOCKS, MAGIC_UNLOCKS,
-         MARKET_DISCOUNT, MARKET_ROTATE_SEC,
+         MARKET_DISCOUNT,
          PLOT_MAX, PLOT_START, PLOT_ORDER, plotCost,
          MOTION_STYLES, DEFAULT_MOTION,
          OWN_TREE, OWN_TREE_RESTOCK_SEC, OWN_TREE_MIN_BATCH, OWN_TREE_MAX_BATCH,
          OWN_TREE_MAX_ITEMS,
          SUPER_UNLOCK, REALM_UNLOCK, SUPER_PAGE,
          TOOLS, DIG_REFUND, DRAGON_UNLOCK, MANSION_UNLOCK, VOID_UNLOCK,
-         CAP_DEAL_OFF, CAP_PLOT_OFF, CAP_SEED_SAVE, CAP_DIG_BACK, CAP_LUCK } from './data.js';
+         CAP_DEAL_OFF, CAP_PLOT_OFF, CAP_SEED_SAVE, CAP_DIG_BACK, CAP_LUCK,
+         isOutOfStock, stockSecsLeft } from './data.js';
 import { fmtNum, fmtTime } from './format.js';
 import { weatherLabel } from './sky.js';
 
@@ -330,7 +331,7 @@ function plotStatus(i){
 
 const STATION_LABELS = {
   seedshop:'Open the Seed Shop', animals:'Open the Animal Pen',
-  carpenter:'Open the Carpenter', market:'Browse the Market deal',
+  carpenter:'Open the Carpenter', market:'Browse the Market — half price',
   magictree:'Trade at the Magic Tree',
   owntree:'Your Magic Tree',
   magicmarket:'Browse the Magic Market',
@@ -628,6 +629,28 @@ function after(){
 }
 
 // ---------------- shops ----------------
+/**
+ * Which of these ids are off the shelf right now.
+ *
+ * The roll is per-item and clock-derived, but a shop that happened to run out
+ * of everything would be a dead end — especially the seed shop at level 1, where
+ * a player with no seeds and no coins would be stuck for good. So the cheapest
+ * items are put back until at least two things remain buyable.
+ */
+function outOfStockSet(ids, costOf = (id) => CROPS[id]?.cost ?? 0){
+  const out = new Set(ids.filter(id => isOutOfStock(id)));
+  const keep = Math.min(2, ids.length);
+  const short = keep - (ids.length - out.size);
+  if (short > 0){
+    [...out].sort((a, b) => costOf(a) - costOf(b))
+            .slice(0, short)
+            .forEach(id => out.delete(id));
+  }
+  return out;
+}
+
+const outOfStockMeta = () => `🚫 Out of stock · back in ${fmtTime(stockSecsLeft())}`;
+
 /** Buy any charm from anywhere. Returns false if it wasn't possible. */
 function buyCharm(id){
   const ch = CHARMS[id];
@@ -643,63 +666,49 @@ function buyCharm(id){
   return true;
 }
 
-/** murmur3 finalizer — mixes high bits down so `% n` isn't reading raw low bits. */
-function hash32(n){
-  let h = n | 0;
-  h ^= h >>> 16; h = Math.imul(h, 0x85ebca6b);
-  h ^= h >>> 13; h = Math.imul(h, 0xc2b2ae35);
-  h ^= h >>> 16;
-  return h >>> 0;
-}
-
-/**
- * One discounted item at a time, rotating on the clock. The pick is derived from
- * the clock rather than stored, so it rotates on its own and survives a reload.
- *
- * Adding the bucket to a per-round hash means consecutive buckets always land on
- * a different item, and every item comes up once per round — a fair rotation
- * rather than a random draw that can show the same deal twice in a row.
- *
- * All three markets share this; they differ only in which shelf they draw from.
- */
-function rotatingDeal(pool){
-  if (!pool.length) return null;
-  const n = pool.length;
-  const bucket = Math.floor(Date.now() / (MARKET_ROTATE_SEC * 1000));
-  const id = pool[(bucket + hash32(Math.floor(bucket / n))) % n];
-  const msLeft = MARKET_ROTATE_SEC * 1000 - (Date.now() % (MARKET_ROTATE_SEC * 1000));
-  return {
-    id,
-    price: Math.max(1, Math.round(CROPS[id].cost * (1 - marketOff()))),
-    secLeft: Math.ceil(msLeft / 1000),
-  };
-}
-
 const OFF = () => Math.round(marketOff() * 100);
 
-/** @param cfg {title, pool:()=>string[], empty:string, blurb:string, onBought?:Function} */
+/**
+ * The markets undercut every other shelf: the whole pool, permanently half off.
+ * They used to rotate one discounted seed at a time on a clock-derived pick —
+ * now there's nothing to rotate, so the shelf is simply everything you could buy
+ * elsewhere, at half the price.
+ *
+ * Sorted cheapest first, so the shelf reads as a progression the same way the
+ * Seed Shop lists in unlock order.
+ *
+ * @param cfg {title, pool:()=>string[], empty:string, blurb:string, onBought?:Function}
+ */
 function openDealShop(cfg){
-  const build = () => {
-    const deal = rotatingDeal(cfg.pool());
-    if (!deal) return { title:cfg.title, coins:state.coins, items:[], note:cfg.empty };
+  const priceOf = (id) => Math.max(1, Math.round(CROPS[id].cost * (1 - marketOff())));
+  // Shared by the cards and the buy re-check — see the note in `openSeedShop`.
+  const shelfOut = () => outOfStockSet(cfg.pool(), priceOf);
 
-    const c = CROPS[deal.id];
+  const build = () => {
+    const pool = cfg.pool().sort((a, b) => CROPS[a].cost - CROPS[b].cost);
+    if (!pool.length) return { title:cfg.title, coins:state.coins, items:[], note:cfg.empty };
+
+    const out = shelfOut();
     return {
       title: cfg.title,
       coins: state.coins,
       tabs: [],
-      note: `${cfg.blurb} Today's deal changes in ${fmtTime(deal.secLeft)}.`,
-      items: [{
-        id: deal.id, emoji:c.emoji, name:c.name,
-        meta: `${OFF()}% off · was ${fmtNum(c.cost)} · sells for ${fmtNum(c.sell)}`,
-        price: deal.price,
-        disabled: state.coins < deal.price,
-      }],
+      note: `${cfg.blurb} Everything on this shelf is ${OFF()}% off.`,
+      items: pool.map(id => {
+        const c = CROPS[id];
+        const gone = out.has(id);
+        const price = priceOf(id);
+        return {
+          id, emoji:c.emoji, name:c.name,
+          meta: gone ? outOfStockMeta()
+              : `${OFF()}% off · was ${fmtNum(c.cost)} · sells for ${fmtNum(c.sell)}`,
+          price,
+          disabled: gone || state.coins < price,
+        };
+      }),
       onBuy: (id) => {
-        // Re-read the deal: the clock may have turned between render and click.
-        const d = rotatingDeal(cfg.pool());
-        if (!d || d.id !== id){ ui.refreshShop(build()); return; }
-        if (!spend(d.price)) return;
+        if (shelfOut().has(id)) return;   // shelf turned over mid-click
+        if (!spend(priceOf(id))) return;
         state.seeds[id] = (state.seeds[id] || 0) + 1;
         cfg.onBought?.();
         ui.toast(`${CROPS[id].emoji} Bagged a cheap ${CROPS[id].name}`, 'gold');
@@ -715,7 +724,7 @@ function openDealShop(cfg){
 const openMarket = () => openDealShop({
   title:'🧺 Farmers Market',
   pool: () => Object.keys(CROPS).filter(id => !CROPS[id].rare && (SHOP_UNLOCKS[id] || 99) <= state.level),
-  blurb:'One seed from the shop, heavily discounted.',
+  blurb:'Every seed the Seed Shop stocks, at half what they charge.',
   empty:'The trader has nothing for you yet.',
 });
 
@@ -723,7 +732,7 @@ const openMagicMarket = () => openDealShop({
   title:'🔮 Magic Market',
   pool: () => Object.keys(CROPS).filter(id => CROPS[id].rare && !CROPS[id].tier
                                            && state.level >= (MAGIC_UNLOCKS[id] || 99)),
-  blurb:'A rare seed, heavily discounted.',
+  blurb:'Every rare seed the Magic Tree sells, at half price.',
   empty:'The magic trader deals in rare seeds. Come back once the Magic Tree will sell to you (level 3).',
   onBought: () => { world.shakeMagicTree(); ui.chime(); },
 });
@@ -732,7 +741,7 @@ const openSuperMarket = () => openDealShop({
   title:'💫 Super Magic Market',
   pool: () => state.level < SUPER_UNLOCK ? []
             : Object.keys(CROPS).filter(id => CROPS[id].tier === 'super'),
-  blurb:'One of the hundred mythic plants, heavily discounted.',
+  blurb:'All hundred mythic plants, at half what the Super Tree asks.',
   empty:`Sealed until level ${SUPER_UNLOCK}, same as the Super Magic Tree.`,
   onBought: () => { world.shakeMagicTree(); ui.chime(); },
 });
@@ -742,6 +751,11 @@ let magicTab = 'seeds';
 
 function openMagicTree(){
   magicTab = 'seeds';   // always open on the seeds; the tab only persists while it's open
+  // Shared by the cards and the buy re-check — see the note in `openSeedShop`.
+  const shelfOut = () => outOfStockSet(
+    Object.entries(CROPS)
+      .filter(([id, c]) => c.rare && !c.tier && state.level >= (MAGIC_UNLOCKS[id] || 99))
+      .map(([id]) => id));
   const build = () => {
     const cfg = {
       title:'✨ Magic Tree',
@@ -753,23 +767,28 @@ function openMagicTree(){
 
     if (magicTab === 'seeds'){
       cfg.note = 'Rare seeds are never stocked by the Seed Shop. They take a long while to ripen, but they are worth it.';
-      cfg.items = Object.entries(CROPS)
-        .filter(([, c]) => c.rare && !c.tier)
-        .map(([id, c]) => {
+      {
+        const rows = Object.entries(CROPS).filter(([, c]) => c.rare && !c.tier);
+        const out = shelfOut();
+        cfg.items = rows.map(([id, c]) => {
           const lvl = MAGIC_UNLOCKS[id] || 99;
           const locked = state.level < lvl;
+          const gone = !locked && out.has(id);
           return {
             id, emoji:c.emoji, name:c.name,
             meta: locked ? `Unlocks at level ${lvl}`
+                : gone ? outOfStockMeta()
                 : c.perennial ? `🌳 Keeps fruiting · ${fmtNum(c.sell)} every ${fmtTime(c.regrowSec)} · you have ${state.seeds[id] || 0}`
                 : `Sells for ${fmtNum(c.sell)} · ${fmtTime(c.growSec)} · you have ${state.seeds[id] || 0}`,
             price:c.cost,
-            disabled: locked || state.coins < c.cost,
+            disabled: locked || gone || state.coins < c.cost,
           };
         });
+      }
       cfg.onBuy = (id) => {
         const c = CROPS[id];
         if (state.level < (MAGIC_UNLOCKS[id] || 99)) return;
+        if (shelfOut().has(id)) return;
         if (!spend(c.cost)) return;
         state.seeds[id] = (state.seeds[id] || 0) + 1;
         world.shakeMagicTree();
@@ -910,6 +929,8 @@ function openTierShop({ title, tier, unlock, note, paged, charmId }){
                note:`Sealed until level ${unlock}. Keep growing.` };
     }
     const slice = paged ? all.slice(page * SUPER_PAGE, (page + 1) * SUPER_PAGE) : all;
+    // Rolled over the whole tier, not the page, so the shelf thins out evenly.
+    const out = outOfStockSet(all.map(([id]) => id));
 
     // The flagship charm rides at the top of the first page.
     const ch = charmId && CHARMS[charmId];
@@ -930,15 +951,20 @@ function openTierShop({ title, tier, unlock, note, paged, charmId }){
         : [],
       onTab: (id) => { page = Number(id); ui.refreshShop(build()); },
       note,
-      items: [...charmCard, ...slice.map(([id, c]) => ({
-        id, emoji:c.emoji, name:c.name,
-        meta:`Sells for ${fmtNum(c.sell)} · ${fmtTime(c.growSec)} · you have ${state.seeds[id] || 0}`,
-        price:c.cost,
-        disabled: state.coins < c.cost,
-      }))],
+      items: [...charmCard, ...slice.map(([id, c]) => {
+        const gone = out.has(id);
+        return {
+          id, emoji:c.emoji, name:c.name,
+          meta: gone ? outOfStockMeta()
+              : `Sells for ${fmtNum(c.sell)} · ${fmtTime(c.growSec)} · you have ${state.seeds[id] || 0}`,
+          price:c.cost,
+          disabled: gone || state.coins < c.cost,
+        };
+      })],
       onBuy: (id) => {
         if (CHARMS[id]){ if (buyCharm(id)) ui.refreshShop(build()); return; }
         const c = CROPS[id];
+        if (outOfStockSet(all.map(([i]) => i)).has(id)) return;
         if (!spend(c.cost)) return;
         state.seeds[id] = (state.seeds[id] || 0) + 1;
         world.shakeMagicTree();
@@ -979,29 +1005,43 @@ const openRealm = () => openTierShop({
 });
 
 function openSeedShop(){
+  // The shelf the cards are drawn from and the shelf `onBuy` re-checks have to
+  // be the same one. Asking about a single id instead would hit the floor in
+  // `outOfStockSet` — with one candidate it always keeps that one, so the
+  // re-check would pass for everything and never actually guard anything.
+  const shelfOut = () => outOfStockSet(
+    Object.entries(CROPS)
+      .filter(([id, c]) => !c.rare && state.level >= (SHOP_UNLOCKS[id] || 99))
+      .map(([id]) => id));
   const build = () => ({
     title:'🌱 Seed Shop',
     coins:state.coins,
     tabs:[],
     note:'Seeds unlock as you level up. Rare seeds only come from the Magic Tree.',
     // Listed in unlock order so the shelf reads as a progression.
-    items: Object.entries(CROPS)
-      .filter(([, c]) => !c.rare)
-      .sort((a, b) => (SHOP_UNLOCKS[a[0]] || 99) - (SHOP_UNLOCKS[b[0]] || 99) || a[1].cost - b[1].cost)
-      .map(([id, c]) => {
+    items: (() => {
+      const rows = Object.entries(CROPS)
+        .filter(([, c]) => !c.rare)
+        .sort((a, b) => (SHOP_UNLOCKS[a[0]] || 99) - (SHOP_UNLOCKS[b[0]] || 99) || a[1].cost - b[1].cost);
+      const out = shelfOut();
+      return rows.map(([id, c]) => {
         const unlockLvl = SHOP_UNLOCKS[id] || 99;
         const locked = state.level < unlockLvl;
+        const gone = !locked && out.has(id);
         return {
           id, emoji:c.emoji, name:c.name,
           meta: locked ? `Unlocks at level ${unlockLvl}`
+              : gone ? outOfStockMeta()
               : c.perennial ? `🌳 Keeps fruiting · ${fmtNum(c.sell)} every ${fmtTime(c.regrowSec)}`
               : `Sells for ${fmtNum(c.sell)} · ${fmtTime(c.growSec)}`,
           price:c.cost,
-          disabled: locked || state.coins < c.cost,
+          disabled: locked || gone || state.coins < c.cost,
         };
-      }),
+      });
+    })(),
     onBuy: (id) => {
       const c = CROPS[id];
+      if (shelfOut().has(id)) return;   // shelf turned over mid-click
       if (!spend(c.cost)) return;
       state.seeds[id] = (state.seeds[id] || 0) + 1;
       ui.toast(`${c.emoji} Bought 1 ${c.name} seed`, 'good');
@@ -1014,28 +1054,41 @@ function openSeedShop(){
 }
 
 function openAnimalShop(){
+  // Shared by the cards and the buy re-check — see the note in `openSeedShop`.
+  const penOut = () => outOfStockSet(
+    Object.entries(ANIMALS)
+      .filter(([id, a]) => !(a.unlock && state.level < a.unlock) && (state.animals[id] || 0) < a.max)
+      .map(([id]) => id),
+    (id) => ANIMALS[id].cost);
   const build = () => ({
     title:'🐔 Animal Pen',
     coins:state.coins,
     tabs:[],
     note:`Growth ×${growthMult().toFixed(2)} · sales ×${valueMult().toFixed(2)} · `
        + `${Math.round(luckChance() * 100)}% double harvest.`,
-    items: Object.entries(ANIMALS).map(([id, a]) => {
-      const owned = state.animals[id] || 0;
-      const full = owned >= a.max;
-      const locked = a.unlock && state.level < a.unlock;
-      return {
-        id, emoji:a.emoji, name:a.name,
-        meta: locked ? `Unlocks at level ${a.unlock}` : `${a.desc} · ${owned}/${a.max} owned`,
-        price:a.cost,
-        disabled: full || locked || state.coins < a.cost,
-        ownedText: full ? `Pen full (${owned})` : null,
-      };
-    }),
+    items: (() => {
+      const out = penOut();
+      return Object.entries(ANIMALS).map(([id, a]) => {
+        const owned = state.animals[id] || 0;
+        const full = owned >= a.max;
+        const locked = a.unlock && state.level < a.unlock;
+        const gone = !full && !locked && out.has(id);
+        return {
+          id, emoji:a.emoji, name:a.name,
+          meta: locked ? `Unlocks at level ${a.unlock}`
+              : gone ? `🚫 Sold out · back in ${fmtTime(stockSecsLeft())}`
+              : `${a.desc} · ${owned}/${a.max} owned`,
+          price:a.cost,
+          disabled: full || locked || gone || state.coins < a.cost,
+          ownedText: full ? `Pen full (${owned})` : null,
+        };
+      });
+    })(),
     onBuy: (id) => {
       const a = ANIMALS[id];
       if ((state.animals[id] || 0) >= a.max) return;
       if (a.unlock && state.level < a.unlock) return;
+      if (penOut().has(id)) return;
       if (!spend(a.cost)) return;
       state.animals[id] = (state.animals[id] || 0) + 1;
       world.syncAnimals(state.animals);

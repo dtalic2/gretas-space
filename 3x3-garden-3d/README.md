@@ -361,13 +361,11 @@ Mostly you'll want it for perennials, which otherwise hold their plot forever.
   **twelve decorations** (scarecrow, toadstool ring, bench, lanterns, bird bath, pond,
   sundial, parasol, tractor, statue, marquee, grand fountain) that are purely cosmetic.
   Each has a reserved spot outside the bed, so they never land on top of each other.
-- **🧺 Farmers Market** — one seed type is 40% off at a time, rotating every 3 minutes.
-  The rotation is derived from the clock rather than stored, so it keeps turning while
-  you're away and survives a reload. Consecutive rotations always land on a different
-  seed, so the deal visibly changes.
+- **🧺 Farmers Market** — the entire Seed Shop catalogue at **50% off**, cheapest first.
+  Not a rotating deal any more: everything on the shelf is half price, all the time.
 - **🌳 Your Tree** — appears once you buy the Magic Sapling. Free seeds, no coins.
-- **🔮 Magic Market** — a rotating 40%-off deal on one rare seed.
-- **💫 Super Magic Market** — the same, on the hundred mythic plants (level 12).
+- **🔮 Magic Market** — every rare seed the Magic Tree sells, at 50% off.
+- **💫 Super Magic Market** — all hundred mythic plants at 50% off (level 12).
 - **🌟 Super Magic Tree** — 100 mythic plants (level 12).
 - **🌌 Enchanted Realm** — 20 seeds beyond the gate (level 15).
 - **🐲 Dragon Cave** — 25 hoard-grade plants (level 17).
@@ -376,6 +374,42 @@ Mostly you'll want it for perennials, which otherwise hold their plot forever.
 - **✨ Magic Tree** — the rare-goods shop. Two tabs: eleven rare seeds you can't get
   anywhere else, and six permanent charms. The tree shudders and throws off sparks each
   time you buy something.
+
+### Stock
+
+Shelves are not infinite. At any moment about **a quarter of the items in a shop are
+out of stock** — greyed out, with a countdown to when they come back. Stock turns over
+every **150 seconds**.
+
+Which items are gone is derived from the clock, exactly like the market deals: a
+per-item hash mixed with the current 150-second bucket. So it needs no save state, it
+keeps rotating while you're away, and reloading doesn't reroll the shelf — you can't
+refresh your way to a seed you want.
+
+Two rules keep it from being annoying rather than interesting:
+
+- **A shop is never sold out of everything.** If a roll would leave fewer than two
+  items buyable, the cheapest ones are put back. This matters most at level 1, where
+  the Seed Shop stocks only Onion and Carrot — the two of them roll out together about
+  6% of the time, and without the floor a new player with no seeds and no coins would
+  be permanently stuck. With it, that window always leaves both on the shelf.
+- **Progression items are exempt.** Charms, tools, soil plots, decorations and the
+  Magic Sapling are never out of stock. They're one-off purchases, and making someone
+  wait on a dice roll for one is just a delay, not a decision.
+
+The three markets *are* stocked, and that is what keeps the rest of the game standing
+up. Since they sell their whole catalogue at half price, a market with unlimited stock
+would strictly dominate the shop it draws from — there'd be no reason to ever pay full
+price at the Seed Shop, the Magic Tree or the Super Tree again. Because a quarter of
+the market shelf is out at any moment, the full-price shops remain the reliable way to
+get a specific seed *now*, and the market is where you save money if you're flexible
+about what you plant.
+
+The stock check runs twice: once when the cards are drawn, and again inside the buy
+handler, so a card that was on screen when the shelf turned over can't still be bought.
+Both checks go through the same shelf list — asking about a single item instead would
+hit the "never sell out of everything" floor, which always keeps a lone candidate, and
+the re-check would silently pass for everything.
 
 ---
 
