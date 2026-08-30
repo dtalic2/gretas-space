@@ -39,8 +39,8 @@ SnakeVersions.register({
 
     // ── Generate a new problem and place 3 food items ──────────────────────────
     _newProblem(ctx, game) {
-        // Scale factor range with streak (starts 2-3, reaches 2-9 around streak 24)
-        const maxFactor = Math.min(9, 3 + Math.floor(game.streak / 4));
+        // Scale factor range with streak (starts 2-3, reaches 2-12 around streak 36)
+        const maxFactor = Math.min(12, 3 + Math.floor(game.streak / 4));
         const a = 2 + Math.floor(Math.random() * (maxFactor - 1));
         const b = 2 + Math.floor(Math.random() * (maxFactor - 1));
         const answer = a * b;
