@@ -26,6 +26,17 @@ edit did nothing.
 
 Any static host works for deployment — `npx serve`, nginx, GitHub Pages, S3.
 
+It also builds to a single self-contained `.html`, for anywhere that can host a
+page but not a folder of ES modules:
+
+```bash
+node milbil-tower/build-artifact.mjs        # -> dist/milbil-tower.html, ~64 KB
+```
+
+That is the only thing in the project with a build step, and it is optional —
+`serve.py` runs the source as-is, which is still how to develop it. esbuild is
+fetched on demand by `npx`, so there is nothing to install and no `package.json`.
+
 ---
 
 ## How it plays

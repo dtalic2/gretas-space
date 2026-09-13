@@ -3,6 +3,7 @@
    all glows. Panels are the one exception — text has to stay readable. */
 
 :root{
+  color-scheme:dark;          /* this game is one dark neon world, wherever it is embedded */
   --cyan:#7af0ff;
   --cyan-dim:#36d8ff;
   --pink:#ff5f8f;

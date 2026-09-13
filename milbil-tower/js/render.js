@@ -309,6 +309,22 @@ function drawTower(ctx, L, C) {
   }
 }
 
+const FACE = '"Baloo 2","Trebuchet MS",system-ui,sans-serif';
+
+/**
+ * Set a font that fits `maxW`, shrinking from `size` until it does, and return
+ * the size used. "ROUND CLEAR" at the nominal size runs off a phone-width board.
+ */
+function fitFont(ctx, text, maxW, size, weight) {
+  let s = size;
+  for (let i = 0; i < 14; i++) {
+    ctx.font = `${weight} ${s}px ${FACE}`;
+    if (ctx.measureText(text).width <= maxW || s < 9) break;
+    s *= 0.92;
+  }
+  return s;
+}
+
 function drawBanner(ctx, L) {
   const b = game.banner;
   const t = game.bannerT;
@@ -331,9 +347,9 @@ function drawBanner(ctx, L) {
   ctx.scale(0.94 + inK * 0.06, 0.94 + inK * 0.06);
 
   ctx.fillStyle = 'rgba(0,0,0,.55)';
-  ctx.fillRect(-L.board / 2, -size * 1.1, L.board, size * 2.2);
+  ctx.fillRect(-L.board / 2, -size * 1.05, L.board, size * 2.1);
 
-  ctx.font = `900 ${size}px "Baloo 2","Trebuchet MS",system-ui,sans-serif`;
+  fitFont(ctx, b.title, L.board * 0.88, size, 900);
   ctx.shadowColor = col;
   ctx.shadowBlur = 26;
   ctx.fillStyle = col;
@@ -344,7 +360,7 @@ function drawBanner(ctx, L) {
   ctx.fillText(b.title, 0, -size * 0.28);
 
   ctx.globalAlpha = a;
-  ctx.font = `700 ${Math.max(13, size * 0.32)}px "Baloo 2","Trebuchet MS",system-ui,sans-serif`;
+  fitFont(ctx, b.sub, L.board * 0.90, Math.max(13, size * 0.32), 700);
   ctx.shadowColor = '#ffffff';
   ctx.shadowBlur = 10;
   ctx.fillStyle = 'rgba(255,255,255,.92)';

@@ -205,6 +205,12 @@ function beginHop(m, target) {
   m.escaping = !!target.escape;
 }
 
+/** Keep a floating number on screen when its Milbil pops near an edge. */
+function floatAt(x, y, text, color, opts) {
+  const m = game.L.cell * 0.95;
+  fx.floater(Math.max(m, Math.min(game.L.W - m, x)), y, text, color, opts);
+}
+
 function damage(m, amount, at) {
   m.hp -= amount;
   m.flash = 1;
@@ -226,7 +232,7 @@ function pop(m) {
   state.popped++;
   game.roundCoins += m.t.coins;
   fx.popBurst(p.x, p.y, col, game.L.cell);
-  fx.floater(p.x, p.y - game.L.cell * 0.25, `+${m.t.coins}`, '#ffd75e', { size: m.t.boss ? 34 : 24 });
+  floatAt(p.x, p.y - game.L.cell * 0.25, `+${m.t.coins}`, '#ffd75e', { size: m.t.boss ? 34 : 24 });
   fx.shake(m.t.boss ? 16 : 5);
   audio.pop(m.t.boss);
   save();
@@ -239,7 +245,7 @@ function reachTower(m) {
   game.perfect = false;
   const { muzzle } = game.L;
   fx.burst(muzzle.x, muzzle.y - 10, '#ff4d6d', 30, 340);
-  fx.floater(muzzle.x, muzzle.y - game.L.towerH * 0.7, 'ZAP!', '#ff4d6d', { size: 30 });
+  floatAt(muzzle.x, muzzle.y - game.L.towerH * 0.7, 'ZAP!', '#ff4d6d', { size: 30 });
   fx.shake(20);
   audio.zapped();
   if (game.shields <= 0) gameOver();
@@ -299,7 +305,7 @@ export function fire() {
     state.coins += bonus;
     game.roundCoins += bonus;
     const mid = taken[Math.floor(taken.length / 2)].p;
-    fx.floater(mid.x, mid.y - game.L.cell * 0.7,
+    floatAt(mid.x, mid.y - game.L.cell * 0.7,
       `${popped > 2 ? 'TRIPLE' : 'DOUBLE'}!  +${bonus}`, '#9dff6b', { size: 26, life: 1.4 });
     audio.combo();
     save();
