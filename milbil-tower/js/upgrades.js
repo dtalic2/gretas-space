@@ -7,6 +7,10 @@
 // A typical Milbil pays 30, so read every price below as "about this many
 // Milbils".
 //
+// Rungs climb steeply on purpose — roughly 3x a step. The first rung of a ladder
+// is meant to land in the first few rounds; the last is meant to be a project you
+// save toward for a long while.
+//
 // The ladders are grouped by what they change, not by price: the laser itself,
 // what happens where the beam lands, and the tower underneath it.
 
@@ -16,35 +20,35 @@ export const UPGRADES = {
     name: 'Charge Coil',
     icon: '⚡',
     blurb: 'Recharges the laser faster between shots.',
-    costs: [90, 220, 460, 950, 1900],
+    costs: [140, 480, 1400, 3600, 8500],
     detail: (l) => `${(0.62 * Math.pow(0.84, l)).toFixed(2)}s per shot`,
   },
   focus: {
     name: 'Beam Focus',
     icon: '🎯',
     blurb: 'A fatter beam. Near misses start counting as hits.',
-    costs: [130, 300, 640, 1300],
+    costs: [200, 650, 1900, 4900],
     detail: (l) => `${['thin', 'steady', 'wide', 'very wide', 'enormous'][l]} beam`,
   },
   power: {
     name: 'Overcharge',
     icon: '🔥',
     blurb: 'Each zap does more damage. Chonks stop being a chore.',
-    costs: [380, 950, 2300],
+    costs: [570, 2100, 6900],
     detail: (l) => `${1 + l} damage per zap`,
   },
   pierce: {
     name: 'Piercer',
     icon: '➶',
     blurb: 'The beam carries on through Milbils instead of stopping at the first.',
-    costs: [520, 1500, 3400],
+    costs: [780, 3300, 10000],
     detail: (l) => (l ? `hits ${1 + l} in a line` : 'stops at the first hit'),
   },
   split: {
     name: 'Twin Beam',
     icon: '🔱',
     blurb: 'Fires a fan of beams. The middle one still goes exactly where you aim.',
-    costs: [1200, 3400],
+    costs: [1800, 7500],
     detail: (l) => `${['one beam', 'three beams', 'five beams'][l]}`,
   },
 
@@ -53,21 +57,21 @@ export const UPGRADES = {
     name: 'Chain Zap',
     icon: '🕸️',
     blurb: 'A popping Milbil throws a spark at whoever is standing too close.',
-    costs: [900, 2200, 5000],
+    costs: [1350, 4800, 15000],
     detail: (l) => (l ? `arcs to ${l} nearby Milbil${l > 1 ? 's' : ''}` : 'no arc'),
   },
   stun: {
     name: 'Stun Coil',
     icon: '❄️',
     blurb: 'A Milbil that survives a zap is frozen stiff and cannot hop.',
-    costs: [700, 1800, 4000],
+    costs: [1050, 3900, 12000],
     detail: (l) => (l ? `frozen for ${(l * 0.6).toFixed(1)}s` : 'no effect yet'),
   },
   combo: {
     name: 'Combo Amp',
     icon: '✨',
     blurb: 'Pays more for every extra Milbil you catch in one beam.',
-    costs: [600, 1500, 3600],
+    costs: [900, 3300, 10800],
     detail: (l) => `🪙 ${25 * (1 + l)} per extra Milbil`,
   },
 
@@ -76,28 +80,28 @@ export const UPGRADES = {
     name: 'Tower Plating',
     icon: '🛡️',
     blurb: 'One more shield, and every shield repaired right now.',
-    costs: [260, 750, 1900],
+    costs: [400, 1650, 5700],
     detail: (l) => `${3 + l} shields`,
   },
   deflect: {
     name: 'Deflector',
     icon: '🧲',
     blurb: 'Throws a Milbil that reaches the tower back to the far row, for free.',
-    costs: [850, 2100, 4600],
+    costs: [1300, 4600, 13800],
     detail: (l) => (l ? `${l} bounce${l > 1 ? 's' : ''} per round` : 'no bounces'),
   },
   damper: {
     name: 'Damper Field',
     icon: '🌀',
     blurb: 'Milbils hop more slowly across the whole board.',
-    costs: [320, 850, 2100],
+    costs: [480, 1870, 6300],
     detail: (l) => (l ? `Milbils ${Math.round(l * 9)}% slower` : 'no effect yet'),
   },
   tracer: {
     name: 'Tracer Array',
     icon: '📡',
     blurb: 'Paints Blinky Milbils so they cannot fade all the way out on you.',
-    costs: [1100, 2600],
+    costs: [1650, 5700],
     detail: (l) => ['Blinkies vanish', 'Blinkies stay faint', 'Blinkies always show'][l],
   },
 };

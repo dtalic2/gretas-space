@@ -88,9 +88,20 @@ family. The field guide behind the **?** button fills in as you meet them.
 
 ## The workshop
 
-Coins have exactly one use: the tower. Twelve ladders in three groups, priced so
-the first rung lands within a round or two and the top rung is a genuine project
-(everything, maxed, is about 57,000 coins — roughly 1,900 typical Milbils).
+Coins have exactly one use: the tower. Twelve ladders in three groups.
+
+Rungs climb steeply — roughly 3x a step — so the shape of the run is a steady
+drip of small wins early and a long save toward each ladder's top. Playing
+greedily (always buying the cheapest thing you can afford), that works out at:
+
+| | |
+| --- | --- |
+| First upgrade | round 2 |
+| 10 rungs bought | round 10 |
+| 20 rungs bought | round 20 |
+| All 38 rungs | round 51 |
+
+Everything maxed comes to about 151,000 coins — roughly 5,000 typical Milbils.
 
 **Laser** — the shot itself.
 
