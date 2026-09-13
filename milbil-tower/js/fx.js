@@ -29,6 +29,7 @@ function glowDot(color) {
 const particles = [];
 const floaters = [];
 const beams = [];
+const bolts = [];
 let shakeAmt = 0;
 
 export function burst(x, y, color, n = 18, speed = 220, spread = Math.PI * 2, dir = 0) {
@@ -56,6 +57,25 @@ export function floater(x, y, text, color, opts = {}) {
 /** A laser beam, drawn for a moment after the shot lands. */
 export function beam(x0, y0, x1, y1, color, width) {
   beams.push({ x0, y0, x1, y1, color, width, age: 0, life: 0.22 });
+}
+
+/**
+ * A jagged arc between two points — a chain spark, or the Deflector throwing a
+ * Milbil back. Unlike a laser it is drawn bent, so it never reads as a shot.
+ */
+export function bolt(x0, y0, x1, y1, color) {
+  const segs = 8;
+  const dx = x1 - x0, dy = y1 - y0;
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len, ny = dx / len;
+  const pts = [];
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs;
+    // Ends are pinned; only the middle wanders, or the arc misses what it hit.
+    const k = i === 0 || i === segs ? 0 : (Math.random() - 0.5) * len * 0.22;
+    pts.push([x0 + dx * t + nx * k, y0 + dy * t + ny * k]);
+  }
+  bolts.push({ pts, color, age: 0, life: 0.26 });
 }
 
 export function shake(amount) {
@@ -96,6 +116,11 @@ export function update(dt) {
     beams[i].age += dt;
     if (beams[i].age >= beams[i].life) beams.splice(i, 1);
   }
+
+  for (let i = bolts.length - 1; i >= 0; i--) {
+    bolts[i].age += dt;
+    if (bolts[i].age >= bolts[i].life) bolts.splice(i, 1);
+  }
 }
 
 export function draw(ctx) {
@@ -113,6 +138,22 @@ export function draw(ctx) {
     ctx.globalAlpha = 0.75 * k; ctx.shadowBlur = 22; ctx.lineWidth = b.width * 1.5; ctx.stroke();
     ctx.globalAlpha = k;        ctx.shadowBlur = 10; ctx.lineWidth = b.width * 0.5;
     ctx.strokeStyle = '#ffffff'; ctx.stroke();
+    ctx.restore();
+  }
+
+  for (const bo of bolts) {
+    const k = 1 - bo.age / bo.life;
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = bo.color;
+    ctx.strokeStyle = bo.color;
+    ctx.beginPath();
+    ctx.moveTo(bo.pts[0][0], bo.pts[0][1]);
+    for (let i = 1; i < bo.pts.length; i++) ctx.lineTo(bo.pts[i][0], bo.pts[i][1]);
+    ctx.globalAlpha = 0.35 * k; ctx.shadowBlur = 26; ctx.lineWidth = 7; ctx.stroke();
+    ctx.globalAlpha = k;        ctx.shadowBlur = 12; ctx.lineWidth = 2.4; ctx.stroke();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.stroke();
     ctx.restore();
   }
 
@@ -147,5 +188,6 @@ export function clear() {
   particles.length = 0;
   floaters.length = 0;
   beams.length = 0;
+  bolts.length = 0;
   shakeAmt = 0;
 }

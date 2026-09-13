@@ -4,7 +4,7 @@
 // field guide, and the two stop-the-world panels. The canvas never draws UI and
 // this module never draws game.
 
-import { UPGRADES, UP_ORDER, nextCost, maxLevel, towerStats } from './upgrades.js';
+import { UPGRADES, UP_GROUPS, nextCost, maxLevel, towerStats } from './upgrades.js';
 import { TYPES, ORDER } from './types.js';
 import { milbilStill } from './milbil-art.js';
 import { state, save } from './state.js';
@@ -19,7 +19,7 @@ let lastCoins = -1;
 
 export function init(handlers) {
   for (const id of [
-    'hud', 'coins', 'roundNo', 'leftNo', 'hint', 'btnShop', 'btnSound', 'btnHelp',
+    'hud', 'coins', 'roundNo', 'leftNo', 'hint', 'bounceChip', 'bounceNo', 'btnShop', 'btnSound', 'btnHelp',
     'shop', 'shopCoins', 'shopList', 'shopClose',
     'help', 'helpClose', 'guide',
     'over', 'overRound', 'overStats', 'overRetry', 'overShop',
@@ -66,6 +66,12 @@ export function sync() {
   }
   el.roundNo.textContent = game.round;
   el.leftNo.textContent = remaining();
+
+  // Bounces left, shown only once there is a Deflector to have any.
+  const hasDeflect = towerStats(state.up).deflects > 0;
+  el.bounceChip.classList.toggle('hidden', !hasDeflect);
+  if (hasDeflect) el.bounceChip.classList.toggle('spent', game.deflects === 0);
+  el.bounceNo.textContent = game.deflects;
 
   if (game.phase === PHASE.OVER && el.over.classList.contains('hidden')) showOver();
 }
@@ -125,36 +131,44 @@ function renderShop() {
   el.shopCoins.textContent = state.coins.toLocaleString();
   el.shopList.replaceChildren();
 
-  for (const key of UP_ORDER) {
-    const u = UPGRADES[key];
-    const lvl = state.up[key];
-    const max = maxLevel(key);
-    const cost = nextCost(key, lvl);
-    const maxed = cost === null;
-    const afford = !maxed && state.coins >= cost;
-
-    const row = document.createElement('div');
-    row.className = 'up' + (maxed ? ' max' : '');
-
-    const pips = Array.from({ length: max }, (_, i) => `<i class="${i < lvl ? 'on' : ''}"></i>`).join('');
-    row.innerHTML =
-      `<div class="up-ico">${u.icon}</div>
-       <div class="up-txt">
-         <div class="up-name">${u.name}</div>
-         <div class="up-blurb">${u.blurb}</div>
-         <div class="up-now">Now: ${u.detail(lvl)}</div>
-         <div class="pips">${pips}</div>
-       </div>`;
-
-    const buy = document.createElement('button');
-    buy.className = 'buy' + (maxed ? ' done' : '');
-    buy.textContent = maxed ? 'MAX' : `🪙 ${cost.toLocaleString()}`;
-    buy.disabled = maxed || !afford;
-    buy.onclick = () => purchase(key);
-    row.appendChild(buy);
-
-    el.shopList.appendChild(row);
+  for (const group of UP_GROUPS) {
+    const head = document.createElement('h3');
+    head.className = 'up-group';
+    head.textContent = group.name;
+    el.shopList.appendChild(head);
+    for (const key of group.keys) addUpgradeRow(key);
   }
+}
+
+/** One upgrade row: icon, name, current effect, level pips and a buy button. */
+function addUpgradeRow(key) {
+  const u = UPGRADES[key];
+  const lvl = state.up[key];
+  const max = maxLevel(key);
+  const cost = nextCost(key, lvl);
+  const maxed = cost === null;
+  const afford = !maxed && state.coins >= cost;
+
+  const row = document.createElement('div');
+  row.className = 'up' + (maxed ? ' max' : '');
+
+  const pips = Array.from({ length: max }, (_, i) => `<i class="${i < lvl ? 'on' : ''}"></i>`).join('');
+  row.innerHTML =
+    `<div class="up-ico">${u.icon}</div>
+     <div class="up-txt">
+       <div class="up-name">${u.name}</div>
+       <div class="up-blurb">${u.blurb}</div>
+       <div class="up-meta"><span class="up-now">${u.detail(lvl)}</span><span class="pips">${pips}</span></div>
+     </div>`;
+
+  const buy = document.createElement('button');
+  buy.className = 'buy' + (maxed ? ' done' : '');
+  buy.textContent = maxed ? 'MAX' : `🪙 ${cost.toLocaleString()}`;
+  buy.disabled = maxed || !afford;
+  buy.onclick = () => purchase(key);
+  row.appendChild(buy);
+
+  el.shopList.appendChild(row);
 }
 
 function purchase(key) {

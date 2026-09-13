@@ -11,7 +11,7 @@
 
 import { N, buildGrid } from './board.js';
 import { FRAMES, FIT } from './milbil-art.js';
-import { game, PHASE, hitRadius } from './game.js';
+import { game, PHASE, hitRadius, beamDirs } from './game.js';
 import { towerStats } from './upgrades.js';
 import { state } from './state.js';
 import { neon, neonFill } from './neon.js';
@@ -166,27 +166,28 @@ function drawDangerRow(ctx, L) {
 /** Where the shot will go, and what it will hit. */
 function drawAimLine(ctx, L) {
   const { muzzle, W, H } = L;
-  let dx = game.aim.x - muzzle.x, dy = game.aim.y - muzzle.y;
-  if (dy > -8) dy = -8;
-  const len = Math.hypot(dx, dy) || 1;
-  dx /= len; dy /= len;
-
   const ready = game.charge >= 1;
-  // Stop the guide at the far edge of the board. Running it off the top of the
-  // screen just draws a stripe through the HUD.
-  const far = dy < -1e-6 ? (L.by - muzzle.y) / dy : Math.hypot(W, H);
 
   ctx.save();
   ctx.setLineDash([7, 11]);
   ctx.lineDashOffset = -game.time * 60;
-  ctx.strokeStyle = ready ? 'rgba(122,240,255,.55)' : 'rgba(122,240,255,.20)';
   ctx.lineWidth = 1.6;
   ctx.shadowColor = '#7af0ff';
   ctx.shadowBlur = ready ? 10 : 4;
-  ctx.beginPath();
-  ctx.moveTo(muzzle.x + dx * 26, muzzle.y + dy * 26);
-  ctx.lineTo(muzzle.x + dx * far, muzzle.y + dy * far);
-  ctx.stroke();
+
+  // One guide per beam. The outer beams of a Twin Beam fan are drawn fainter so
+  // the aimed one still reads as the shot you are lining up.
+  beamDirs().forEach(({ x: dx, y: dy }, i) => {
+    // Stop the guide at the far edge of the board. Running it off the top of the
+    // screen just draws a stripe through the HUD.
+    const far = dy < -1e-6 ? (L.by - muzzle.y) / dy : Math.hypot(W, H);
+    const a = (ready ? 0.55 : 0.20) * (i === 0 ? 1 : 0.5);
+    ctx.strokeStyle = `rgba(122,240,255,${a})`;
+    ctx.beginPath();
+    ctx.moveTo(muzzle.x + dx * 26, muzzle.y + dy * 26);
+    ctx.lineTo(muzzle.x + dx * far, muzzle.y + dy * far);
+    ctx.stroke();
+  });
   ctx.restore();
 
   // Lock-on rings. A faded Blinky is deliberately left off — spotting one is the

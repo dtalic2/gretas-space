@@ -2,7 +2,7 @@
 
 import { layout } from './board.js';
 import { buildSprites, spritePx } from './milbil-art.js';
-import { game, PHASE, startRound, update, fire } from './game.js';
+import { game, PHASE, startRound, update, fire, beamDirs } from './game.js';
 import { state, load } from './state.js';
 import * as render from './render.js';
 import * as ui from './ui.js';
@@ -178,6 +178,6 @@ async function boot() {
 }
 
 // Handy when tuning from the browser console: milbilTower.game, .state
-window.milbilTower = { game, state, startRound };
+window.milbilTower = { game, state, startRound, fire, beamDirs };
 
 boot();

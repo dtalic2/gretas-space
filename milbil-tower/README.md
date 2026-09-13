@@ -88,18 +88,41 @@ family. The field guide behind the **?** button fills in as you meet them.
 
 ## The workshop
 
-Coins have exactly one use: the tower. Six ladders, priced so the first rung lands
-within a round or two and the top rung is a genuine project (everything, maxed, is
-about 21,000 coins).
+Coins have exactly one use: the tower. Twelve ladders in three groups, priced so
+the first rung lands within a round or two and the top rung is a genuine project
+(everything, maxed, is about 57,000 coins — roughly 1,900 typical Milbils).
+
+**Laser** — the shot itself.
 
 | | Does |
 | --- | --- |
-| **Charge Coil** | Recharges the laser faster — 0.62s down to 0.26s per shot. |
+| **Charge Coil** | Recharges faster — 0.62s down to 0.26s per shot. |
 | **Beam Focus** | A fatter beam, so near misses start counting as hits. |
 | **Overcharge** | More damage per zap, up to 4. Chonks stop being a chore. |
 | **Piercer** | The beam carries on through up to 4 Milbils instead of stopping at the first. |
+| **Twin Beam** | Fires a fan of 3, then 5. The count is always odd, so one beam still goes exactly where you aim — an upgrade must never make aiming worse. |
+
+**On impact** — what happens where the beam lands.
+
+| | Does |
+| --- | --- |
+| **Chain Zap** | A popping Milbil throws a spark at up to 3 standing too close. Arcs are one hop deep, so a crowded board cannot cascade into itself. |
+| **Stun Coil** | Anything that survives a zap is frozen for up to 1.8s. A Milbil that has stopped dancing is one you know will still be there next shot. |
+| **Combo Amp** | Raises the multi-kill bonus from 25 to 100 coins per extra Milbil. |
+
+**Tower** — the thing you are defending.
+
+| | Does |
+| --- | --- |
 | **Tower Plating** | Up to 6 shields, and every lost shield repaired on purchase. |
+| **Deflector** | Throws up to 3 Milbils a round back to the far row instead of taking a shield. The count left shows in the HUD. |
 | **Damper Field** | Milbils hop up to 27% more slowly across the whole board. |
+| **Tracer Array** | Stops Blinky Milbils fading out on you — first to faint, then fully visible. |
+
+Shields refill at the start of every round, so they are a within-round resource:
+they measure how badly one round went, not how the run is going. That is why
+there is a Deflector rather than a repair kit — repairing something that is about
+to be handed back full would buy nothing.
 
 ---
 

@@ -78,6 +78,8 @@ body{
 .chip b{font-weight:900; font-variant-numeric:tabular-nums}
 .chip.coin{border-color:rgba(255,215,94,.45); color:var(--gold); box-shadow:0 0 14px rgba(255,215,94,.18)}
 .chip.milbil b{color:var(--pink)}
+.chip.bounce{border-color:rgba(95,255,168,.45); color:var(--lime)}
+.chip.bounce.spent{opacity:.42; border-color:var(--edge); color:var(--ink)}
 .chip.btn{pointer-events:auto; cursor:pointer; padding:6px 12px; font-size:17px; line-height:1; transition:transform .08s, border-color .15s}
 .chip.btn:hover{border-color:var(--cyan); transform:translateY(-1px)}
 .chip.btn:active{transform:translateY(1px)}
@@ -144,24 +146,34 @@ b.danger{color:var(--danger)}
 .keys b{color:#fff; background:rgba(122,240,255,.12); border:1px solid var(--edge); border-radius:5px; padding:1px 6px; font-size:12.5px}
 
 /* ---------- SHOP ---------- */
-.shop-list{padding:12px; overflow-y:auto; display:flex; flex-direction:column; gap:9px}
+.shop-list{padding:12px 12px 16px; overflow-y:auto; display:flex; flex-direction:column; gap:9px}
+.up-group{
+  font-size:11.5px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase;
+  color:var(--pink); opacity:.85;
+  display:flex; align-items:center; gap:10px;
+  margin:8px 2px 0;
+}
+.up-group::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,rgba(255,95,143,.4),transparent)}
+.up-group:first-child{margin-top:0}
 .up{
-  display:flex; align-items:center; gap:12px;
-  padding:11px 13px; border-radius:13px;
+  display:flex; align-items:center; gap:11px;
+  padding:9px 12px; border-radius:13px;
   background:rgba(122,240,255,.04);
   border:1.5px solid rgba(122,240,255,.14);
 }
 .up.max{border-color:rgba(157,255,107,.35); background:rgba(157,255,107,.05)}
-.up-ico{font-size:23px; width:34px; text-align:center; flex:none}
+.up-ico{font-size:21px; width:28px; text-align:center; flex:none}
 .up-txt{flex:1; min-width:0}
-.up-name{font-size:15.5px; font-weight:900; color:var(--ink)}
-.up-blurb{font-size:12.5px; color:rgba(223,244,255,.55); font-weight:600; line-height:1.4}
-.up-now{font-size:12.5px; color:var(--lime); font-weight:800; margin-top:2px}
-.pips{display:flex; gap:3px; margin-top:5px}
+.up-name{font-size:15px; font-weight:900; color:var(--ink); line-height:1.25}
+.up-blurb{font-size:12px; color:rgba(223,244,255,.55); font-weight:600; line-height:1.35; margin-top:1px}
+/* effect and level pips share one line — twelve upgrades is a lot of scrolling otherwise */
+.up-meta{display:flex; align-items:center; gap:9px; margin-top:4px; flex-wrap:wrap}
+.up-now{font-size:12.5px; color:var(--lime); font-weight:800}
+.pips{display:flex; gap:3px}
 .pips i{width:15px; height:4px; border-radius:2px; background:rgba(255,255,255,.14)}
 .pips i.on{background:var(--cyan); box-shadow:0 0 7px var(--cyan)}
 .buy{
-  flex:none; min-width:82px;
+  flex:none; min-width:80px;
   background:rgba(255,215,94,.1); border:1.5px solid rgba(255,215,94,.4);
   color:var(--gold); font-weight:900; font-size:14px; font-family:inherit;
   padding:9px 12px; border-radius:10px; cursor:pointer;

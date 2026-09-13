@@ -9,7 +9,7 @@
 
 import { N, cellCenter, inBoard } from './board.js';
 import { TYPES, buildWave, roundSpeed } from './types.js';
-import { towerStats } from './upgrades.js';
+import { towerStats, BEAM_SPREAD } from './upgrades.js';
 import { state, save } from './state.js';
 import * as fx from './fx.js';
 import * as audio from './audio.js';
@@ -26,6 +26,7 @@ export const game = {
   queue: [],            // variants still waiting to walk on
   spawnT: 0,
   shields: 3,
+  deflects: 0,          // Deflector bounces left this round
   charge: 1,            // 0..1, laser readiness
   aim: { x: 0, y: 0 },
   barrel: -Math.PI / 2, // where the turret is actually pointing, eased
@@ -104,6 +105,7 @@ export function startRound(n) {
   game.queue = buildWave(n);
   game.spawnT = 0;
   game.shields = S.maxShields;
+  game.deflects = S.deflects;
   game.charge = 1;
   game.roundCoins = 0;
   game.perfect = true;
@@ -165,6 +167,7 @@ function spawn(key) {
     alpha: 1, flash: 0,
     warp: 0,                                          // 0..1 arrival animation
     dodgeCd: 0,
+    stun: 0,
     escaping: false,
     dead: false,
     seed: Math.random() * 1000,
@@ -211,20 +214,48 @@ function floatAt(x, y, text, color, opts) {
   fx.floater(Math.max(m, Math.min(game.L.W - m, x)), y, text, color, opts);
 }
 
-function damage(m, amount, at) {
+function damage(m, amount, at, opts = {}) {
+  const S = towerStats(state.up);
   m.hp -= amount;
   m.flash = 1;
   const col = `hsl(${(58 + m.t.hue) % 360} 95% 65%)`;
   if (m.hp <= 0) {
-    pop(m);
+    pop(m, opts);
     return true;
   }
+  // Anything that survives a zap is frozen stiff for a moment.
+  if (S.stunSec) m.stun = Math.max(m.stun, S.stunSec);
   fx.burst(at.x, at.y, col, 9, game.L.cell * 2.0);
   audio.thud();
   return false;
 }
 
-function pop(m) {
+/**
+ * Chain Zap: a popping Milbil throws a spark at whoever is standing too close.
+ *
+ * Arcs deal a flat 1 damage and are marked `noChain`, so a chain is exactly one
+ * hop deep and a crowded board cannot cascade into itself.
+ */
+function chainFrom(from) {
+  const S = towerStats(state.up);
+  if (!S.chain) return;
+  const range = game.L.cell * S.chainRange;
+
+  const near = game.milbils
+    .filter((o) => !o.dead && o.warp > 0.35)
+    .map((o) => ({ o, d: Math.hypot(o.x - from.x, o.y - from.y) }))
+    .filter((c) => c.d <= range)
+    .sort((a, b) => a.d - b.d)
+    .slice(0, S.chain);
+
+  for (const c of near) {
+    fx.bolt(from.x, from.y, c.o.x, c.o.y, '#c9a0ff');
+    damage(c.o, 1, { x: c.o.x, y: c.o.y }, { noChain: true });
+  }
+  if (near.length) audio.chain();
+}
+
+function pop(m, opts = {}) {
   m.dead = true;
   const p = posOf(m);
   const col = `hsl(${(58 + m.t.hue) % 360} 95% 66%)`;
@@ -236,10 +267,34 @@ function pop(m) {
   fx.shake(m.t.boss ? 16 : 5);
   audio.pop(m.t.boss);
   save();
+  if (!opts.noChain) chainFrom(p);
 }
 
 /** A Milbil that hopped off the near edge has reached the tower. */
 function reachTower(m) {
+  // Deflector: throw it back to the far row instead, and charge nothing for it.
+  if (game.deflects > 0) {
+    const occ = occupied(m);
+    const free = [];
+    for (let c = 0; c < N; c++) if (!occ.has(c)) free.push(c);
+    if (free.length) {
+      game.deflects--;
+      m.escaping = false;
+      m.col = m.fromCol = free[(Math.random() * free.length) | 0];
+      m.row = m.fromRow = 0;
+      m.hopT = 1;
+      m.rest = (m.t.hopMs / 1000) * 1.2;
+      m.stun = Math.max(m.stun, 0.5);
+      const p = posOf(m);
+      fx.burst(game.L.muzzle.x, game.L.muzzle.y - 10, '#5fffa8', 22, 300);
+      fx.bolt(game.L.muzzle.x, game.L.muzzle.y - 10, p.x, p.y, '#5fffa8');
+      floatAt(game.L.muzzle.x, game.L.muzzle.y - game.L.towerH * 0.7, 'BOUNCED!', '#5fffa8', { size: 26 });
+      fx.shake(8);
+      audio.deflect();
+      return;
+    }
+  }
+
   m.dead = true;
   game.shields--;
   game.perfect = false;
@@ -253,11 +308,30 @@ function reachTower(m) {
 
 // ---------- shooting ----------
 
-/** Every Milbil the beam would cross, nearest first. */
-function beamTargets() {
+/**
+ * Unit directions of every beam the tower fires, centre first.
+ *
+ * The count is always odd, so however wide the fan gets there is still one beam
+ * going exactly where the player aimed — an upgrade must never make aiming worse.
+ */
+export function beamDirs() {
+  const S = towerStats(state.up);
+  const base = aimDir();
+  const a0 = Math.atan2(base.y, base.x);
+  const out = [base];
+  for (let i = 1; i <= (S.beams - 1) / 2; i++) {
+    for (const sign of [-1, 1]) {
+      const a = a0 + sign * i * BEAM_SPREAD;
+      out.push({ x: Math.cos(a), y: Math.sin(a) });
+    }
+  }
+  return out;
+}
+
+/** Every Milbil one beam would cross, nearest first. */
+function beamTargets(d = aimDir()) {
   const S = towerStats(state.up);
   const { muzzle } = game.L;
-  const d = aimDir();
   const pad = game.L.cell * S.beamHalf;
   const out = [];
   for (const m of game.milbils) {
@@ -276,35 +350,47 @@ export function fire() {
 
   const S = towerStats(state.up);
   const { muzzle, W, H } = game.L;
-  const d = aimDir();
   game.charge = 0;
 
-  const targets = beamTargets();
-  const taken = targets.slice(0, S.pierce);
-
-  // The beam stops at the last thing it was able to hit, but runs off-screen if
-  // it had pierce to spare — that reads as "I missed" rather than "it fizzled".
-  let end = rayExit(muzzle.x, muzzle.y, d.x, d.y, W, H);
-  if (targets.length > S.pierce && taken.length) end = taken[taken.length - 1].t;
-
+  const dirs = beamDirs();
   const bw = Math.max(2.5, game.L.cell * S.beamHalf * 1.1);
-  fx.beam(muzzle.x, muzzle.y, muzzle.x + d.x * end, muzzle.y + d.y * end, '#7af0ff', bw);
-  fx.burst(muzzle.x + d.x * 14, muzzle.y + d.y * 14, '#7af0ff', 8, 200, 1.2, Math.atan2(d.y, d.x));
+  const hitAll = [];
+
+  dirs.forEach((d, i) => {
+    const targets = beamTargets(d);
+    const taken = targets.slice(0, S.pierce);
+
+    // A beam stops at the last thing it was able to hit, but runs off-screen if
+    // it had pierce to spare — that reads as "I missed" rather than "it fizzled".
+    let end = rayExit(muzzle.x, muzzle.y, d.x, d.y, W, H);
+    if (targets.length > S.pierce && taken.length) end = taken[taken.length - 1].t;
+
+    // Outer beams of a fan are drawn slightly thinner so the aimed one still reads
+    // as the main shot.
+    const k = i === 0 ? 1 : 0.72;
+    fx.beam(muzzle.x, muzzle.y, muzzle.x + d.x * end, muzzle.y + d.y * end, '#7af0ff', bw * k);
+    fx.burst(muzzle.x + d.x * 14, muzzle.y + d.y * 14, '#7af0ff', i === 0 ? 8 : 4, 200, 1.2, Math.atan2(d.y, d.x));
+
+    // One Milbil standing where two beams cross must not be charged twice.
+    for (const hit of taken) if (!hitAll.some((h) => h.m === hit.m)) hitAll.push(hit);
+  });
+
   fx.shake(2.5);
   audio.laser();
 
   let popped = 0;
-  for (const hit of taken) {
+  for (const hit of hitAll) {
+    if (hit.m.dead) continue;                    // a chain arc may already have got it
     fx.burst(hit.p.x, hit.p.y, '#ffffff', 10, 240);
     if (damage(hit.m, S.damage, hit.p)) popped++;
   }
 
-  // Lining two or more up in a single beam is the skill shot; pay for it.
+  // Lining two or more up in one shot is the skill shot; pay for it.
   if (popped >= 2) {
-    const bonus = 25 * (popped - 1);
+    const bonus = S.comboCoins * (popped - 1);
     state.coins += bonus;
     game.roundCoins += bonus;
-    const mid = taken[Math.floor(taken.length / 2)].p;
+    const mid = hitAll[Math.floor(hitAll.length / 2)].p;
     floatAt(mid.x, mid.y - game.L.cell * 0.7,
       `${popped > 2 ? 'TRIPLE' : 'DOUBLE'}!  +${bonus}`, '#9dff6b', { size: 26, life: 1.4 });
     audio.combo();
@@ -355,8 +441,13 @@ export function update(dt) {
     }
   }
 
-  // ---- who is under the crosshair ----
-  game.locked = beamTargets().slice(0, S.pierce).map((h) => h.m.id);
+  // ---- who is under the crosshair, across every beam of the fan ----
+  game.locked = [];
+  for (const d of beamDirs()) {
+    for (const h of beamTargets(d).slice(0, S.pierce)) {
+      if (!game.locked.includes(h.m.id)) game.locked.push(h.m.id);
+    }
+  }
 
   // ---- Milbils ----
   for (const m of game.milbils) {
@@ -364,12 +455,21 @@ export function update(dt) {
 
     m.warp = Math.min(1, m.warp + dt / 0.45);
     m.flash = Math.max(0, m.flash - dt * 4.5);
-    m.phase = (m.phase + dt * (m.t.boss ? 0.5 : 0.8)) % 1;
     m.dodgeCd = Math.max(0, m.dodgeCd - dt);
 
+    // Stun Coil: frozen mid-step. Freezing the dance is the tell — a Milbil that
+    // has stopped moving is one you know will still be there next shot.
+    if (m.stun > 0) {
+      m.stun = Math.max(0, m.stun - dt);
+      if (Math.random() < dt * 9) fx.burst(m.x, m.y, '#9de8ff', 2, 60);
+    } else {
+      m.phase = (m.phase + dt * (m.t.boss ? 0.5 : 0.8)) % 1;
+    }
+
     // Blinky spends most of its time nearly invisible, with brief bright peaks.
+    // A Tracer Array lifts the floor so it can never quite disappear.
     m.alpha = m.t.fade
-      ? 0.10 + 0.90 * Math.pow(0.5 + 0.5 * Math.sin(game.time * 2.3 + m.seed), 2.4)
+      ? S.blinkFloor + (1 - S.blinkFloor) * Math.pow(0.5 + 0.5 * Math.sin(game.time * 2.3 + m.seed), 2.4)
       : 1;
 
     if (m.hopT < 1) {
@@ -378,7 +478,7 @@ export function update(dt) {
         if (m.escaping) { reachTower(m); continue; }
         m.rest = (m.t.hopMs / 1000) * S.hopScale / speed * (0.75 + Math.random() * 0.5);
       }
-    } else {
+    } else if (m.stun <= 0) {
       // Shifty feels the crosshair settle on it and bolts sideways.
       if (m.t.dodge && m.dodgeCd <= 0 && game.locked.includes(m.id)) {
         const occ = occupied(m);
