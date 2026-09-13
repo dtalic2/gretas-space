@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="9" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="soft" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="#05050a"/>
+
+  <!-- board hint -->
+  <g stroke="#2f6f8f" stroke-width="4" opacity=".55">
+    <path d="M96 128h320M96 224h320M96 320h320"/>
+    <path d="M160 96v320M256 96v320M352 96v320"/>
+  </g>
+  <rect x="96" y="96" width="320" height="320" rx="8" fill="none"
+        stroke="#36d8ff" stroke-width="7" filter="url(#soft)"/>
+
+  <!-- a Milbil, mid-wave -->
+  <g filter="url(#glow)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M176 150 L318 168 L310 316 L176 306 L156 202 Z" stroke="#f0f04a" stroke-width="13"/>
+    <ellipse cx="212" cy="214" rx="20" ry="30" stroke="#d2ea5a" stroke-width="10"/>
+    <path d="M248 200 q34 -26 68 0 q-34 26 -68 0 Z" stroke="#4dff7a" stroke-width="10"/>
+    <circle cx="214" cy="224" r="7" fill="#fff" stroke="none"/>
+    <circle cx="290" cy="200" r="8" fill="#fff" stroke="none"/>
+    <path d="M186 246 L256 236 L318 230" stroke="#5ff0ff" stroke-width="10"/>
+    <path d="M198 224 L296 218 L292 268 q-46 22 -92 -4 Z" stroke="#6bf06b" stroke-width="8"/>
+    <path d="M245 220 L243 278" stroke="#6bf06b" stroke-width="8"/>
+    <!-- raised arm -->
+    <path d="M312 236 L364 228 L392 172" stroke="#ff5fd0" stroke-width="12"/>
+    <path d="M392 172 L410 118 M392 172 L428 140" stroke="#8fd6ff" stroke-width="10"/>
+    <!-- low arm -->
+    <path d="M176 250 L120 258 L88 282" stroke="#f5d14a" stroke-width="12"/>
+    <path d="M88 282 L44 296 M88 282 L62 338" stroke="#7aa8ff" stroke-width="10"/>
+    <!-- legs -->
+    <path d="M214 306 L222 372 L160 414" stroke="#ff7a9c" stroke-width="12"/>
+    <path d="M280 310 L288 380 L326 436" stroke="#ff7a9c" stroke-width="12"/>
+  </g>
+
+  <!-- the laser, coming up from the tower -->
+  <path d="M256 500 L232 268" stroke="#7af0ff" stroke-width="11" stroke-linecap="round"
+        filter="url(#glow)" opacity=".95"/>
+  <path d="M256 500 L232 268" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+</svg>

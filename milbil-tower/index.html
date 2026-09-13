@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#05050a">
+<title>Milbil Tower</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+
+<!-- ============ BOOT ============ -->
+<div id="boot">
+  <div class="boot-inner">
+    <div class="boot-title">MILBIL</div>
+    <div class="boot-title two">TOWER</div>
+    <div class="boot-bar"><i id="bootBar"></i></div>
+    <div class="boot-msg" id="bootMsg">Warming up the lasers…</div>
+  </div>
+</div>
+
+<!-- ============ HUD ============ -->
+<div id="hud" class="hidden">
+  <div class="hud-top">
+    <div class="hud-group">
+      <div class="chip coin"><span class="ico">🪙</span><b id="coins">0</b></div>
+      <div class="chip"><span class="lbl">Round</span><b id="roundNo">1</b></div>
+      <div class="chip milbil"><span class="lbl">Milbils</span><b id="leftNo">1</b></div>
+    </div>
+    <div class="hud-group right">
+      <button class="chip btn" id="btnShop" title="Tower workshop (B)">🛠️</button>
+      <button class="chip btn" id="btnSound" title="Sound">🔊</button>
+      <button class="chip btn" id="btnHelp" title="How to play (H)">?</button>
+    </div>
+  </div>
+  <div class="hud-hint" id="hint"></div>
+</div>
+
+<!-- ============ WORKSHOP ============ -->
+<div id="shop" class="overlay hidden">
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Tower Workshop</h2>
+      <div class="panel-coins">🪙 <b id="shopCoins">0</b></div>
+      <button class="x" id="shopClose">✕</button>
+    </div>
+    <div class="shop-list" id="shopList"></div>
+    <div class="panel-foot" id="shopFoot">Coins come off Milbils. A typical one pays 30.</div>
+  </div>
+</div>
+
+<!-- ============ HOW TO PLAY + FIELD GUIDE ============ -->
+<div id="help" class="overlay hidden">
+  <div class="panel">
+    <div class="panel-head">
+      <h2>How to play</h2>
+      <button class="x" id="helpClose">✕</button>
+    </div>
+    <div class="panel-body">
+      <table class="keys">
+        <tr><th></th><th>Desktop</th><th>Phone</th></tr>
+        <tr><td>Aim</td><td>move the mouse</td><td>hold and drag</td></tr>
+        <tr><td>Fire</td><td>click or <b>Space</b></td><td>lift your finger</td></tr>
+        <tr><td>Workshop</td><td><b>B</b></td><td>🛠️</td></tr>
+        <tr><td>Pause</td><td><b>P</b></td><td>—</td></tr>
+      </table>
+      <p>Milbils walk on at the <b>far row</b> and hop toward you. One that hops
+         off the <b class="danger">near row</b> reaches the tower and takes a shield.
+         Lose every shield and the Milbils have the tower.</p>
+      <p><b>Round 1 has one Milbil, round 2 has two</b>, and so on. Clear them all
+         to move on. Line two up in a single beam for a bonus.</p>
+      <h3>Field guide</h3>
+      <div class="guide" id="guide"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TOWER LOST ============ -->
+<div id="over" class="overlay hidden">
+  <div class="panel narrow">
+    <div class="panel-head"><h2 class="lost">Tower lost</h2></div>
+    <div class="panel-body center">
+      <p class="big" id="overRound">The Milbils took round 1</p>
+      <p id="overStats"></p>
+      <p class="note">Your coins and every upgrade are safe. Have another go at the same round.</p>
+      <div class="btn-row">
+        <button class="big-btn" id="overRetry">Try again</button>
+        <button class="big-btn ghost" id="overShop">🛠️ Workshop</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PAUSED ============ -->
+<div id="pause" class="overlay hidden">
+  <div class="panel narrow">
+    <div class="panel-body center">
+      <p class="big">Paused</p>
+      <div class="btn-row"><button class="big-btn" id="pauseResume">Resume</button></div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,208 @@
+/* ---------- Milbil Tower ----------
+   A neon-on-black UI to match the Milbils themselves: nothing is filled in, it
+   all glows. Panels are the one exception — text has to stay readable. */
+
+:root{
+  --cyan:#7af0ff;
+  --cyan-dim:#36d8ff;
+  --pink:#ff5f8f;
+  --lime:#9dff6b;
+  --gold:#ffd75e;
+  --danger:#ff4d6d;
+  --ink:#dff4ff;
+  --panel:#0b1420;
+  --edge:rgba(122,240,255,.28);
+  font-synthesis-weight:none;
+}
+
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{height:100%; overflow:hidden}
+body{
+  background:#05050a;
+  color:var(--ink);
+  font-family:"Baloo 2","Nunito","Trebuchet MS",system-ui,-apple-system,sans-serif;
+  font-weight:700;
+  overscroll-behavior:none;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-user-select:none; user-select:none;
+  -webkit-font-smoothing:antialiased;
+  touch-action:none;
+}
+#scene{position:fixed; inset:0; width:100%; height:100%; display:block; cursor:crosshair}
+.hidden{display:none !important}
+
+/* ---------- BOOT ---------- */
+#boot{
+  position:fixed; inset:0; z-index:60;
+  display:grid; place-items:center;
+  background:radial-gradient(circle at 50% 45%, #0d1c2b, #05050a 70%);
+  transition:opacity .5s ease;
+}
+#boot.gone{opacity:0; pointer-events:none}
+.boot-inner{text-align:center}
+.boot-title{
+  font-size:clamp(38px,11vw,74px); font-weight:900; letter-spacing:9px; line-height:.98;
+  color:var(--cyan); text-shadow:0 0 12px var(--cyan), 0 0 40px rgba(122,240,255,.55);
+}
+.boot-title.two{color:var(--pink); text-shadow:0 0 12px var(--pink), 0 0 40px rgba(255,95,143,.5)}
+.boot-bar{width:min(260px,60vw); height:8px; border-radius:99px; background:rgba(122,240,255,.15); margin:26px auto 12px; overflow:hidden}
+.boot-bar i{display:block; height:100%; width:0%; border-radius:99px; background:var(--cyan); box-shadow:0 0 14px var(--cyan); transition:width .25s ease}
+.boot-msg{font-size:14px; opacity:.7; letter-spacing:.6px}
+
+/* ---------- HUD ---------- */
+#hud{position:fixed; inset:0; z-index:10; pointer-events:none}
+.hud-top{
+  position:absolute;
+  top:calc(10px + env(safe-area-inset-top));
+  left:calc(10px + env(safe-area-inset-left));
+  right:calc(10px + env(safe-area-inset-right));
+  display:flex; justify-content:space-between; align-items:flex-start; gap:8px;
+}
+.hud-group{display:flex; gap:8px; align-items:center; flex-wrap:wrap; min-width:0}
+.hud-group.right{justify-content:flex-end}
+
+.chip{
+  background:rgba(10,20,32,.78);
+  border:1.5px solid var(--edge);
+  border-radius:99px;
+  padding:6px 13px;
+  font-size:15px;
+  color:var(--ink);
+  display:flex; align-items:center; gap:7px;
+  backdrop-filter:blur(6px);
+  box-shadow:0 0 14px rgba(54,216,255,.14), inset 0 0 12px rgba(54,216,255,.06);
+  white-space:nowrap;
+}
+.chip .lbl{font-size:12px; opacity:.62; letter-spacing:.6px; text-transform:uppercase}
+.chip b{font-weight:900; font-variant-numeric:tabular-nums}
+.chip.coin{border-color:rgba(255,215,94,.45); color:var(--gold); box-shadow:0 0 14px rgba(255,215,94,.18)}
+.chip.milbil b{color:var(--pink)}
+.chip.btn{pointer-events:auto; cursor:pointer; padding:6px 12px; font-size:17px; line-height:1; transition:transform .08s, border-color .15s}
+.chip.btn:hover{border-color:var(--cyan); transform:translateY(-1px)}
+.chip.btn:active{transform:translateY(1px)}
+.chip.flash{animation:chipflash .45s ease}
+@keyframes chipflash{0%{transform:scale(1)}40%{transform:scale(1.16)}100%{transform:scale(1)}}
+
+.hud-hint{
+  position:absolute; left:0; right:0;
+  bottom:calc(6px + env(safe-area-inset-bottom));
+  text-align:center; font-size:12.5px; letter-spacing:.5px;
+  color:rgba(223,244,255,.45);
+  transition:opacity .5s ease;
+}
+
+/* ---------- OVERLAYS ---------- */
+.overlay{
+  position:fixed; inset:0; z-index:40;
+  display:grid; place-items:center;
+  background:rgba(3,6,12,.74);
+  backdrop-filter:blur(5px);
+  padding:14px;
+  pointer-events:auto;
+}
+.panel{
+  width:min(560px,100%);
+  max-height:min(88vh,780px);
+  display:flex; flex-direction:column;
+  background:linear-gradient(180deg,#0d1826,#080f18);
+  border:1.5px solid var(--edge);
+  border-radius:18px;
+  box-shadow:0 0 40px rgba(54,216,255,.18), 0 20px 60px rgba(0,0,0,.6);
+  overflow:hidden;
+}
+.panel.narrow{width:min(400px,100%)}
+.panel-head{
+  display:flex; align-items:center; gap:12px;
+  padding:15px 18px; border-bottom:1px solid rgba(122,240,255,.16);
+}
+.panel-head h2{
+  font-size:21px; font-weight:900; letter-spacing:1.4px; flex:1;
+  color:var(--cyan); text-shadow:0 0 14px rgba(122,240,255,.55);
+}
+.panel-head h2.lost{color:var(--danger); text-shadow:0 0 14px rgba(255,77,109,.6)}
+.panel-coins{color:var(--gold); font-weight:900; font-size:17px; font-variant-numeric:tabular-nums}
+.x{
+  background:none; border:1.5px solid var(--edge); color:var(--ink);
+  width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:15px; font-weight:900;
+}
+.x:hover{border-color:var(--pink); color:var(--pink)}
+.panel-body{padding:16px 18px; overflow-y:auto; font-size:14.5px; line-height:1.6; font-weight:600}
+.panel-body.center{text-align:center}
+.panel-body p{margin-bottom:11px; color:rgba(223,244,255,.86)}
+.panel-body p.big{font-size:20px; font-weight:900; color:var(--ink); margin-bottom:6px}
+.panel-body p.note{font-size:13px; color:rgba(223,244,255,.55)}
+.panel-body h3{margin:16px 0 9px; font-size:15px; letter-spacing:1.2px; text-transform:uppercase; color:var(--pink)}
+.panel-foot{padding:11px 18px; border-top:1px solid rgba(122,240,255,.14); font-size:12.5px; color:rgba(223,244,255,.55); text-align:center}
+b.danger{color:var(--danger)}
+
+.keys{width:100%; table-layout:fixed; border-collapse:collapse; margin-bottom:14px; font-size:14px}
+.keys th{text-align:left; font-size:11.5px; letter-spacing:1px; text-transform:uppercase; color:rgba(223,244,255,.45); padding-bottom:5px}
+.keys td{padding:4px 12px 4px 0; color:rgba(223,244,255,.85)}
+.keys th:first-child,.keys td:first-child{color:var(--cyan); font-weight:900; width:30%}
+.keys th{padding-right:12px}
+.keys b{color:#fff; background:rgba(122,240,255,.12); border:1px solid var(--edge); border-radius:5px; padding:1px 6px; font-size:12.5px}
+
+/* ---------- SHOP ---------- */
+.shop-list{padding:12px; overflow-y:auto; display:flex; flex-direction:column; gap:9px}
+.up{
+  display:flex; align-items:center; gap:12px;
+  padding:11px 13px; border-radius:13px;
+  background:rgba(122,240,255,.04);
+  border:1.5px solid rgba(122,240,255,.14);
+}
+.up.max{border-color:rgba(157,255,107,.35); background:rgba(157,255,107,.05)}
+.up-ico{font-size:23px; width:34px; text-align:center; flex:none}
+.up-txt{flex:1; min-width:0}
+.up-name{font-size:15.5px; font-weight:900; color:var(--ink)}
+.up-blurb{font-size:12.5px; color:rgba(223,244,255,.55); font-weight:600; line-height:1.4}
+.up-now{font-size:12.5px; color:var(--lime); font-weight:800; margin-top:2px}
+.pips{display:flex; gap:3px; margin-top:5px}
+.pips i{width:15px; height:4px; border-radius:2px; background:rgba(255,255,255,.14)}
+.pips i.on{background:var(--cyan); box-shadow:0 0 7px var(--cyan)}
+.buy{
+  flex:none; min-width:82px;
+  background:rgba(255,215,94,.1); border:1.5px solid rgba(255,215,94,.4);
+  color:var(--gold); font-weight:900; font-size:14px; font-family:inherit;
+  padding:9px 12px; border-radius:10px; cursor:pointer;
+  transition:transform .08s, background .15s;
+}
+.buy:hover:not(:disabled){background:rgba(255,215,94,.2); transform:translateY(-1px)}
+.buy:active:not(:disabled){transform:translateY(1px)}
+.buy:disabled{opacity:.35; cursor:not-allowed}
+.buy.done{color:var(--lime); border-color:rgba(157,255,107,.4); background:rgba(157,255,107,.1)}
+
+/* ---------- FIELD GUIDE ---------- */
+.guide{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:9px}
+.gcard{
+  border:1.5px solid rgba(122,240,255,.14); border-radius:12px;
+  padding:9px; background:rgba(122,240,255,.03); text-align:center;
+}
+.gcard canvas{width:78px; height:78px; display:block; margin:0 auto}
+.gcard .gname{font-size:13.5px; font-weight:900; margin-top:3px; color:var(--ink)}
+.gcard .gcoins{font-size:13px; font-weight:900; color:var(--gold)}
+.gcard .gblurb{font-size:11.5px; color:rgba(223,244,255,.5); font-weight:600; line-height:1.35; margin-top:3px}
+.gcard.unknown{opacity:.4}
+.gcard.unknown .qm{font-size:46px; line-height:78px; color:rgba(223,244,255,.3)}
+
+/* ---------- BUTTONS ---------- */
+.btn-row{display:flex; gap:10px; justify-content:center; margin-top:16px; flex-wrap:wrap}
+.big-btn{
+  background:rgba(122,240,255,.12); border:1.5px solid var(--cyan);
+  color:var(--cyan); font-family:inherit; font-weight:900; font-size:16px;
+  padding:12px 24px; border-radius:12px; cursor:pointer;
+  box-shadow:0 0 18px rgba(122,240,255,.2);
+  transition:transform .08s, background .15s;
+}
+.big-btn:hover{background:rgba(122,240,255,.22); transform:translateY(-1px)}
+.big-btn:active{transform:translateY(1px)}
+.big-btn.ghost{border-color:var(--edge); color:var(--ink); box-shadow:none; background:rgba(255,255,255,.04)}
+
+@media (max-width:540px){
+  .chip{padding:5px 10px; font-size:13.5px}
+  .chip .lbl{font-size:10.5px}
+  .buy{min-width:74px; font-size:13px; padding:8px 10px}
+}
+@media (max-width:380px){
+  .up-blurb{display:none}
+  .up-ico{font-size:20px; width:26px}
+}
