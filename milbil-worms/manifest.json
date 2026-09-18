@@ -1,0 +1,11 @@
+{
+  "name": "Milbil Worms",
+  "short_name": "Milbil Worms",
+  "description": "Two teams of Milbils, one map that blows apart, ten ways to ruin somebody's day.",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#04050a",
+  "theme_color": "#04050a",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

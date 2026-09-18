@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#05050a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Milbil Worms — two teams of Milbils, one destructible map, ten ways to ruin somebody's day.">
+<title>Milbil Worms</title>
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+
+<!-- ============ BOOT ============ -->
+<div id="boot">
+  <div class="boot-inner">
+    <div class="boot-title">MILBIL</div>
+    <div class="boot-title two">WORMS</div>
+    <div class="boot-bar"><i id="bootBar"></i></div>
+    <div class="boot-msg" id="bootMsg">Waking the Milbils…</div>
+  </div>
+</div>
+
+<!-- ============ HUD ============ -->
+<div id="hud" class="hidden">
+  <div class="hud-top">
+    <div class="team-card t0" id="team0">
+      <div class="team-name">GLOW</div>
+      <div class="team-bar"><i></i></div>
+      <div class="team-pips"></div>
+    </div>
+
+    <div class="mid">
+      <div class="mid-row">
+        <div class="chip round"><span class="lbl">Round</span><b id="roundNo">1</b></div>
+        <div class="chip timer" id="timerChip"><b id="timerNo">30</b></div>
+      </div>
+      <div class="wind" id="wind">
+        <span class="lbl">Wind</span>
+        <div class="wind-bar"><i id="windFill"></i><u></u></div>
+      </div>
+    </div>
+
+    <div class="team-card t1" id="team1">
+      <div class="team-name">FLUX</div>
+      <div class="team-bar"><i></i></div>
+      <div class="team-pips"></div>
+    </div>
+  </div>
+
+  <div class="tools">
+    <button class="tool" id="btnWeapons" title="Weapons (Tab)">🎒</button>
+    <button class="tool" id="btnHelp" title="How to play (H)">?</button>
+    <button class="tool" id="btnSound" title="Sound (M)">🔊</button>
+    <button class="tool" id="btnPause" title="Pause (P)">⏸</button>
+  </div>
+
+  <div class="banner" id="banner"></div>
+  <div class="prompt" id="prompt"></div>
+
+  <div class="hud-bottom">
+    <div class="pad">
+      <button class="pad-btn" id="btnLeft" aria-label="walk left">◀</button>
+      <button class="pad-btn" id="btnJump" aria-label="jump">⤒</button>
+      <button class="pad-btn" id="btnRight" aria-label="walk right">▶</button>
+    </div>
+
+    <button class="current-weapon" id="currentWeapon">
+      <span class="cw-ico">🚀</span>
+      <span class="cw-txt"><b>Bazooka</b><i>∞</i></span>
+    </button>
+
+    <button class="fire" id="btnFire">
+      <span>FIRE</span>
+      <div class="fire-fill" id="fireFill"></div>
+    </button>
+  </div>
+</div>
+
+<!-- ============ MENU ============ -->
+<div id="menu" class="overlay hidden">
+  <div class="panel">
+    <div class="title-wrap">
+      <h1>MILBIL <span>WORMS</span></h1>
+      <p class="tag">Two teams. One map. Ten ways to ruin somebody's day.</p>
+    </div>
+    <div class="panel-body">
+      <div class="opt-row" id="optSize">
+        <span class="opt-label">Milbils per team</span>
+        <div class="seg" data-opt="teamSize">
+          <button data-v="2">2</button><button data-v="3">3</button>
+          <button data-v="4" class="on">4</button><button data-v="5">5</button><button data-v="6">6</button>
+        </div>
+      </div>
+      <div class="opt-row">
+        <span class="opt-label">Other side</span>
+        <div class="seg" data-opt="cpu">
+          <button data-v="1" class="on">Computer</button><button data-v="0">A friend</button>
+        </div>
+      </div>
+      <div class="opt-row" id="optSkill">
+        <span class="opt-label">Computer skill</span>
+        <div class="seg" data-opt="aiSkill">
+          <button data-v="easy">Wobbly</button><button data-v="normal" class="on">Sharp</button><button data-v="tough">Deadly</button>
+        </div>
+      </div>
+      <div class="opt-row">
+        <span class="opt-label">Aim guide</span>
+        <div class="seg" data-opt="guide">
+          <button data-v="off">Off</button><button data-v="short" class="on">Short</button><button data-v="full">Full arc</button>
+        </div>
+      </div>
+      <div class="opt-row">
+        <span class="opt-label">Map</span>
+        <div class="seg wrap" data-opt="theme">
+          <button data-v="" class="on">Surprise me</button><button data-v="canyon">Canyon</button>
+          <button data-v="ember">Ember</button><button data-v="frost">Frost</button><button data-v="toxic">Toxic</button>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="big-btn" id="btnPlay">PLAY</button>
+        <button class="big-btn ghost" id="btnMenuHelp">How to play</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ WEAPONS ============ -->
+<div id="weapons" class="overlay hidden">
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Weapons</h2>
+      <button class="x" id="weaponsClose">✕</button>
+    </div>
+    <div class="wgrid" id="wgrid"></div>
+    <div class="panel-foot">Crates drop the scarce ones. Number keys work too.</div>
+  </div>
+</div>
+
+<!-- ============ HELP ============ -->
+<div id="help" class="overlay hidden">
+  <div class="panel">
+    <div class="panel-head">
+      <h2>How to play</h2>
+      <button class="x" id="helpClose">✕</button>
+    </div>
+    <div class="panel-body scroll">
+      <p>Two teams of Milbils, one map that blows apart. Wipe out the other side.
+         Each turn you get <b>30 seconds</b> to walk, aim and fire — then it is
+         their go.</p>
+      <table class="keys">
+        <tr><th></th><th>Phone</th><th>Desktop</th></tr>
+        <tr><td>Aim &amp; power</td><td>drag on the map</td><td>drag from your Milbil, or <b>↑</b><b>↓</b></td></tr>
+        <tr><td>Fire</td><td>let go, or hold <b>FIRE</b></td><td>hold <b>Space</b> and let go</td></tr>
+        <tr><td>Walk</td><td><b>◀</b> <b>▶</b></td><td><b>A</b> <b>D</b> or <b>←</b> <b>→</b></td></tr>
+        <tr><td>Jump</td><td><b>⤒</b></td><td><b>Enter</b></td></tr>
+        <tr><td>Weapons</td><td>🎒</td><td><b>Tab</b>, or <b>1</b>–<b>0</b></td></tr>
+        <tr><td>Look around</td><td>two fingers</td><td>right-drag, wheel to zoom</td></tr>
+      </table>
+      <p>The longer you drag, the harder the shot. The dotted line shows where it
+         starts out — <b>wind</b> does the rest, and the wind bar at the top tells
+         you which way it is pushing.</p>
+      <h3>Things that will kill you</h3>
+      <p>Falling a long way. The water. Standing next to your own dynamite.
+         Standing next to a team-mate's rocket — <b>friendly fire is on</b>.</p>
+      <h3>Crates</h3>
+      <p>A crate drops most turns. Walk into it: <b>weapon crates</b> restock the
+         rare stuff, <b>health crates</b> patch you up 30.</p>
+      <h3>Sudden death</h3>
+      <p>Nine rounds in, everyone drops to 25 health and the water starts climbing
+         a little every turn. It ends games.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PAUSE ============ -->
+<div id="pause" class="overlay hidden">
+  <div class="panel narrow">
+    <div class="panel-body center">
+      <p class="big">Paused</p>
+      <div class="btn-row">
+        <button class="big-btn" id="pauseResume">Resume</button>
+        <button class="big-btn ghost" id="pauseQuit">Quit to menu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ GAME OVER ============ -->
+<div id="over" class="overlay hidden">
+  <div class="panel narrow">
+    <div class="panel-head"><h2 id="overTitle">GLOW WINS</h2></div>
+    <div class="panel-body center">
+      <canvas id="overArt" width="150" height="150"></canvas>
+      <p id="overLine">Two Milbils left standing.</p>
+      <table class="stats" id="overStats"></table>
+      <div class="btn-row">
+        <button class="big-btn" id="overAgain">Rematch</button>
+        <button class="big-btn ghost" id="overMenu">Menu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

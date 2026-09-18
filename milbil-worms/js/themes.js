@@ -1,0 +1,80 @@
+// ---------- Map themes ----------
+//
+// A match picks one of these and everything visual hangs off it: the sky wash,
+// what floats through the air, how the ground is coloured, what the water is
+// made of. Two matches on the same theme still get a different silhouette — the
+// terrain seed is separate — but they read as the same *place*, which is what
+// makes a map feel like somewhere rather than a backdrop.
+
+export const THEMES = {
+  canyon: {
+    key: 'canyon',
+    name: 'Neon Canyon',
+    blurb: 'Cyan strata under a magenta sky.',
+    sky: ['#0a0f22', '#160b28', '#05050a'],
+    nebula: ['rgba(255,95,143,.18)', 'rgba(54,216,255,.16)'],
+    stars: '#cfe9ff',
+    hills: ['#0d1a2c', '#101228'],
+    rock: ['#1d4c6e', '#123048', '#080f1b'],
+    crust: 'rgba(122,240,255,.30)',
+    strata: 'rgba(122,240,255,.13)',
+    rim: '#7af0ff',
+    rimGlow: 'rgba(122,240,255,.55)',
+    water: ['rgba(30,180,220,.30)', 'rgba(10,60,120,.75)'],
+    waterEdge: '#6fe8ff',
+    motes: { color: '#7af0ff', rise: -8, count: 46, size: 1.6 },
+  },
+  ember: {
+    key: 'ember',
+    name: 'Ember Ridge',
+    blurb: 'Cinders drifting up off hot rock.',
+    sky: ['#1b0a12', '#2a0d0c', '#08040a'],
+    nebula: ['rgba(255,140,60,.18)', 'rgba(255,60,90,.14)'],
+    stars: '#ffd9c0',
+    hills: ['#24101a', '#170a12'],
+    rock: ['#5c2320', '#33121a', '#12070c'],
+    crust: 'rgba(255,150,70,.32)',
+    strata: 'rgba(255,170,90,.14)',
+    rim: '#ffab5e',
+    rimGlow: 'rgba(255,140,60,.55)',
+    water: ['rgba(255,120,40,.35)', 'rgba(150,30,10,.8)'],
+    waterEdge: '#ffb066',
+    motes: { color: '#ff9d4d', rise: -26, count: 60, size: 1.9 },
+  },
+  frost: {
+    key: 'frost',
+    name: 'Frost Circuit',
+    blurb: 'Snow falling through an aurora.',
+    sky: ['#071427', '#0b2036', '#04070f'],
+    nebula: ['rgba(120,255,220,.14)', 'rgba(130,160,255,.16)'],
+    stars: '#eaf6ff',
+    hills: ['#0c1e30', '#0a1626'],
+    rock: ['#2b5f7e', '#163449', '#08111c'],
+    crust: 'rgba(200,244,255,.34)',
+    strata: 'rgba(200,240,255,.16)',
+    rim: '#b8f2ff',
+    rimGlow: 'rgba(180,240,255,.55)',
+    water: ['rgba(120,200,255,.28)', 'rgba(20,60,110,.78)'],
+    waterEdge: '#d6f6ff',
+    motes: { color: '#e8fbff', rise: 26, count: 70, size: 1.7 },
+  },
+  toxic: {
+    key: 'toxic',
+    name: 'Toxic Flats',
+    blurb: 'Do not fall in the green.',
+    sky: ['#06160f', '#0c1f14', '#03070a'],
+    nebula: ['rgba(157,255,107,.14)', 'rgba(60,220,180,.14)'],
+    stars: '#d8ffd0',
+    hills: ['#0c2318', '#091a13'],
+    rock: ['#23613c', '#123720', '#06120c'],
+    crust: 'rgba(157,255,107,.28)',
+    strata: 'rgba(157,255,107,.14)',
+    rim: '#9dff6b',
+    rimGlow: 'rgba(157,255,107,.5)',
+    water: ['rgba(120,255,120,.32)', 'rgba(20,110,50,.8)'],
+    waterEdge: '#b6ff8f',
+    motes: { color: '#9dff6b', rise: -12, count: 40, size: 1.8 },
+  },
+};
+
+export const THEME_KEYS = Object.keys(THEMES);
