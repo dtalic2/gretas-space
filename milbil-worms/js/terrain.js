@@ -409,6 +409,17 @@ export class Terrain {
     r.globalCompositeOperation = 'source-in';
     r.fillStyle = this.theme.rim;
     r.fillRect(0, 0, rw, rh);
+
+    // Erosion treats everything past the canvas as empty, so the four borders
+    // come out as lit edges and the map ends up framed in a glowing rectangle.
+    // Ground that runs off the side of the world is a cut, not a surface.
+    r.globalCompositeOperation = 'destination-out';
+    r.fillStyle = '#000';
+    const band = RIM_PX * RIM_SCALE + 1;
+    r.fillRect(0, 0, rw, band);
+    r.fillRect(0, rh - band, rw, band);
+    r.fillRect(0, 0, band, rh);
+    r.fillRect(rw - band, 0, band, rh);
     r.globalCompositeOperation = 'source-over';
 
     // bloom = the rim, tiny. Scaled back up at draw time it is a free blur, and

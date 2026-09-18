@@ -11,7 +11,7 @@
 //
 // Nothing outside this file moves a Milbil or changes a health bar.
 
-import { clamp, approach, seeded, shuffle, TAU, dist } from './util.js';
+import { clamp, approach, seeded, shuffle, TAU, dist, angleDiff } from './util.js';
 import { Terrain, WORLD } from './terrain.js';
 import { THEMES, THEME_KEYS } from './themes.js';
 import { WEAPONS, WEAPON_ORDER, startingAmmo, CRATE_TABLE } from './weapons.js';
@@ -69,6 +69,10 @@ export const G = {
   charging: false,
   waterY: WORLD.h - 46,
   retreat: 0,          // seconds of "run!" left after dropping something fused
+  aimWant: null,       // the angle the finger is asking for; the arm eases toward it
+  powerWant: 0,
+  dragAim: false,      // a finger or mouse is currently setting the aim
+  powerSpan: 180,      // screen pixels of drag that means full power
   suddenDeath: false,
   winner: null,
   banner: null,
@@ -234,6 +238,13 @@ function nextTurn(first = false) {
   // The weapon is the team's, not the game's: the computer picking a cluster
   // bomb on its turn must not leave one in your hands on yours.
   G.weapon = hasAmmo(team.weapon, team) ? team.weapon : firstWithAmmo(team);
+  // Hand back the angle this side fired at last. Re-dialling the same arc from
+  // scratch every turn is the most tedious thing about artillery on a phone.
+  if (team.lastAim !== undefined) m.aim = team.lastAim;
+  m.facing = Math.cos(m.aim) >= 0 ? 1 : -1;
+  G.aimWant = m.aim;
+  G.powerWant = 0;
+  G.dragAim = false;
   G.banner = { title: `${team.name} — ${m.name}`, color: team.accent, life: 1.6 };
   sfx.turn(teamIdx);
   maybeDropCrate();
@@ -581,6 +592,12 @@ export function fireWeapon(power) {
   });
   if (!ok) return false;
 
+  team.lastAim = G.active.aim;
+  team.lastPower = clamp(power, 0.08, 1);
+  G.dragAim = false;
+  G.aimWant = G.active.aim;
+  G.powerWant = 0;
+
   G.charging = false;
   G.power = 0;
   G.target = null;
@@ -600,6 +617,36 @@ export function fireWeapon(power) {
 }
 
 // ---------------------------------------------------------------- camera
+
+/**
+ * The zoom at which the whole map fits on screen, as a multiple of `cam.base`.
+ * This is the floor for pinching out — pinch all the way and you get the board.
+ */
+export function fitZoomFactor() {
+  const fit = Math.min(G.view.w / WORLD.w, G.view.h / WORLD.h) * 0.97;
+  return clamp(fit / G.cam.base, 0.08, 1);
+}
+
+export function isOverview() {
+  return G.cam.user <= fitZoomFactor() * 1.08;
+}
+
+/** The ⤢ button: snap out to the whole board, or back to where you were. */
+export function toggleOverview() {
+  const fit = fitZoomFactor();
+  if (isOverview()) {
+    G.cam.user = G.cam.preOverview ?? 1;
+  } else {
+    G.cam.preOverview = G.cam.user;
+    G.cam.user = fit;
+  }
+  G.cam.manual = 0;
+  sfx.select();
+}
+
+export function setUserZoom(v) {
+  G.cam.user = clamp(v, fitZoomFactor(), 2.6);
+}
 
 export function focusOn(m, snap = false) {
   if (!m) return;
@@ -660,7 +707,11 @@ function updateCamera(dt) {
     }
   }
 
-  const wantZoom = cam.base * cam.user * (G.projectiles.length || G.plane ? 0.82 : 1);
+  // Pull back a little while something is in the air — but never past the
+  // whole board, and not at all if the player has already zoomed out to it.
+  const fit = fitZoomFactor();
+  const pullBack = (G.projectiles.length || G.plane) && cam.user > fit * 1.1 ? 0.82 : 1;
+  const wantZoom = Math.max(cam.base * fit, cam.base * cam.user * pullBack);
   cam.zoom = approach(cam.zoom, wantZoom, 0.06, dt);
 
   const rate = G.projectiles.length ? 0.18 : 0.1;
@@ -733,6 +784,17 @@ export function update(dt) {
         G.timer = 0;
         endTurn();
       }
+      // The arm eases toward where the finger is rather than snapping to it:
+      // a touch point jitters by a couple of pixels and a hard follow turns
+      // that into a visibly twitching barrel.
+      if (!G.activeTeam?.cpu && G.aimWant !== null) {
+        const m = G.active;
+        if (m) {
+          m.aim += angleDiff(m.aim, G.aimWant) * (1 - Math.pow(0.5, dt * 60));
+          m.facing = Math.cos(m.aim) >= 0 ? 1 : -1;
+          if (G.dragAim && !G.charging) G.power = approach(G.power, G.powerWant, 0.5, dt);
+        }
+      }
       if (G.charging) {
         G.power = Math.min(1, G.power + dt * 0.85);
         if (G.power >= 1) fireWeapon(1);
@@ -779,14 +841,52 @@ function quiet() {
 
 // ---------------------------------------------------------------- aiming
 
-export function aimToward(wx, wy, setPower = true) {
+/**
+ * How close to the Milbil a finger may get before its angle stops being
+ * meaningful. Two pixels of thumb wobble an inch from the barrel is forty
+ * degrees of aim; past this ring it is a fraction of one.
+ */
+export const AIM_DEAD = 38;
+
+/**
+ * Point the shot at a place on the map.
+ *
+ * Power comes off the *screen* distance rather than the world distance, so a
+ * full-power drag is the same length of thumb travel whether you are zoomed in
+ * on one ledge or looking at the whole board. `powerSpan` is set from the
+ * viewport at resize.
+ */
+export function aimToward(wx, wy, zoom = 1) {
   const m = G.active;
   if (!m || G.phase !== 'aim') return;
   const dx = wx - m.x, dy = wy - (m.y - 22);
-  if (Math.hypot(dx, dy) < 6) return;
-  m.aim = Math.atan2(dy, dx);
-  m.facing = Math.cos(m.aim) >= 0 ? 1 : -1;
-  if (setPower) G.power = clamp(Math.hypot(dx, dy) / 250, 0.12, 1);
+  const screen = Math.hypot(dx, dy) * zoom;
+  if (screen > AIM_DEAD) G.aimWant = Math.atan2(dy, dx);
+  const span = Math.max(70, G.powerSpan - AIM_DEAD);
+  G.powerWant = clamp((screen - AIM_DEAD) / span, 0.1, 1);
+  G.dragAim = true;
+}
+
+/** Let go: the shot is exactly where the finger said, not where the eased arm
+ *  has got to. Returns the power to fire at. */
+export function releaseAim() {
+  const m = G.active;
+  if (!m) return 0;
+  if (G.aimWant !== null) {
+    m.aim = G.aimWant;
+    m.facing = Math.cos(m.aim) >= 0 ? 1 : -1;
+  }
+  G.power = G.powerWant;
+  G.dragAim = false;
+  return G.power;
+}
+
+/** A stray tap, or a drag that never went anywhere. Costs nothing. */
+export function cancelAim() {
+  G.dragAim = false;
+  G.powerWant = 0;
+  G.power = 0;
+  if (G.active) G.aimWant = G.active.aim;
 }
 
 export function nudgeAim(d) {
@@ -801,6 +901,7 @@ export function nudgeAim(d) {
     if (a < 0) a += TAU;
     m.aim = clamp(a, Math.PI / 2 - 0.42, Math.PI * 1.5 + 0.42);
   }
+  G.aimWant = m.aim;
 }
 
 /** Where a lobbed shot would go, for the aim guide. */

@@ -8,7 +8,7 @@
 // re-renders sixty times a second will happily eat more frame time than the
 // terrain does.
 
-import { G, MAX_HP, aliveOf, selectWeapon, needsTarget } from './game.js';
+import { G, MAX_HP, aliveOf, selectWeapon, needsTarget, isOverview } from './game.js';
 import { WEAPONS, WEAPON_ORDER } from './weapons.js';
 import { milbilStill } from './art.js';
 import { sfx, setMuted, isMuted, unlock } from './audio.js';
@@ -23,7 +23,7 @@ export function initUI(hooks) {
     'boot', 'bootBar', 'bootMsg', 'hud', 'menu', 'help', 'pause', 'over', 'weapons',
     'team0', 'team1', 'roundNo', 'timerNo', 'timerChip', 'windFill', 'banner', 'prompt',
     'currentWeapon', 'btnFire', 'fireFill', 'wgrid', 'overTitle', 'overLine', 'overStats',
-    'overArt', 'btnLeft', 'btnRight', 'btnJump', 'btnSound',
+    'overArt', 'btnLeft', 'btnRight', 'btnJump', 'btnSound', 'btnZoom', 'aimRead',
   ]) el[id] = $(id);
 
   el.teamCards = [el.team0, el.team1];
@@ -139,7 +139,7 @@ function syncWeapon(force = false) {
   el.currentWeapon.querySelector('.cw-ico').textContent = w.icon;
   el.currentWeapon.querySelector('.cw-txt b').textContent = w.name;
   el.currentWeapon.querySelector('.cw-txt i').textContent =
-    ammo === Infinity ? 'unlimited' : `${ammo} left`;
+    ammo === Infinity ? '∞ ammo' : `${ammo} left`;
   if (isOpen('weapons')) buildWeaponGrid();
 }
 
@@ -198,6 +198,24 @@ export function sync() {
   }
 
   syncWeapon();
+
+  // the aim readout: elevation off the horizon, and which way it is pointing
+  const m = G.active;
+  if (m) {
+    let e = (-m.aim * 180) / Math.PI;
+    if (e > 90) e = 180 - e;
+    if (e < -90) e = -180 - e;
+    const read = `${m.facing > 0 ? '▶' : '◀'} ${Math.round(e)}°`;
+    if (cache.aim !== read) {
+      cache.aim = read;
+      el.aimRead.textContent = read;
+    }
+  }
+  const over = isOverview();
+  if (cache.over !== over) {
+    cache.over = over;
+    el.btnZoom.classList.toggle('on', over);
+  }
 
   // fire button: charge level, and whether it can be used at all
   const canFire = G.phase === 'aim' && G.activeTeam && !G.activeTeam.cpu;

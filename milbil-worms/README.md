@@ -46,11 +46,13 @@ A turn is **30 seconds**. Walk, pick a weapon, aim, fire. Then it is their go.
 | Action | Phone | Desktop |
 | --- | --- | --- |
 | Aim and power | drag anywhere on the map | drag, or **↑** / **↓** |
+| Fine aim | **▲** **▼** beside FIRE | **↑** **↓** |
 | Fire | let go, or hold **FIRE** | hold **Space** and let go |
 | Walk | **◀** **▶** | **A** **D** or **←** **→** |
 | Jump | **⤒** | **Enter** |
 | Weapons | 🎒 | **Tab**, or **1**–**0** |
-| Look around | two fingers | right-drag, wheel to zoom |
+| Zoom | pinch, or **⤢** for the whole board | wheel, or **Z** |
+| Look around | drag with two fingers | right-drag |
 | Pause / help / mute | ⏸ ? 🔊 | **P** **H** **M** |
 
 **One aiming model for thumbs and mice**: your Milbil aims at wherever you are
@@ -59,10 +61,40 @@ arc swing, let go. There is no separate set-the-angle-then-set-the-power step �
 that is the part of the classic artillery control scheme that does not survive
 contact with a touchscreen.
 
+Four things make that work with a thumb rather than a mouse:
+
+- **Power is measured on the screen, not in the world.** A full-power drag is
+  about a third of the short side of the display — one comfortable thumb
+  movement — whether you are zoomed in on one ledge or looking at the whole
+  board. A world-distance rule makes full power unreachable when zoomed in and
+  trivial when zoomed out.
+- **There is a dead zone around the Milbil.** Two pixels of wobble an inch from
+  the barrel is forty degrees of aim; inside the ring the angle simply holds
+  still, and only the power follows your finger.
+- **The arm eases toward your finger instead of snapping to it**, so a touch
+  point that jitters does not produce a visibly twitching barrel. Letting go
+  fires exactly where the finger was, not where the eased arm had got to.
+- **A drag that never leaves the dead zone does not fire.** Neither does a tap.
+  A fumble should cost nothing.
+
+For the shots that need to be exact, **▲** and **▼** next to FIRE dial the angle
+a third of a degree at a time (hold them and they accelerate), the readout beside
+them shows the elevation, and then holding **FIRE** charges the power. Each side
+also keeps the angle it fired at last, and the faint tick on the power ring is
+where the last shot went off — so "same again, a bit harder" is two taps and a
+hold rather than a fresh guess.
+
 The dotted arc shows how the shot *starts out*. **Wind** does the rest, and the
 bar at the top of the screen says which way it is pushing and how hard. Set the
 aim guide to **Full arc** in the menu if you would rather see the whole thing, or
 **Off** if you want it honest.
+
+**Pinch out as far as you like and you get the whole board** — the zoom floor is
+whatever fits 1700×950 on your screen, not an arbitrary number — or tap **⤢** to
+snap between the whole board and where you were. Zoomed out that far, names come
+off the Milbils and the pool of team colour under each one stops shrinking, so
+you can still read the board at a glance. The zoom stays where you put it, turn
+after turn, and everything past the edge of the world hazes off into the dark.
 
 Three weapons want a target *before* you fire — Homing Blip, Air Strike and
 Teleport. Tap the map to place it, then fire.

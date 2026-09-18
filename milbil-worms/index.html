@@ -58,6 +58,7 @@
 
   <div class="tools">
     <button class="tool" id="btnWeapons" title="Weapons (Tab)">🎒</button>
+    <button class="tool" id="btnZoom" title="Whole board (Z)">⤢</button>
     <button class="tool" id="btnHelp" title="How to play (H)">?</button>
     <button class="tool" id="btnSound" title="Sound (M)">🔊</button>
     <button class="tool" id="btnPause" title="Pause (P)">⏸</button>
@@ -77,6 +78,12 @@
       <span class="cw-ico">🚀</span>
       <span class="cw-txt"><b>Bazooka</b><i>∞</i></span>
     </button>
+
+    <div class="aim-pad">
+      <button class="aim-btn" id="btnAimUp" aria-label="aim higher">▲</button>
+      <div class="aim-read" id="aimRead">▶ 30°</div>
+      <button class="aim-btn" id="btnAimDown" aria-label="aim lower">▼</button>
+    </div>
 
     <button class="fire" id="btnFire">
       <span>FIRE</span>
@@ -163,11 +170,20 @@
         <tr><td>Walk</td><td><b>◀</b> <b>▶</b></td><td><b>A</b> <b>D</b> or <b>←</b> <b>→</b></td></tr>
         <tr><td>Jump</td><td><b>⤒</b></td><td><b>Enter</b></td></tr>
         <tr><td>Weapons</td><td>🎒</td><td><b>Tab</b>, or <b>1</b>–<b>0</b></td></tr>
-        <tr><td>Look around</td><td>two fingers</td><td>right-drag, wheel to zoom</td></tr>
+        <tr><td>Fine aim</td><td><b>▲</b> <b>▼</b> beside FIRE</td><td><b>↑</b> <b>↓</b></td></tr>
+        <tr><td>Look around</td><td>drag with two fingers</td><td>right-drag</td></tr>
+        <tr><td>Zoom</td><td>pinch, or <b>⤢</b> for the whole board</td><td>wheel, or <b>Z</b></td></tr>
       </table>
-      <p>The longer you drag, the harder the shot. The dotted line shows where it
-         starts out — <b>wind</b> does the rest, and the wind bar at the top tells
-         you which way it is pushing.</p>
+      <p>The longer you drag, the harder the shot — and the further your finger
+         is from the Milbil, the finer the angle gets. The dotted line shows
+         where the shot starts out; <b>wind</b> does the rest, and the bar at the
+         top says which way it is pushing.</p>
+      <p>For the fiddly ones, use <b>▲</b> and <b>▼</b> next to FIRE to dial the
+         angle in a fraction of a degree at a time, then <b>hold FIRE</b> and let
+         go at the power you want. The faint tick on the power ring is where your
+         last shot went off, so "same again, a bit harder" is easy.</p>
+      <p>Pinch out — or tap <b>⤢</b> — to see the whole board, and the zoom
+         stays where you put it.</p>
       <h3>Things that will kill you</h3>
       <p>Falling a long way. The water. Standing next to a team-mate's rocket —
          <b>friendly fire is on</b>, for you and for the computer.</p>

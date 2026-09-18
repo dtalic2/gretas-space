@@ -55,6 +55,7 @@ export function draw(ctx, dpr = 1) {
   drawAim(ctx);
   fx.draw(ctx, cam.zoom);
   drawWater(ctx, rect);
+  drawBounds(ctx, rect);
 
   ctx.restore();
 
@@ -83,11 +84,14 @@ function drawMilbil(ctx, m) {
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
   ctx.globalAlpha = active ? 0.42 : 0.2;
-  const g = ctx.createRadialGradient(m.x, m.y - 2, 1, m.x, m.y - 2, 34);
+  // Zoomed right out a Milbil is nine pixels tall, so the pool under it stops
+  // shrinking — it becomes how you find your team on the board.
+  const pool = Math.max(34, 22 / G.cam.zoom);
+  const g = ctx.createRadialGradient(m.x, m.y - 2, 1, m.x, m.y - 2, pool);
   g.addColorStop(0, team.accent);
   g.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = g;
-  ctx.fillRect(m.x - 36, m.y - 20, 72, 36);
+  ctx.fillRect(m.x - pool, m.y - pool * 0.6, pool * 2, pool * 1.2);
   ctx.restore();
 
   ctx.save();
@@ -265,8 +269,11 @@ function drawAim(ctx) {
     ctx.restore();
   }
 
-  // power, as a ring that fills around the Milbil
-  if (G.power > 0.02) {
+  // Power, as a ring that fills around the Milbil. The faint tick is where the
+  // last shot from this side went off — "same again, a bit harder" is most of
+  // what you want from a second turn, and it is impossible to judge from a bar
+  // that resets to nothing.
+  if (human || G.power > 0.02) {
     const r = 40;
     ctx.save();
     ctx.lineCap = 'round';
@@ -275,6 +282,18 @@ function drawAim(ctx) {
     ctx.beginPath();
     ctx.arc(m.x, m.y - 22, r, -TAU / 4, -TAU / 4 + TAU * 0.999);
     ctx.stroke();
+
+    const last = G.teams[m.team].lastPower;
+    if (last) {
+      const a = -TAU / 4 + TAU * last;
+      ctx.strokeStyle = 'rgba(255,255,255,.55)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(m.x + Math.cos(a) * (r - 6), m.y - 22 + Math.sin(a) * (r - 6));
+      ctx.lineTo(m.x + Math.cos(a) * (r + 6), m.y - 22 + Math.sin(a) * (r + 6));
+      ctx.stroke();
+    }
+    if (G.power <= 0.02) { ctx.restore(); return; }
     const col = G.power > 0.85 ? '#ff4d6d' : G.power > 0.5 ? '#ffd75e' : '#9dff6b';
     ctx.strokeStyle = col;
     ctx.shadowColor = col;
@@ -294,7 +313,7 @@ function drawWater(ctx, rect) {
   if (rect.y1 < y - 12) return;              // water is off the bottom of the view
   const t = G.time;
   const th = G.theme;
-  const x0 = Math.max(rect.x0, -200), x1 = Math.min(rect.x1, WORLD.w + 200);
+  const x0 = rect.x0, x1 = rect.x1;    // an ocean, not a rectangle the size of the map
 
   ctx.save();
   const g = ctx.createLinearGradient(0, y - 10, 0, WORLD.h + 60);
@@ -326,36 +345,69 @@ function drawWater(ctx, rect) {
   ctx.globalAlpha = 0.16;
   ctx.fillStyle = th.waterEdge;
   for (let i = 0; i < 26; i++) {
-    const x = ((i * 137.5 + t * 22) % (WORLD.w + 200)) - 100;
+    const x = ((i * 137.5 + t * 22) % (WORLD.w + 400)) - 200;
     if (x < x0 - 90 || x > x1) continue;
     ctx.fillRect(x, y + 6 + ((i * 31) % 26), 26 + ((i * 53) % 60), 1.5);
   }
   ctx.restore();
 }
 
+/**
+ * Haze outside the playfield.
+ *
+ * Zoom out to the whole board and you can see where the world stops — the far
+ * ends of the ground, the edge of the starfield. Rather than pretend otherwise,
+ * everything past the world darkens off, gradually enough to read as distance
+ * rather than as a wall. It is also true: anything that leaves the map dies.
+ */
+function drawBounds(ctx, rect) {
+  const { w, h } = { w: WORLD.w, h: WORLD.h };
+  const fade = (x0, y0, x1, y1, gx0, gy0, gx1, gy1) => {
+    if (x1 <= x0 || y1 <= y0) return;
+    const g = ctx.createLinearGradient(gx0, gy0, gx1, gy1);
+    g.addColorStop(0, 'rgba(2,4,9,0)');
+    g.addColorStop(0.45, 'rgba(2,4,9,.42)');
+    g.addColorStop(1, 'rgba(2,4,9,.8)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+  };
+
+  ctx.save();
+  fade(rect.x0, rect.y0, 0, rect.y1, 0, 0, -300, 0);
+  fade(w, rect.y0, rect.x1, rect.y1, w, 0, w + 300, 0);
+  fade(rect.x0, rect.y0, rect.x1, 0, 0, 0, 0, -340);
+  fade(rect.x0, h, rect.x1, rect.y1, 0, h, 0, h + 300);
+  ctx.restore();
+}
+
 // ---------------------------------------------------------------- screen space
 
 function drawTags(ctx) {
+  // Zoomed out to the whole board there is no room for names, and twelve of
+  // them overlapping is worse than none. The bars stay: that is the board state.
+  const tiny = G.cam.zoom < 0.5;
   ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   for (const m of G.milbils) {
     if (!m.alive) continue;
-    const p = worldToScreen(m.x, m.y - 62);
+    const p = worldToScreen(m.x, m.y - (tiny ? 36 : 62));
     if (p.x < -80 || p.x > G.view.w + 80 || p.y < -40 || p.y > G.view.h + 40) continue;
     const team = G.teams[m.team];
     const active = G.active === m && G.phase !== 'over';
-    const W = 50, H = 6;
+    const W = tiny ? 26 : 50, H = tiny ? 4 : 6;
 
     ctx.globalAlpha = active ? 1 : 0.8;
-    ctx.font = `800 ${active ? 13 : 11.5}px "Baloo 2", "Trebuchet MS", system-ui, sans-serif`;
-    ctx.fillStyle = 'rgba(0,0,0,.55)';
-    ctx.fillText(m.name, p.x + 1, p.y - 9);
-    ctx.fillStyle = team.accent;
-    ctx.shadowColor = team.accent;
-    ctx.shadowBlur = active ? 10 : 4;
-    ctx.fillText(m.name, p.x, p.y - 10);
-    ctx.shadowBlur = 0;
+    if (!tiny) {
+      ctx.font = `800 ${active ? 13 : 11.5}px "Baloo 2", "Trebuchet MS", system-ui, sans-serif`;
+      ctx.fillStyle = 'rgba(0,0,0,.55)';
+      ctx.fillText(m.name, p.x + 1, p.y - 9);
+      ctx.fillStyle = team.accent;
+      ctx.shadowColor = team.accent;
+      ctx.shadowBlur = active ? 10 : 4;
+      ctx.fillText(m.name, p.x, p.y - 10);
+      ctx.shadowBlur = 0;
+    }
 
     ctx.fillStyle = 'rgba(4,8,14,.75)';
     ctx.fillRect(p.x - W / 2 - 1, p.y - 1, W + 2, H + 2);

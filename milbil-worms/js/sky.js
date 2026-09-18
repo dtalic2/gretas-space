@@ -107,6 +107,27 @@ export function makeBackdrop(theme, seed) {
     hc.globalAlpha = 1;
   }
 
+  // Both plates fade out at their own edges. Zoomed right out you can see past
+  // them, and a starfield that stops in a straight line is worse than one that
+  // thins out into the dark.
+  for (const plate of [stars, hills]) {
+    const c = plate.getContext('2d');
+    const pw = plate.width, ph = plate.height;
+    c.globalCompositeOperation = 'destination-out';
+    const edges = [
+      [0, 0, pw * 0.1, 0], [pw, 0, pw * 0.9, 0],
+      [0, 0, 0, ph * 0.1], [0, ph, 0, ph * 0.9],
+    ];
+    for (const [x0, y0, x1, y1] of edges) {
+      const g = c.createLinearGradient(x0, y0, x1, y1);
+      g.addColorStop(0, 'rgba(0,0,0,1)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      c.fillStyle = g;
+      c.fillRect(0, 0, pw, ph);
+    }
+    c.globalCompositeOperation = 'source-over';
+  }
+
   return { stars, hills };
 }
 

@@ -146,7 +146,7 @@ button{font-family:inherit; font-weight:800; cursor:pointer}
 
 .prompt{
   position:absolute; left:0; right:0;
-  bottom:calc(102px + env(safe-area-inset-bottom));
+  bottom:calc(186px + env(safe-area-inset-bottom));
   text-align:center; font-size:13px; letter-spacing:.6px;
   color:rgba(223,244,255,.75); pointer-events:none;
   text-shadow:0 2px 8px #000;
@@ -161,7 +161,7 @@ button{font-family:inherit; font-weight:800; cursor:pointer}
   bottom:calc(10px + env(safe-area-inset-bottom));
   display:flex; align-items:flex-end; justify-content:space-between; gap:10px;
 }
-.pad{display:flex; gap:7px; align-items:center}
+.pad{display:flex; gap:7px; align-items:center; flex:none}
 .pad-btn{
   width:54px; height:54px; border-radius:16px;
   background:rgba(8,16,26,.72); border:1.5px solid var(--edge); color:var(--ink);
@@ -171,19 +171,44 @@ button{font-family:inherit; font-weight:800; cursor:pointer}
 .pad-btn:active,.pad-btn.on{background:rgba(122,240,255,.2); border-color:var(--cyan); transform:scale(.95)}
 
 .current-weapon{
-  display:flex; align-items:center; gap:8px;
+  display:flex; align-items:center; gap:8px; flex:0 1 auto; overflow:hidden;
   background:rgba(8,16,26,.75); border:1.5px solid rgba(255,215,94,.45); color:var(--gold);
   border-radius:14px; padding:7px 12px; backdrop-filter:blur(6px);
   box-shadow:0 0 16px rgba(255,215,94,.14);
   min-width:0;
 }
 .cw-ico{font-size:22px; line-height:1}
-.cw-txt{display:flex; flex-direction:column; align-items:flex-start; line-height:1.15; min-width:0}
-.cw-txt b{font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:24vw}
+.cw-txt{display:flex; flex-direction:column; align-items:flex-start; line-height:1.15; min-width:0; overflow:hidden}
+.cw-txt b,.cw-txt i{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%}
+.cw-txt b{font-size:13.5px}
 .cw-txt i{font-style:normal; font-size:11.5px; opacity:.7}
 
+/* The fine-aim pad sits directly above FIRE rather than in the bottom row:
+   that is where the thumb already is, and the row has no 50px to spare on a
+   narrow phone without chopping the weapon name down to "Ba...". */
+.aim-pad{
+  position:absolute;
+  right:calc(12px + env(safe-area-inset-right));
+  bottom:calc(98px + env(safe-area-inset-bottom));
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  pointer-events:none;
+}
+.aim-btn{
+  width:44px; height:30px; border-radius:9px;
+  background:rgba(8,16,26,.72); border:1.5px solid var(--edge); color:var(--ink);
+  font-size:13px; line-height:1; backdrop-filter:blur(6px); pointer-events:auto;
+  transition:transform .08s, background .12s, border-color .12s;
+}
+.aim-btn:active,.aim-btn.on{background:rgba(122,240,255,.22); border-color:var(--cyan); transform:scale(.94)}
+.aim-read{
+  font-size:11.5px; letter-spacing:.4px; color:var(--gold);
+  font-variant-numeric:tabular-nums; text-shadow:0 1px 6px #000; white-space:nowrap;
+}
+
+.tool.on{background:rgba(122,240,255,.22); border-color:var(--cyan); color:var(--cyan)}
+
 .fire{
-  position:relative; overflow:hidden;
+  position:relative; overflow:hidden; flex:none;
   width:78px; height:78px; border-radius:50%;
   background:rgba(255,77,109,.14); border:2px solid var(--danger); color:#fff;
   font-size:15px; letter-spacing:1.6px;
@@ -285,12 +310,15 @@ button{font-family:inherit; font-weight:800; cursor:pointer}
 .wcard:active{transform:scale(.98)}
 
 @media (max-width:520px){
+  .hud-bottom{gap:6px}
+  .pad{gap:6px}
+  .aim-btn{width:40px; height:28px}
   .team-card{min-width:92px; padding:5px 8px}
   .team-name{font-size:12.5px; letter-spacing:1.8px}
   .wind-bar{width:70px}
   .chip{font-size:13px; padding:3px 9px}
-  .pad-btn{width:50px; height:50px; font-size:18px}
-  .fire{width:70px; height:70px; font-size:13.5px}
+  .pad-btn{width:46px; height:46px; font-size:17px}
+  .fire{width:66px; height:66px; font-size:13px}
   .cw-txt b{font-size:12.5px}
   .tools{top:calc(78px + env(safe-area-inset-top))}
   .tool{width:34px; height:34px; font-size:14px}
@@ -299,6 +327,9 @@ button{font-family:inherit; font-weight:800; cursor:pointer}
 @media (max-height:430px){
   .banner{top:24%}
   .tools{flex-direction:row; top:auto; bottom:calc(96px + env(safe-area-inset-bottom))}
+  .aim-pad{flex-direction:row; gap:5px; right:calc(178px + env(safe-area-inset-right))}
+  .prompt{bottom:calc(142px + env(safe-area-inset-bottom))}
+  .aim-read{display:none}
 }
 
 .prompt.urgent{

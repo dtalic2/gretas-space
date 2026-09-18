@@ -11,6 +11,7 @@
 
 import {
   G, TEAM_DEFS, newMatch, update as updateGame, fireWeapon, selectWeapon, endTurn,
+  setUserZoom, toggleOverview,
 } from './game.js';
 import { WORLD } from './terrain.js';
 import { bakeTeam } from './art.js';
@@ -45,6 +46,15 @@ function resize() {
   // whole map vertically and half the screen is empty sky.
   const targetVis = w < 620 ? 680 : w < 1100 ? 980 : 1240;
   G.cam.base = clamp(Math.max(w / targetVis, h / (WORLD.h * 1.02)), 0.3, 1.8);
+
+  // How far you have to drag for a full-power shot: about a third of the short
+  // side of the screen, so it is one comfortable thumb movement on a phone and
+  // a short mouse drag on a desktop — and the same either way, at any zoom.
+  G.powerSpan = clamp(Math.min(w, h) * 0.34, 130, 260);
+
+  // A rotate can leave the zoom below the new floor (the board fits differently
+  // in landscape), so re-clamp it against the new viewport.
+  setUserZoom(G.cam.user);
 }
 
 const raf = () => new Promise((r) => requestAnimationFrame(r));
@@ -129,7 +139,7 @@ function loop(now) {
 
 // Handy from the browser console, and what the smoke test pokes at: the whole
 // match state, live, plus the two verbs that are awkward to trigger by hand.
-window.MILBIL = { G, startMatch, fire: fireWeapon, select: selectWeapon, endTurn };
+window.MILBIL = { G, startMatch, fire: fireWeapon, select: selectWeapon, endTurn, toggleOverview };
 
 addEventListener('visibilitychange', () => {
   if (document.hidden && G.phase !== 'menu' && G.phase !== 'over') {
