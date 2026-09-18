@@ -68,6 +68,7 @@ export const G = {
   power: 0,
   charging: false,
   waterY: WORLD.h - 46,
+  retreat: 0,          // seconds of "run!" left after dropping something fused
   suddenDeath: false,
   winner: null,
   banner: null,
@@ -107,6 +108,7 @@ export function newMatch(opts = {}) {
     ammo: startingAmmo(),
     sprites: d.sprites || bakeTeam(d.hue, d.accent, 168),
     next: 0,
+    weapon: 'bazooka',      // each side remembers what it last had out
   }));
   // Sprite sheets are expensive and never change, so keep them on the defs.
   TEAM_DEFS.forEach((d, i) => { d.sprites = G.teams[i].sprites; });
@@ -221,6 +223,7 @@ function nextTurn(first = false) {
   G.wind = Math.round((Math.random() * 2 - 1) * 20) / 20;
   G.timer = TURN_TIME;
   G.power = 0;
+  G.retreat = 0;
   G.charging = false;
   G.target = null;
   G.phase = 'intro';
@@ -228,7 +231,9 @@ function nextTurn(first = false) {
   G.cam.manual = 0;
   G.camHold = null;
   m.vx = 0;
-  if (!hasAmmo(G.weapon, team)) G.weapon = firstWithAmmo(team);
+  // The weapon is the team's, not the game's: the computer picking a cluster
+  // bomb on its turn must not leave one in your hands on yours.
+  G.weapon = hasAmmo(team.weapon, team) ? team.weapon : firstWithAmmo(team);
   G.banner = { title: `${team.name} — ${m.name}`, color: team.accent, life: 1.6 };
   sfx.turn(teamIdx);
   maybeDropCrate();
@@ -527,7 +532,7 @@ function collect(m, c) {
     const w = WEAPONS[c.item];
     team.ammo[c.item] = (team.ammo[c.item] || 0) + c.amount;
     fx.floater(m.x, m.y - 56, `${w.icon} +${c.amount}`, '#ffd75e', { size: 24 });
-    if (G.active === m && !hasAmmo(G.weapon, team)) G.weapon = c.item;
+    if (G.active === m && !hasAmmo(G.weapon, team)) { G.weapon = c.item; team.weapon = c.item; }
   }
   fx.ring(c.x, c.y, 6, 60, '#ffd75e', { width: 4, life: 0.5 });
   fx.spark(c.x, c.y, '#ffd75e', { n: 22, speed: 220, life: 0.6, size: 2 });
@@ -549,6 +554,7 @@ export function firstWithAmmo(team = G.activeTeam) {
 export function selectWeapon(key) {
   if (!WEAPONS[key] || !hasAmmo(key)) return false;
   G.weapon = key;
+  if (G.activeTeam) G.activeTeam.weapon = key;
   G.target = null;
   sfx.select();
   return true;
@@ -578,15 +584,18 @@ export function fireWeapon(power) {
   G.charging = false;
   G.power = 0;
   G.target = null;
+  // Anything with a fuse hands the turn back for a moment: dropping dynamite at
+  // your own feet with no way to walk away is not a weapon, it is a mistake.
+  G.retreat = w.retreat ?? 0;
   fx.shake(w.kind === 'hitscan' ? 2 : 4);
 
-  if (w.endsTurn === false) {
-    if (!hasAmmo(G.weapon)) G.weapon = firstWithAmmo();
-    return true;
+  if (!hasAmmo(G.weapon)) {
+    G.weapon = firstWithAmmo();
+    team.weapon = G.weapon;
   }
+  if (w.endsTurn === false) return true;
   G.phase = 'fire';
   G.phaseT = 0;
-  if (!hasAmmo(G.weapon)) G.weapon = firstWithAmmo();
   return true;
 }
 
@@ -732,7 +741,14 @@ export function update(dt) {
     }
 
     case 'fire':
-      if (quiet()) {
+      if (G.retreat > 0) {
+        G.retreat -= dt;
+        if (G.retreat <= 0) {
+          G.retreat = 0;
+          if (G.active) G.active.walking = 0;
+        }
+      }
+      if (quiet() && G.retreat <= 0) {
         G.phase = 'settle';
         G.phaseT = 0;
       } else if (G.phaseT > 22) {          // nothing should fly this long

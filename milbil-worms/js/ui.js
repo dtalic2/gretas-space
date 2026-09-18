@@ -11,7 +11,7 @@
 import { G, MAX_HP, aliveOf, selectWeapon, needsTarget } from './game.js';
 import { WEAPONS, WEAPON_ORDER } from './weapons.js';
 import { milbilStill } from './art.js';
-import { sfx, setMuted, isMuted } from './audio.js';
+import { sfx, setMuted, isMuted, unlock } from './audio.js';
 
 const $ = (id) => document.getElementById(id);
 const el = {};
@@ -44,6 +44,10 @@ export function initUI(hooks) {
     });
   }
   G.opts.aiSkill = G.opts.aiSkill || 'normal';
+
+  // iOS will not start an AudioContext outside a user gesture, and the first
+  // gesture of a session is usually this button rather than the canvas.
+  for (const b of document.querySelectorAll('button')) b.addEventListener('pointerdown', unlock);
 
   $('btnPlay').onclick = () => hooks.onPlay();
   $('btnMenuHelp').onclick = () => show('help');
@@ -197,6 +201,7 @@ export function sync() {
 
   // fire button: charge level, and whether it can be used at all
   const canFire = G.phase === 'aim' && G.activeTeam && !G.activeTeam.cpu;
+  el.prompt.classList.toggle('urgent', G.retreat > 0);
   el.btnFire.classList.toggle('off', !canFire);
   el.fireFill.style.height = `${G.power * 100}%`;
   el.btnFire.classList.toggle('armed', G.charging);
@@ -224,6 +229,9 @@ export function sync() {
 
 function promptText() {
   if (G.phase === 'over' || G.phase === 'menu') return '';
+  if (G.retreat > 0) {
+    return G.activeTeam?.cpu ? 'They are running for it…' : `RUN! ${G.retreat.toFixed(1)}s`;
+  }
   if (G.activeTeam?.cpu && G.phase === 'aim') return 'The other side is thinking…';
   if (G.phase === 'fire') return '';
   if (G.phase === 'intro') return '';

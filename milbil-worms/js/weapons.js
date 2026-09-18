@@ -25,7 +25,7 @@ export const WEAPONS = {
     key: 'grenade', name: 'Grenade', icon: '💣', kind: 'lob',
     blurb: 'Bounces. Cooks for three seconds, wherever it ends up.',
     ammo: Infinity, damage: 50, radius: 72, speed: 820, wind: 0.25, gravity: 1,
-    bounce: 0.52, fuse: 3, color: '#9dff6b', trail: '#5fd86b', crate: false, key1: '2',
+    bounce: 0.52, fuse: 3, retreat: 2, color: '#9dff6b', trail: '#5fd86b', crate: false, key1: '2',
   },
   cluster: {
     key: 'cluster', name: 'Cluster Bomb', icon: '🧨', kind: 'lob',
@@ -57,7 +57,7 @@ export const WEAPONS = {
   dynamite: {
     key: 'dynamite', name: 'Dynamite', icon: '🧱', kind: 'drop',
     blurb: 'Dropped at your feet. Four seconds to be somewhere else.',
-    ammo: 1, damage: 80, radius: 98, fuse: 4, gravity: 1, bounce: 0.15,
+    ammo: 1, damage: 80, radius: 98, fuse: 4, gravity: 1, bounce: 0.15, retreat: 3.6,
     color: '#ff4d6d', trail: '#ff7a92', crate: true, key1: '7',
   },
   airstrike: {

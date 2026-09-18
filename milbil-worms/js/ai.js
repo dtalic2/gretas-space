@@ -149,9 +149,15 @@ export function makeAI() {
       this.walkDir = 0;
       this.walkT = 0;
       this.replans = 0;
+      this.fled = 0;
     },
 
     update(dt) {
+      // Dropped something fused: walk away from it like anyone sensible would.
+      if (G.phase === 'fire' && G.retreat > 0 && this.fled && G.active) {
+        walk(G.active, this.fled, dt);
+        return;
+      }
       if (G.phase !== 'aim' || !G.active || !G.activeTeam?.cpu) return;
       const me = G.active;
       const skill = SKILL[G.opts.aiSkill] ?? SKILL.normal;
@@ -190,6 +196,7 @@ export function makeAI() {
 
       if (this.state === 'fire') {
         if (this.t < 0.28) return;
+        this.fled = WEAPONS[G.weapon].retreat ? (G.active.x < G.terrain.w / 2 ? 1 : -1) : 0;
         fireWeapon(this.plan.power);
         this.state = 'done';
       }

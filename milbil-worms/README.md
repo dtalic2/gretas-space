@@ -30,7 +30,7 @@ It also builds to a single self-contained `.html`, for anywhere that can host a
 page but not a folder of ES modules:
 
 ```bash
-node milbil-worms/build-artifact.mjs      # -> dist/milbil-worms.html, ~137 KB
+node milbil-worms/build-artifact.mjs      # -> dist/milbil-worms.html, ~140 KB
 ```
 
 That is the only thing in the project with a build step, and it is optional.
@@ -69,8 +69,14 @@ Teleport. Tap the map to place it, then fire.
 
 ### Things that will kill you
 
-Falling a long way. The water. Your own dynamite. A team-mate's rocket —
-**friendly fire is on**, for you and for the computer.
+Falling a long way. The water. A team-mate's rocket — **friendly fire is on**,
+for you and for the computer.
+
+Anything with a fuse hands the turn back for a moment once it is thrown: the
+prompt turns into **RUN!** and you can still walk and jump (but not fire) until
+it goes off. Dropping dynamite at your own feet with no way to walk away is not
+a weapon, it is a mistake — so grenades give you two seconds and dynamite gives
+you three and a half. The computer runs too.
 
 ### Crates
 
@@ -97,7 +103,7 @@ match, and crates are the only way to get more.
 | 🎯 **Homing Blip** | 1 | 52 | Pick a spot first. It will find it, wind or no wind. |
 | 🔫 **Scatter Gun** | 2 | 2×27 | Two barrels, no arc, no wind. Point it and mean it. |
 | ⚡ **Zap Beam** | 2 | 34 | Tower surplus. Instant, and cuts through everything in line. |
-| 🧱 **Dynamite** | 1 | 80 | Dropped at your feet. Four seconds to be somewhere else. |
+| 🧱 **Dynamite** | 1 | 80 | Dropped at your feet. Four seconds to be somewhere else — and you get them. |
 | ✈️ **Air Strike** | 1 | 5×30 | Pick a column. One pass, five bombs, no take-backs. |
 | 🌟 **MEGA MILL** | 1 | 135 | One per match. It rearranges the map and everyone on it. |
 | 🌀 **Teleport** | 1 | — | Blink anywhere. The only thing that does not end your turn. |

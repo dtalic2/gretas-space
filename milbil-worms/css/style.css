@@ -300,3 +300,9 @@ button{font-family:inherit; font-weight:800; cursor:pointer}
   .banner{top:24%}
   .tools{flex-direction:row; top:auto; bottom:calc(96px + env(safe-area-inset-bottom))}
 }
+
+.prompt.urgent{
+  color:var(--danger); font-size:17px; letter-spacing:2px;
+  text-shadow:0 0 14px var(--danger), 0 2px 8px #000;
+  animation:pulse .5s infinite;
+}

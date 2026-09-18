@@ -122,13 +122,16 @@ export function flashAlpha() {
 export function explode(x, y, radius, opts = {}) {
   const { color = '#ffb457', debris = '#2a3a4d', mega = false } = opts;
   const s = radius / 60;
+  // A bigger blast throws *more* sparks, not bigger ones — scaling the size
+  // linearly turns a MEGA MILL into a screen full of soft bubbles.
+  const g = Math.sqrt(s);
 
-  ring(x, y, radius * 0.18, radius * 1.25, '#ffffff', { width: 5 * s, life: 0.24 });
-  ring(x, y, radius * 0.1, radius * 1.85, color, { width: 3.4 * s, life: 0.48 });
-  spark(x, y, '#ffffff', { n: 14 * s, speed: 320 * s, life: 0.24, size: 2.4 * s, grav: 60 });
-  spark(x, y, color, { n: 26 * s, speed: 260 * s, life: 0.62, size: 2.8 * s, grav: 220 });
-  spark(x, y, '#ffd75e', { n: 12 * s, speed: 420 * s, life: 0.5, size: 1.8 * s, grav: 420 });
-  spark(x, y, debris, { n: 16 * s, speed: 300 * s, life: 1.5, size: 2.6 * s, grav: 900, drag: 0.02 });
+  ring(x, y, radius * 0.18, radius * 1.25, '#ffffff', { width: 5 * g, life: 0.24 });
+  ring(x, y, radius * 0.1, radius * 1.85, color, { width: 3.4 * g, life: 0.48 });
+  spark(x, y, '#ffffff', { n: 16 * s, speed: 320 * s, life: 0.24, size: 2.1 * g, grav: 60 });
+  spark(x, y, color, { n: 30 * s, speed: 260 * s, life: 0.62, size: 2.4 * g, grav: 220 });
+  spark(x, y, '#ffd75e', { n: 14 * s, speed: 420 * s, life: 0.5, size: 1.6 * g, grav: 420 });
+  spark(x, y, debris, { n: 18 * s, speed: 300 * s, life: 1.5, size: 2.2 * g, grav: 900, drag: 0.02 });
   puff(x, y, { n: 8 + 6 * s, r: radius * 0.4, grow: radius * 1.1, life: 2.1, speed: 70 * s });
   light(x, y, radius * 3.2, color, 0.42);
   shake(mega ? 34 : 6 + 10 * s);

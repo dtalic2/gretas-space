@@ -34,6 +34,12 @@ function myTurn() {
   return G.phase === 'aim' && G.active && G.activeTeam && !G.activeTeam.cpu && !paused;
 }
 
+/** Walking and jumping stay live during the retreat window; aiming does not. */
+function canMove() {
+  return myTurn() || (G.phase === 'fire' && G.retreat > 0 && G.active &&
+                      G.activeTeam && !G.activeTeam.cpu && !paused);
+}
+
 function overlayOpen() {
   return ui.isOpen('menu') || ui.isOpen('help') || ui.isOpen('pause') ||
          ui.isOpen('over') || ui.isOpen('weapons');
@@ -155,12 +161,13 @@ export function init(canvas) {
       return;
     }
 
-    if (!myTurn()) return;
+    if (!canMove()) return;
     if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) e.preventDefault();
-    if (k === ' ' && !held.has(' ')) {
-      if (!needsTarget() || G.target) G.charging = true;
-    }
     if (k === 'enter') jump(G.active);
+    // While retreating you may walk and jump, but the gun is put away.
+    if (myTurn() && k === ' ' && !held.has(' ') && (!needsTarget() || G.target)) {
+      G.charging = true;
+    }
     held.add(k);
   });
 
@@ -180,7 +187,7 @@ export function init(canvas) {
   holdBtn('btnRight', () => { padDir = 1; }, () => { if (padDir === 1) padDir = 0; });
   document.getElementById('btnJump').addEventListener('pointerdown', (e) => {
     e.preventDefault();
-    if (myTurn()) jump(G.active);
+    if (canMove()) jump(G.active);
   });
   document.getElementById('currentWeapon').onclick = () => ui.toggleWeapons();
 
@@ -216,13 +223,14 @@ function worldOf(e) {
 
 /** Held keys and buttons, applied once per frame. */
 export function update(dt) {
-  if (!myTurn()) return;
+  if (!canMove()) return;
   const m = G.active;
   let dir = padDir;
   if (held.has('a') || held.has('arrowleft')) dir = -1;
   if (held.has('d') || held.has('arrowright')) dir = 1;
   if (dir) walk(m, dir, dt);
 
+  if (!myTurn()) return;
   if (held.has('w') || held.has('arrowup')) nudgeAim(-dt * 1.3);
   if (held.has('s') || held.has('arrowdown')) nudgeAim(dt * 1.3);
 }
