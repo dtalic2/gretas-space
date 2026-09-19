@@ -60,6 +60,12 @@ html,body{
 .card.center{ text-align:center; }
 .card h1{ margin:.1em 0 .45em; font-size:clamp(22px,5.5vmin,32px); line-height:1.15; }
 .lede{ color:#6b5747; line-height:1.55; margin:0 0 16px; font-size:15px; }
+/* The flavour that follows the instructions, rather than delaying them. */
+.lede.after{ margin:18px 0 0; font-size:14px; color:var(--ink-dim); }
+.eyebrow{
+  font-size:11px; font-weight:800; letter-spacing:.26em; text-transform:uppercase;
+  color:var(--ink-dim); margin-bottom:2px;
+}
 .tiny{ color:var(--ink-dim); font-size:12px; line-height:1.55; margin-top:12px; }
 .pop-mark{ font-size:58px; line-height:1; }
 
