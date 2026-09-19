@@ -283,6 +283,13 @@ button.big:active{ transform:translateY(3px); box-shadow:0 3px 0 var(--coin-dk);
 .order{
   padding:12px; border-radius:18px; background:var(--cream-2); margin-bottom:10px;
 }
+.order .who{ display:flex; align-items:center; gap:10px; margin-bottom:9px; font-size:14px; }
+.order .who img{
+  width:56px; height:74px; object-fit:contain; border-radius:12px; padding:3px;
+  background:radial-gradient(circle at 50% 40%, #2b2440, #16121f);
+  box-shadow:0 2px 6px rgba(58,40,24,.25);
+}
+.order .who b{ font-size:15px; }
 .order .want{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
 .want-item{
   display:flex; align-items:center; gap:6px; padding:7px 10px; border-radius:12px;

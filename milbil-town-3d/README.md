@@ -1,10 +1,11 @@
 # 🏡 Milbil Town — 3D
 
-A floating island, a barn, a post balloon and three milbils.
+A floating island, a barn, a helipad and three milbils.
 
 Milbils are small, round, and never happier than when there is something to do.
 You give them fields to plant, workshops to run and homes to live in; they give
-you a town that keeps working while you are not looking.
+you a town that keeps working while you are not looking. Visitors land on the
+helipad wanting things, and the visitors are Greta's drawings.
 
 **▶ Play it: https://dtalic2.github.io/gretas-space/milbil-town-3d/**
 
@@ -18,9 +19,11 @@ you a town that keeps working while you are not looking.
 2. **Make.** Build a workshop and it turns crops into things worth far more:
    wheat → bread, berries → cake, fluff → a milbil plush. Queue up to four
    recipes; they cook one after another and wait on the shelf until you collect.
-3. **Send.** The post balloon 🎈 holds three orders from other islands. Filling
-   one pays about 1.6× what the barn pays for the same goods, plus the XP that
-   moves the town up a level. Orders are the whole economy — selling raw crops
+3. **Mail.** Visitors land on the helipad 🚁 — Petal, Chomp, Hattie, Sunny and
+   Scoop, who are Greta's drawings cut straight out of the page. Each one waits
+   next to the pad with a list; mail it and the helicopter takes them away.
+   Delivering pays about 1.6× what the barn pays for the same goods, plus the XP
+   that moves the town up a level. This is the whole economy — selling raw crops
    is what you do when the barn is full.
 4. **Grow.** Every workshop needs free milbils to run it, and milbils come from
    homes. A cottage houses two, a mushroom burrow four, a sky tower seven, and
@@ -34,7 +37,7 @@ Levels unlock everything: crops, workshops, homes and the pretty things
 | 2 | Crumb Bakery 🥐 — bread |
 | 3 | Sunberries 🫐, Mushroom Burrow 🍄 |
 | 4 | Dew Press 🧃 — juice and cookies |
-| 5 | Corn 🌽, Fountain ⛲ |
+| 5 | Corn 🌽, Fountain ⛲, Post Balloon 🎈 |
 | 6 | Sky Tower 🗼, Fluff Pen 🐑, Berry Cake 🍰 |
 | 7 | Moonleaf 🍃 |
 | 8 | Cosy Loom 🧣, Moon Tonic 🍶, Milbil Statue 🗿 |
@@ -55,6 +58,10 @@ Levels unlock everything: crops, workshops, homes and the pretty things
   decorations can also be sold back for half.
 - **The shore is not buildable.** The outer ring of the island is grass, rocks
   and bushes, and it stays that way.
+- **The visitors are real drawings.** `art/` holds the five characters, cut out
+  of a photo of the originals with the black turned transparent so the neon
+  still glows. To add another: drop a PNG in `art/` and add a line to
+  `CHARACTERS` in `js/data.js`. Renaming them is the same one line.
 
 ## Getting around
 
@@ -91,9 +98,11 @@ js/models.js      every mesh, built from boxes and balls
 js/world.js       island, sky, clouds, the day/night cycle
 js/town.js        keeps the 3D town in step with the saved state
 js/milbils.js     the residents, and where they wander
+js/visitors.js    the drawn characters on the helipad, and the helicopter
 js/camera.js      drag, pinch, twist, tap
 js/ui.js          chips, sheets, bubbles, toasts
 js/main.js        boot, wiring, the frame loop
+art/              the five visitors, as transparent PNGs
 vendor/           three.js r160
 ```
 

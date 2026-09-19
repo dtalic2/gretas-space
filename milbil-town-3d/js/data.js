@@ -90,6 +90,8 @@ export const CATALOGUE = [
     blurb:'The centre of any town worth walking across.' },
   { id:'statue',  kind:'decor',   name:'Milbil Statue', emoji:'🗿', w:1, d:1, cost:1600, level:8,  scale:1.4,
     blurb:'Nobody remembers which milbil. Everyone is proud of it.' },
+  { id:'balloon', kind:'decor',   name:'Post Balloon',  emoji:'🎈', w:2, d:2, cost:900,  level:5,  scale:1.2,
+    blurb:'Moored, striped, and going nowhere. The helipad took its job.' },
 ];
 
 export const BUILD = {};
@@ -97,8 +99,8 @@ for (const b of CATALOGUE) BUILD[b.id] = b;
 
 // Fixed pieces the town starts with — placed, never bought, never moved.
 export const FIXED = {
-  barn:    { id:'barn',    name:'Barn',       emoji:'📦', w:2, d:2 },
-  balloon: { id:'balloon', name:'Post Balloon',emoji:'🎈', w:2, d:2 },
+  barn:    { id:'barn',    name:'Barn',    emoji:'📦', w:2, d:2 },
+  helipad: { id:'helipad', name:'Helipad', emoji:'🚁', w:3, d:3 },
 };
 
 // Fields get pricier the more you own, so a big farm is a real decision.
@@ -142,6 +144,22 @@ export function unlocksAt(level){
 export const ORDER_SLOTS = 3;
 export const ORDER_GAP = 40;        // seconds before an empty slot refills
 export const ORDER_SKIP_COOLDOWN = 60;
+
+// ------------------------------------------------------------ characters ---
+// The milbils from other islands who land on the helipad wanting things.
+// Each one is a drawing; `art` is the cut-out PNG in art/. Rename freely —
+// nothing but this list knows what they are called.
+
+export const CHARACTERS = [
+  { id:'petal',  name:'Petal',  art:'art/petal.png',  tint:0xff8fb1 },
+  { id:'chomp',  name:'Chomp',  art:'art/chomp.png',  tint:0x8f9dff },
+  { id:'hattie', name:'Hattie', art:'art/hattie.png', tint:0xff9dd6 },
+  { id:'sunny',  name:'Sunny',  art:'art/sunny.png',  tint:0xffe08a },
+  { id:'scoop',  name:'Scoop',  art:'art/scoop.png',  tint:0x8fe0a8 },
+];
+
+export const CHARACTER = {};
+for (const c of CHARACTERS) CHARACTER[c.id] = c;
 
 // --------------------------------------------------------------- milbils ---
 

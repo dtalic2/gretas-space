@@ -5,7 +5,7 @@
 // and means offline catch-up is the same code as the live tick.
 
 import {
-  CROPS, GOODS, ITEMS, BUILD, FIXED, CATALOGUE,
+  CROPS, GOODS, ITEMS, BUILD, FIXED, CATALOGUE, CHARACTERS, CHARACTER,
   ORDER_SLOTS, ORDER_GAP, ORDER_SKIP_COOLDOWN,
   fieldCost, barnUpgradeCost, levelForXp, xpForLevel,
 } from './data.js';
@@ -303,7 +303,7 @@ export function collect(state, o){
 
 // --------------------------------------------------------------- orders ----
 
-/** What the balloon can plausibly ask for: crops you can grow, goods you can make. */
+/** What a visitor can plausibly ask for: crops you grow, goods you can make. */
 export function orderPool(state){
   const pool = [];
   for (const c of CROPS) if (state.level >= c.level) pool.push(c);
@@ -312,6 +312,19 @@ export function orderPool(state){
     if (state.objs.some(o => o.type === g.at)) pool.push(g);
   }
   return pool;
+}
+
+/** Whoever the order is addressed to — old saves have none, so fall back. */
+export function characterFor(order){
+  return CHARACTER[order && order.who] || CHARACTERS[(order && order.uid || 0) % CHARACTERS.length];
+}
+
+/** Prefer a visitor who is not already standing on the pad. */
+function pickCharacter(state){
+  const here = new Set(state.orders.map(o => o.who));
+  const free = CHARACTERS.filter(c => !here.has(c.id));
+  const pool = free.length ? free : CHARACTERS;
+  return pool[Math.floor(Math.random() * pool.length)].id;
 }
 
 export function rollOrder(state, now = Date.now()){
@@ -335,6 +348,7 @@ export function rollOrder(state, now = Date.now()){
   }
   return {
     uid: state.nextUid++,
+    who: pickCharacter(state),
     want,
     coins: Math.max(5, Math.round(coins * 1.65 / 5) * 5),
     xp: Math.max(3, Math.round(xp * 0.55)),
@@ -376,7 +390,7 @@ export function fillOrder(state, orderUid, now = Date.now()){
   if (state.orders.length < ORDER_SLOTS){
     state.nextOrderAt = Math.min(state.nextOrderAt, now + ORDER_GAP * 1000);
   }
-  return { coins:order.coins, xp:order.xp, levels };
+  return { coins:order.coins, xp:order.xp, levels, who: characterFor(order) };
 }
 
 export const skipReadyIn = (state, now) => Math.max(0, (state.skipAt - now) / 1000);
@@ -441,8 +455,8 @@ export const STEPS = [
     want:'field', done:(s) => s.objs.some(o => o.type === 'field' && o.crop) },
   { text:'Wait for it to ripen, then tap the field to harvest',
     want:'field', done:(s) => s.stats.harvest >= 1 },
-  { text:'Tap the balloon 🎈 and fill an order for coins',
-    want:'balloon', done:(s) => s.stats.delivered >= 1 },
+  { text:'Tap the helipad 🚁 and mail an order to a visitor',
+    want:'helipad', done:(s) => s.stats.delivered >= 1 },
   { text:'Tap 🛒 Build and put up a Crumb Bakery',
     want:'shop', done:(s) => s.objs.some(o => o.type === 'bakery') },
   { text:'Tap the bakery and bake some bread',

@@ -179,9 +179,10 @@ export class UI {
       return { cls:'', html:`<span>${c.emoji}</span><span class="bar"><i style="width:${pct}%"></i></span><span>${F.clock(left)}</span>` };
     }
 
-    if (obj.type === 'balloon'){
+    if (obj.type === 'helipad'){
       const ready = state.orders.filter(o => E.canFill(state, o)).length;
-      if (ready) return { cls:'ready', html:`<span>🎈</span><span>${ready} ready</span>` };
+      if (ready) return { cls:'ready', html:`<span>🚁</span><span>${ready} to mail</span>` };
+      if (state.orders.length) return { cls:'empty', html:`<span>🚁</span><span>${state.orders.length} waiting</span>` };
       return null;
     }
 
@@ -292,7 +293,7 @@ export class UI {
     html += `<div class="actions" style="margin-top:16px">
         <button class="pill go" data-act="upgrade">Bigger barn — 🪙 ${F.coins(this.game.barnCost())} (+25 spaces)</button>
       </div>
-      <p class="tiny">Selling straight from the barn is quick, but the post balloon pays far more for the same goods.</p>`;
+      <p class="tiny">Selling straight from the barn is quick, but the helipad pays far more for the same goods.</p>`;
     this.open('📦 Barn', html, { kind:'barn' });
   }
 
@@ -301,25 +302,28 @@ export class UI {
     this.reopen = () => this.openOrders();
     const s = this.game.state;
     const now = Date.now();
-    let html = '<p class="sub">Milbils from other islands send up orders. Fill one and the balloon takes it away.</p>';
+    let html = '<p class="sub">Milbils from other islands land on the pad with a list. Mail one their goods and the helicopter takes it away.</p>';
 
     if (!s.orders.length){
-      html += '<p class="sub">No orders on the board. The next one is on its way.</p>';
+      html += '<p class="sub">Nobody on the pad. Somebody is on their way.</p>';
     }
     for (const o of s.orders){
       const can = E.canFill(s, o);
-      html += `<div class="order"><div class="want">`;
+      const who = E.characterFor(o);
+      html += `<div class="order">
+        <div class="who"><img src="${who.art}" alt=""><span><b>${esc(who.name)}</b> is waiting for:</span></div>
+        <div class="want">`;
       for (const w of o.want) html += needChip(w.id, w.n, s.barn[w.id] || 0);
       html += `</div>
         <div class="pay"><span class="c">🪙 ${F.coins(o.coins)}</span><span class="x">⭐ ${o.xp} xp</span></div>
         <div class="acts">
-          <button class="pill go" data-act="fill" data-uid="${o.uid}" ${can ? '' : 'disabled'}>${can ? 'Send it up' : 'Not enough yet'}</button>
-          <button class="pill" data-act="skip" data-uid="${o.uid}">${now < s.skipAt ? 'Skip in ' + F.clock(E.skipReadyIn(s, now)) : 'Skip'}</button>
+          <button class="pill go" data-act="fill" data-uid="${o.uid}" ${can ? '' : 'disabled'}>${can ? 'Mail it' : 'Not enough yet'}</button>
+          <button class="pill" data-act="skip" data-uid="${o.uid}">${now < s.skipAt ? 'Skip in ' + F.clock(E.skipReadyIn(s, now)) : 'Send them home'}</button>
         </div></div>`;
     }
     const wait = Math.max(0, (s.nextOrderAt - now) / 1000);
-    if (s.orders.length < ORDER_SLOTS) html += `<p class="tiny">Next order in ${F.clock(wait)}.</p>`;
-    this.open('🎈 Post balloon', html, { kind:'orders' });
+    if (s.orders.length < ORDER_SLOTS) html += `<p class="tiny">Next visitor lands in ${F.clock(wait)}.</p>`;
+    this.open('🚁 Helipad', html, { kind:'orders' });
   }
 
   // ---- a tapped building
@@ -332,7 +336,7 @@ export class UI {
     const now = Date.now();
 
     if (obj.type === 'barn') return this.openBarn();
-    if (obj.type === 'balloon') return this.openOrders();
+    if (obj.type === 'helipad') return this.openOrders();
 
     if (kind === 'field') return this.open(`${d.emoji} ${d.name}`, this._fieldBody(obj, s, now), ctx);
     if (kind === 'factory') return this.open(`${d.emoji} ${d.name}`, this._factoryBody(obj, s, now), ctx);
@@ -451,11 +455,12 @@ export class UI {
     const html = `<div class="help">
       <p>Milbil Town runs on real time. Crops and workshops keep going while the
       game is closed — up to eight hours' worth.</p>
+      <p class="tiny" style="margin-top:0">The visitors on the helipad were drawn by Greta.</p>
       <h3>The loop</h3>
       <ul>
         <li><b>Fields.</b> Tap an empty field to plant, tap it again when the bubble shows ✓.</li>
         <li><b>Workshops.</b> Tap one, pick a recipe, and it cooks through its queue. Tap to collect.</li>
-        <li><b>The balloon 🎈.</b> Orders pay about 1.6× what the barn pays, plus XP. Fill them.</li>
+        <li><b>The helipad 🚁.</b> Visitors land with a list. Mailing it pays about 1.6× what the barn pays, plus XP.</li>
         <li><b>Homes 🏡.</b> Every workshop needs free milbils. Homes are where they come from.</li>
         <li><b>The barn 📦.</b> Limited space. Upgrade it, or sell the surplus.</li>
       </ul>
@@ -469,7 +474,7 @@ export class UI {
       <div class="rows">
         <div class="row"><span>Harvests</span><b>${s.stats.harvest}</b></div>
         <div class="row"><span>Things made</span><b>${s.stats.made}</b></div>
-        <div class="row"><span>Orders sent</span><b>${s.stats.delivered}</b></div>
+        <div class="row"><span>Deliveries mailed</span><b>${s.stats.delivered}</b></div>
         <div class="row"><span>Buildings put up</span><b>${s.stats.built}</b></div>
       </div>
       <div class="actions" style="margin-top:14px">
@@ -512,7 +517,7 @@ export class UI {
     const rows = [];
     if (rep.fields) rows.push(['🌾 Fields ready to pick', rep.fields]);
     if (rep.shelves) rows.push(['📦 Things waiting in workshops', rep.shelves]);
-    if (rep.orders) rows.push(['🎈 Orders on the board', rep.orders]);
+    if (rep.orders) rows.push(['🚁 Visitors on the helipad', rep.orders]);
     if (!rows.length) return false;
     this.el.welcomeBody.innerHTML =
       `<div class="row"><span>You were away</span><b>${mins < 60 ? mins + ' min' : F.clock(away)}</b></div>` +

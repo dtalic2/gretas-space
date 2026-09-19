@@ -3,7 +3,7 @@ import { START_COINS, BARN_START, BARN_STEP, OFFLINE_CAP, MILBIL_NAMES } from '.
 
 const KEY = 'milbiltown.save.v1';
 
-/** The town every new player wakes up in: a barn, the post balloon, a home, two fields. */
+/** The town every new player wakes up in: a barn, a helipad, a home, three fields. */
 export function defaultState(){
   const now = Date.now();
   const s = {
@@ -28,7 +28,7 @@ export function defaultState(){
   // Anchored at the min corner of the footprint, in tile coordinates.
   const start = [
     ['barn',    10, 10],
-    ['balloon',  6, 10],
+    ['helipad',  5, 10],
     ['cottage',  6,  6],
     ['field',   10,  7],
     ['field',   11,  7],
@@ -45,7 +45,7 @@ export function defaultState(){
 export function newObj(state, type, x, z){
   const o = { uid: state.nextUid++, type, x, z, born: Date.now() };
   if (type === 'field'){ o.crop = null; o.at = 0; }
-  if (type === 'barn' || type === 'balloon'){ o.fixed = true; }
+  if (type === 'barn' || type === 'helipad'){ o.fixed = true; }
   return o;
 }
 
@@ -84,6 +84,10 @@ function migrate(s){
   if (!Array.isArray(out.objs) || !out.objs.length) out.objs = base.objs;
   if (!Array.isArray(out.orders)) out.orders = [];
   out.objs = out.objs.filter(o => o && typeof o.type === 'string');
+  // Saves from before the helipad have a post balloon doing its job.
+  for (const o of out.objs){
+    if (o.type === 'balloon' && o.fixed){ o.type = 'helipad'; o.x = Math.max(0, o.x - 1); o.z = Math.max(0, o.z - 1); }
+  }
   out.nextUid = Math.max(out.nextUid || 1, ...out.objs.map(o => (o.uid || 0) + 1));
   for (const o of out.objs){
     if (!Array.isArray(o.queue)) delete o.queue;

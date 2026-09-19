@@ -357,6 +357,48 @@ export const MODELS = {
     return g;
   },
 
+  helipad(){
+    const g = new THREE.Group();
+    // 3x3 tiles: a round pad with a painted H, lights at the corners, a windsock.
+    g.add(cyl(2.7, 2.8, 0.22, 24, 0x6f6a63, 0, 0, 0));
+    const top = new THREE.Mesh(new THREE.CircleGeometry(2.62, 24), mat(0x8c867d));
+    top.rotation.x = -Math.PI / 2;
+    top.position.y = 0.225;
+    top.receiveShadow = true;
+    g.add(top);
+    const ring = new THREE.Mesh(new THREE.RingGeometry(2.1, 2.3, 24), mat(0xfff3e0));
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.23;
+    g.add(ring);
+    // the H
+    for (const x of [-0.5, 0.5]) g.add(box(0.26, 0.04, 1.5, 0xfff3e0, x, 0.225, 0));
+    g.add(box(1.0, 0.04, 0.26, 0xfff3e0, 0, 0.225, 0));
+
+    for (let i = 0; i < 6; i++){
+      const a = (i / 6) * Math.PI * 2 + 0.3;
+      g.add(panel(ball(0.12, 0, 0xffd98a, Math.cos(a) * 2.45, 0.32, Math.sin(a) * 2.45), GLOW));
+    }
+
+    const mast = box(0.12, 2.1, 0.12, 0xb0a99e, -2.5, 0, 2.2);
+    g.add(mast);
+    const sock = new THREE.Group();
+    for (let i = 0; i < 3; i++){
+      const seg = cyl(0.14 - i * 0.03, 0.18 - i * 0.03, 0.3, 8, i % 2 ? 0xfff3e0 : 0xff8b4a, 0, 0, 0);
+      seg.rotation.z = Math.PI / 2;
+      seg.position.set(0.22 + i * 0.3, 1.95, 0);
+      sock.add(seg);
+    }
+    sock.position.set(-2.5, 0, 2.2);
+    g.add(sock);
+    g.userData.sock = sock;
+
+    const heli = helicopter();
+    heli.position.y = 0.26;
+    g.add(heli);
+    g.userData.heli = heli;
+    return g;
+  },
+
   balloon(){
     const g = new THREE.Group();
     g.add(box(3.0, 0.4, 3.0, 0xc9a06a, 0, 0, 0));
@@ -497,6 +539,64 @@ export const MODELS = {
     return g;
   },
 };
+
+/** The little helicopter that lives on the pad and takes deliveries away. */
+export function helicopter(){
+  const g = new THREE.Group();
+  const body = ball(0.62, 1, 0xf25f5c, 0, 0.62, 0);
+  body.scale.set(1.0, 0.85, 1.25);
+  g.add(body);
+  g.add(panel(ball(0.36, 1, 0x9fd9f2, 0, 0.7, 0.42), WINDOW));     // bubble cockpit
+  g.add(box(0.26, 0.26, 1.5, 0xe0574f, 0, 0.62, -1.15));           // tail boom
+  g.add(box(0.1, 0.62, 0.42, 0xf7a8a8, 0, 0.72, -1.85));           // tail fin
+
+  const tail = cyl(0.04, 0.04, 0.62, 6, 0xfff3e0, 0.14, 1.0, -1.85);
+  tail.rotation.z = Math.PI / 2;
+  tail.rotation.x = Math.PI / 2;
+  g.add(tail);
+  g.userData.tailRotor = tail;
+
+  for (const sx of [-1, 1]){
+    g.add(box(0.1, 0.1, 1.4, 0xb0a99e, sx * 0.42, 0.06, 0.05));
+    g.add(box(0.08, 0.3, 0.08, 0xb0a99e, sx * 0.42, 0.16, 0.45));
+    g.add(box(0.08, 0.3, 0.08, 0xb0a99e, sx * 0.42, 0.16, -0.45));
+  }
+
+  const mast = box(0.1, 0.3, 0.1, 0xb0a99e, 0, 1.05, 0);
+  g.add(mast);
+  const rotor = new THREE.Group();
+  for (let i = 0; i < 2; i++){
+    const blade = box(2.9, 0.07, 0.26, 0xd8d2c6, 0, 0, 0);
+    blade.rotation.y = i * Math.PI / 2;
+    rotor.add(blade);
+  }
+  rotor.add(cyl(0.14, 0.14, 0.16, 8, 0x8f8a80, 0, -0.04, 0));
+  rotor.position.y = 1.4;
+  g.add(rotor);
+  g.userData.rotor = rotor;
+  return g;
+}
+
+/** A drawn character as a billboard sprite, plus the smudge of shade under it. */
+export function characterSprite(texture, height = 2.1){
+  const group = new THREE.Group();
+  const mat = new THREE.SpriteMaterial({ map:texture, transparent:true, depthWrite:false });
+  const sprite = new THREE.Sprite(mat);
+  const aspect = (texture.image && texture.image.width / texture.image.height) || 0.71;
+  sprite.scale.set(height * aspect, height, 1);
+  sprite.position.y = height / 2;
+  group.add(sprite);
+
+  const shade = new THREE.Mesh(new THREE.CircleGeometry(height * 0.26, 14),
+    new THREE.MeshBasicMaterial({ color:0x2e2418, transparent:true, opacity:0.22, depthWrite:false }));
+  shade.rotation.x = -Math.PI / 2;
+  shade.position.y = 0.03;
+  group.add(shade);
+
+  group.userData.sprite = sprite;
+  group.userData.shade = shade;
+  return group;
+}
 
 // ------------------------------------------------------------- crop plants --
 

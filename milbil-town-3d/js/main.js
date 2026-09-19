@@ -5,6 +5,7 @@ import { CameraRig } from './camera.js';
 import { Town } from './town.js';
 import { Milbils } from './milbils.js';
 import { UI } from './ui.js';
+import { Visitors } from './visitors.js';
 import { Audio } from './audio.js';
 import * as E from './econ.js';
 import * as F from './format.js';
@@ -28,6 +29,7 @@ class Game {
 
     this.town = new Town(this.world, this.state);
     this.milbils = new Milbils(this.world, this.state);
+    this.visitors = new Visitors(this.world, this.state, this.town);
     this.audio = new Audio(this.state.muted);
     this.ui = new UI(this);
     step(70, 'Waking the milbils…');
@@ -54,7 +56,7 @@ class Game {
     // A brand new town gets something to aim at straight away: one hand-made
     // wheat order (which the first field can fill) and one of the usual ones.
     if (!s.orders.length && !s.stats.delivered){
-      s.orders.push({ uid: s.nextUid++, want:[{ id:'wheat', n:4 }], coins:60, xp:12, at:now });
+      s.orders.push({ uid: s.nextUid++, who:'sunny', want:[{ id:'wheat', n:4 }], coins:60, xp:12, at:now });
       const extra = E.rollOrder(s, now);
       if (extra) s.orders.push(extra);
       s.nextOrderAt = now + 40000;
@@ -64,6 +66,7 @@ class Game {
     this.town.sync();
     this.milbils.refreshTaken();
     this.milbils.sync();
+    this.visitors.sync();
     this.ui.hud();
 
     this.firstRun = !s.seenHelp;
@@ -211,16 +214,17 @@ class Game {
       return this.ui.toast('Not enough in the barn yet', 'bad');
     }
     this.audio.deliver();
-    const balloon = this.state.objs.find(o => o.type === 'balloon');
-    if (balloon){
-      const a = this.town.anchor(balloon.uid);
+    this.visitors.takeOff();
+    const pad = this.state.objs.find(o => o.type === 'helipad');
+    if (pad){
+      const a = this.town.anchor(pad.uid);
       if (a){
         this.ui.pop(a, `+🪙 ${F.coins(res.coins)}`);
         this.milbils.cheer(a.x, a.z);
       }
-      this.town.poof(balloon.uid, 0xffd86b, 10);
+      this.town.poof(pad.uid, 0xffd86b, 10);
     }
-    this.ui.toast(`Sent up — 🪙 ${F.coins(res.coins)} and ${res.xp} xp`, 'good');
+    this.ui.toast(`${res.who.name} flew off happy — 🪙 ${F.coins(res.coins)} and ${res.xp} xp`, 'good');
     this.after(res.levels);
   }
 
@@ -229,7 +233,7 @@ class Game {
       this.audio.nope();
       return this.ui.toast(`Another skip in ${F.clock(E.skipReadyIn(this.state, Date.now()))}`, 'bad');
     }
-    this.ui.toast('Order sent back down', '');
+    this.ui.toast('They will come back another day', '');
     this.after();
   }
 
@@ -351,6 +355,7 @@ class Game {
     this.town.sync();
     this.milbils.refreshTaken();
     this.milbils.sync();
+    this.visitors.sync();
     this.ui.hud();
     this.ui.refresh();
     this.ui.objective(E.objective(this.state));     // tick again straight away
@@ -389,6 +394,7 @@ class Game {
       this.world.update(dt);
       this.town.update(dt, now);
       this.milbils.update(dt, t / 1000);
+      this.visitors.update(dt, t / 1000);
 
       // Timers only need checking a few times a second.
       sinceTick += dt;
@@ -397,6 +403,7 @@ class Game {
         const res = E.tick(this.state, now);
         for (const o of this.state.objs) if (o.type === 'field') this.town.refresh(o);
         if (res.made || res.orders) this.ui.refresh();
+        if (res.orders) this.visitors.sync();
         this.ui.hud();
         this.ui.objective(E.objective(this.state));
       }
