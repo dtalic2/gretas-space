@@ -8,13 +8,14 @@ export const DAY_LENGTH = 420;        // seconds for a full day + night
 
 // Key moments of the cycle. Everything between them is a straight lerp.
 const SKY_KEYS = [
-  { t:0.00, sky:0x27406e, sun:0x5f7fbf, si:0.25, ai:0.42, night:1.00 },  // deep night
-  { t:0.12, sky:0xf0a678, sun:0xffb070, si:0.75, ai:0.62, night:0.45 },  // dawn
-  { t:0.25, sky:0x8fd3f4, sun:0xfff3dd, si:1.25, ai:0.80, night:0.00 },  // morning
-  { t:0.55, sky:0x8fd3f4, sun:0xfff6e6, si:1.30, ai:0.82, night:0.00 },  // afternoon
-  { t:0.70, sky:0xffb07a, sun:0xff9d5c, si:0.85, ai:0.62, night:0.40 },  // sunset
-  { t:0.82, sky:0x3b4d80, sun:0x6f8ccc, si:0.35, ai:0.46, night:0.92 },  // dusk
-  { t:1.00, sky:0x27406e, sun:0x5f7fbf, si:0.25, ai:0.42, night:1.00 },
+  //          overhead    horizon     sunlight    strength      how dark
+  { t:0.00, zen:0x101a38, sky:0x27406e, sun:0x5f7fbf, si:0.25, ai:0.42, night:1.00 },  // deep night
+  { t:0.12, zen:0x6a6fa8, sky:0xf0a678, sun:0xffb070, si:0.75, ai:0.62, night:0.45 },  // dawn
+  { t:0.25, zen:0x4aa8e8, sky:0xc8ecfb, sun:0xfff3dd, si:1.25, ai:0.80, night:0.00 },  // morning
+  { t:0.55, zen:0x3f9fe4, sky:0xcdeefb, sun:0xfff6e6, si:1.30, ai:0.82, night:0.00 },  // afternoon
+  { t:0.70, zen:0x7a7fd0, sky:0xffc79a, sun:0xff9d5c, si:0.85, ai:0.62, night:0.40 },  // sunset
+  { t:0.82, zen:0x1e2a5a, sky:0x51639a, sun:0x6f8ccc, si:0.35, ai:0.46, night:0.92 },  // dusk
+  { t:1.00, zen:0x101a38, sky:0x27406e, sun:0x5f7fbf, si:0.25, ai:0.42, night:1.00 },
 ];
 
 function keyAt(t){
@@ -24,6 +25,7 @@ function keyAt(t){
   }
   const f = b.t === a.t ? 0 : (t - a.t) / (b.t - a.t);
   return {
+    zen: new THREE.Color(a.zen).lerp(new THREE.Color(b.zen), f),
     sky: new THREE.Color(a.sky).lerp(new THREE.Color(b.sky), f),
     sun: new THREE.Color(a.sun).lerp(new THREE.Color(b.sun), f),
     si: a.si + (b.si - a.si) * f,
@@ -41,8 +43,7 @@ export class World {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x8fd3f4);
-    this.scene.fog = new THREE.Fog(0x8fd3f4, 55, 190);
+    this.scene.fog = new THREE.Fog(0xc8ecfb, 48, 330);
 
     this.camera = new THREE.PerspectiveCamera(46, 1, 0.5, 400);
     this.camera.position.set(0, 26, 30);
@@ -65,6 +66,7 @@ export class World {
 
     this._island();
     this._scatter();
+    this._horizon();
     this._sky();
     this._clouds();
 
@@ -213,8 +215,88 @@ export class World {
     }
   }
 
+  /**
+   * Other islands, far enough out that the fog does most of the work. They are
+   * the difference between standing in a town and standing on a diorama.
+   */
+  _horizon(){
+    this.far = [];
+    for (let i = 0; i < 9; i++){
+      const g = new THREE.Group();
+      const size = 9 + hash2(i, 101) * 20;
+      const disc = new THREE.Mesh(new THREE.CylinderGeometry(size, size * 0.94, 1.6, 9), mat(0x86c95e));
+      disc.position.y = 0.8;
+      g.add(disc);
+      const rock = new THREE.Mesh(new THREE.ConeGeometry(size * 0.94, size * 1.5, 9, 2), mat(0x7d5333));
+      rock.rotation.x = Math.PI;
+      rock.position.y = -size * 0.75;
+      g.add(rock);
+
+      // a hint of trees on the bigger ones, so they read as land
+      if (size > 12){
+        for (let j = 0; j < 5; j++){
+          const a = hash2(i * 7, j) * Math.PI * 2;
+          const r = hash2(j, i * 3) * size * 0.7;
+          const t = new THREE.Mesh(new THREE.ConeGeometry(1.6, 4.5, 6), mat(0x4f9a46));
+          t.position.set(Math.cos(a) * r, 3.2, Math.sin(a) * r);
+          g.add(t);
+        }
+      }
+
+      // Spread them above and below the eyeline so the view over the edge has
+      // something in it whichever way you are facing.
+      const ang = (i / 9) * Math.PI * 2 + hash2(i, 5);
+      const dist = 155 + hash2(i, 61) * 130;
+      g.position.set(Math.cos(ang) * dist, -11 + hash2(i, 71) * 18, Math.sin(ang) * dist);
+      g.traverse((n) => { n.castShadow = false; n.receiveShadow = false; });
+      this.scene.add(g);
+      this.far.push({ mesh:g, base:g.position.y, phase:i * 2.1 });
+    }
+  }
+
   // ---------------------------------------------------------------- sky ---
   _sky(){
+    // A gradient dome instead of a flat clear colour: the horizon stays pale
+    // while the zenith deepens, and the sun spills a haze into the sky around
+    // it. At ground level this is most of what you are looking at.
+    this.skyUniforms = {
+      zen:  { value: new THREE.Color(0x4aa8e8) },
+      haze: { value: new THREE.Color(0xc8ecfb) },
+      sunDir: { value: new THREE.Vector3(0, 1, 0) },
+      sunCol: { value: new THREE.Color(0xfff3dd) },
+      glow: { value: 0.75 },
+    };
+    const dome = new THREE.Mesh(
+      new THREE.SphereGeometry(320, 28, 18),
+      new THREE.ShaderMaterial({
+        side: THREE.BackSide, depthWrite:false, fog:false,
+        uniforms: this.skyUniforms,
+        vertexShader: `
+          varying vec3 vDir;
+          void main(){
+            vDir = position;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }`,
+        fragmentShader: `
+          uniform vec3 zen, haze, sunCol, sunDir;
+          uniform float glow;
+          varying vec3 vDir;
+          void main(){
+            vec3 d = normalize(vDir);
+            float h = clamp(d.y, 0.0, 1.0);
+            vec3 c = mix(haze, zen, pow(h, 0.62));
+            float s = max(dot(d, normalize(sunDir)), 0.0);
+            c += sunCol * pow(s, 90.0) * glow * 1.6;     // the sun's own bloom
+            c += sunCol * pow(s, 5.0) * glow * 0.22;     // the haze around it
+            gl_FragColor = vec4(c, 1.0);
+          }`,
+      }),
+    );
+    dome.renderOrder = -1000;
+    dome.frustumCulled = false;
+    this.scene.add(dome);
+    this.dome = dome;
+
     const disc = new THREE.Mesh(new THREE.CircleGeometry(9, 24),
       new THREE.MeshBasicMaterial({ color:0xfff0c0, transparent:true, opacity:0.9, fog:false }));
     disc.renderOrder = -1;
@@ -237,7 +319,10 @@ export class World {
 
   _clouds(){
     this.clouds = [];
+    // Clouds take a little of the sky's own colour, so they are pink at dawn
+    // and dark blue at night instead of always looking like rain.
     const puffMat = new THREE.MeshLambertMaterial({ color:0xffffff, flatShading:true, fog:false });
+    this.cloudMat = puffMat;
     for (let i = 0; i < 26; i++){
       const g = new THREE.Group();
       const lumps = 3 + Math.floor(hash2(i, 11) * 3);
@@ -248,11 +333,18 @@ export class World {
         m.scale.y = 0.62;
         g.add(m);
       }
-      const below = i % 3 !== 0;
+      // Three bands: under the island, high overhead, and a distant row that
+      // sits on the horizon when you are standing in the grass.
+      const band = i % 3;
       const a = hash2(i, 21) * Math.PI * 2;
-      const r = below ? 12 + hash2(i, 31) * 60 : 40 + hash2(i, 41) * 60;
-      g.position.set(Math.cos(a) * r, below ? -12 - hash2(i, 51) * 14 : 16 + hash2(i, 61) * 12, Math.sin(a) * r);
-      g.scale.setScalar(below ? 1.4 : 1.0);
+      const r = band === 0 ? 40 + hash2(i, 41) * 60
+              : band === 1 ? 12 + hash2(i, 31) * 60
+              : 70 + hash2(i, 33) * 60;
+      const y = band === 0 ? 17 + hash2(i, 61) * 12
+              : band === 1 ? -12 - hash2(i, 51) * 14
+              : 2.5 + hash2(i, 63) * 7;
+      g.position.set(Math.cos(a) * r, y, Math.sin(a) * r);
+      g.scale.setScalar(band === 1 ? 1.4 : band === 2 ? 1.9 : 1.0);
       this.scene.add(g);
       this.clouds.push({ mesh:g, speed: 0.25 + hash2(i, 71) * 0.5 });
     }
@@ -266,13 +358,17 @@ export class World {
     this.camera.updateProjectionMatrix();
   }
 
-  /** Advance the sky. `dt` in seconds; `speed` lets the intro run time forward. */
+  /** Advance the sky. `dt` in seconds. */
   update(dt){
     this.time = (this.time + dt) % DAY_LENGTH;
     const t = this.time / DAY_LENGTH;
     const k = keyAt(t);
 
-    this.scene.background.copy(k.sky);
+    this.skyUniforms.zen.value.copy(k.zen);
+    this.skyUniforms.haze.value.copy(k.sky);
+    this.skyUniforms.sunCol.value.copy(k.sun);
+    this.skyUniforms.glow.value = 0.35 + 0.65 * (1 - k.night);
+    this.dome.position.copy(this.camera.position);
     this.scene.fog.color.copy(k.sky);
     this.sun.color.copy(k.sun);
     this.sun.intensity = k.si;
@@ -285,17 +381,23 @@ export class World {
     const sx = Math.cos(ang) * 60, sy = Math.sin(ang) * 48, sz = -26;
     this.sun.position.set(sx, sy, sz);
     this.sun.target.position.set(0, 0, 0);
+    this.skyUniforms.sunDir.value.set(sx, sy, sz).normalize();
     this.sunDisc.position.set(sx * 2.4, sy * 2.4, sz * 2.4);
     this.sunDisc.lookAt(0, 0, 0);
     this.sunDisc.material.opacity = Math.max(0, Math.min(1, (sy + 10) / 30)) * 0.9;
     this.sunDisc.material.color.copy(k.sun);
     this.stars.material.opacity = k.night * 0.9;
 
+    this.cloudMat.emissive.copy(k.sky).multiplyScalar(0.16 + 0.26 * (1 - k.night));
     for (const c of this.clouds){
       c.mesh.position.x += c.speed * dt;
       if (c.mesh.position.x > 95) c.mesh.position.x = -95;
     }
     const tt = this.time;
+    for (const f of this.far){
+      f.mesh.position.y = f.base + Math.sin(tt * 0.12 + f.phase) * 0.8;
+      f.mesh.rotation.y += dt * 0.008;
+    }
     for (const f of this.floaters){
       f.mesh.position.y = f.base + Math.sin(tt * 0.35 + f.phase) * 0.45;
       f.mesh.rotation.y += dt * 0.05;

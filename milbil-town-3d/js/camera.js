@@ -1,13 +1,23 @@
-// ---------- Looking around the island: drag to pan, pinch to zoom ----------
+// ---------- Looking around the island, from orbit or from the grass ----------
 //
-// One finger drags the ground, two fingers pinch and twist, the wheel zooms and
-// WASD/QE do the same on a keyboard. A short press that does not move is a tap,
-// which is how you interact with everything in the town.
+// Two modes. Overview is the town-planner camera: drag the ground, pinch to
+// zoom, twist to turn. Ground level drops you into the town at milbil height,
+// where dragging looks around instead of shoving the island about.
+//
+// Every value is smoothed towards a wanted value rather than set directly,
+// which is most of what makes the camera feel like a camera.
 import * as THREE from 'three';
 
 const GROUND = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const TAP_SLOP = 14;        // px of movement still counted as a tap
 const TAP_TIME = 600;       // ms
+
+const damp = (rate, dt) => 1 - Math.exp(-rate * dt);
+
+export const MODES = {
+  overview: { pitch:0.82, dist:36, minDist:9,   maxDist:76, minPitch:0.25, maxPitch:1.35, eye:0 },
+  ground:   { pitch:0.14, dist:5.2, minDist:2.6, maxDist:14, minPitch:-0.12, maxPitch:0.75, eye:1.25 },
+};
 
 export class CameraRig {
   constructor(world, canvas, hooks = {}){
@@ -16,14 +26,19 @@ export class CameraRig {
     this.canvas = canvas;
     this.hooks = hooks;
 
+    this.mode = 'overview';
+    this.limits = MODES.overview;
+
     this.target = new THREE.Vector3(0, 0, 2);
     this.yaw = -0.62;
-    this.pitch = 0.82;                    // radians above the horizon
-    this.dist = 44;
-    this.vel = new THREE.Vector3();       // pan inertia
+    this.pitch = 0.82;
+    this.dist = 36;
 
-    this.minDist = 9;
-    this.maxDist = 76;
+    // What the camera is heading towards. Input writes here, never to the above.
+    this.want = { yaw:this.yaw, pitch:this.pitch, dist:this.dist, target:this.target.clone() };
+    this.rate = 14;                     // how hard it chases; lowered for fly-tos
+    this.vel = new THREE.Vector3();     // pan inertia
+    this.bob = 0;                       // footstep sway at ground level
     this.bound = 24;
 
     this.pointers = new Map();
@@ -45,7 +60,7 @@ export class CameraRig {
     c.addEventListener('contextmenu', (e) => e.preventDefault());
     c.addEventListener('wheel', (e) => {
       e.preventDefault();
-      this.zoom(this.dist * (e.deltaY > 0 ? 0.12 : -0.12));
+      this.zoom(this.want.dist * (e.deltaY > 0 ? 0.12 : -0.12));
     }, { passive:false });
 
     window.addEventListener('keydown', (e) => {
@@ -63,6 +78,7 @@ export class CameraRig {
       orbit: e.button === 2 || e.shiftKey,
     });
     this.vel.set(0, 0, 0);
+    this.rate = 14;
     if (this.pointers.size === 2) this._startPinch();
   }
 
@@ -71,8 +87,8 @@ export class CameraRig {
     this._gesture = {
       dist: Math.hypot(a.x - b.x, a.y - b.y),
       angle: Math.atan2(b.y - a.y, b.x - a.x),
-      yaw: this.yaw,
-      d0: this.dist,
+      yaw: this.want.yaw,
+      d0: this.want.dist,
     };
   }
 
@@ -89,31 +105,28 @@ export class CameraRig {
       const angle = Math.atan2(b.y - a.y, b.x - a.x);
       if (this._gesture){
         const scale = this._gesture.dist / Math.max(1, dist);
-        this.dist = this._clampDist(this._gesture.d0 * scale);
-        this.yaw = this._gesture.yaw - (angle - this._gesture.angle);
+        this.want.dist = this._clampDist(this._gesture.d0 * scale);
+        this.want.yaw = this._gesture.yaw - (angle - this._gesture.angle);
       }
-      this.apply();
       return;
     }
 
-    // One finger: either nudging a building into place, orbiting, or panning.
     if (this.hooks.placing && this.hooks.placing()){
       if (p.moved > TAP_SLOP) this.hooks.onPlaceDrag?.(e.clientX, e.clientY);
       return;
     }
-    if (p.orbit){
-      this.yaw -= dx * 0.006;
-      this.pitch = Math.max(0.25, Math.min(1.35, this.pitch + dy * 0.005));
+
+    // Down in the town, a drag turns your head. From orbit, it moves the island.
+    if (p.orbit || this.mode === 'ground'){
+      this.look(-dx * 0.0055, dy * 0.0042);
     } else {
       this.panPixels(-dx, -dy);
     }
-    this.apply();
   }
 
   _up(e, cancelled){
     const p = this.pointers.get(e.pointerId);
     this.pointers.delete(e.pointerId);
-    // Dropping below two fingers ends the pinch; it re-arms if a second returns.
     if (this.pointers.size < 2) this._gesture = null;
     if (!p || cancelled) return;
     const quick = performance.now() - p.t0 < TAP_TIME;
@@ -122,73 +135,119 @@ export class CameraRig {
   }
 
   // -------------------------------------------------------------- moves ---
-  _clampDist(d){ return Math.max(this.minDist, Math.min(this.maxDist, d)); }
+  _clampDist(d){ return Math.max(this.limits.minDist, Math.min(this.limits.maxDist, d)); }
 
-  zoom(delta){
-    this.dist = this._clampDist(this.dist + delta);
-    this.apply();
+  zoom(delta){ this.want.dist = this._clampDist(this.want.dist + delta); }
+
+  look(dyaw, dpitch){
+    this.want.yaw += dyaw;
+    this.want.pitch = Math.max(this.limits.minPitch, Math.min(this.limits.maxPitch, this.want.pitch + dpitch));
   }
 
   /** Move the camera target by a screen-space drag, in pixels. */
   panPixels(px, py){
-    const k = (2 * this.dist * Math.tan((this.camera.fov * Math.PI / 180) / 2)) / window.innerHeight;
+    const k = (2 * this.want.dist * Math.tan((this.camera.fov * Math.PI / 180) / 2)) / window.innerHeight;
     const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
     const fwd = new THREE.Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
     const move = right.multiplyScalar(px * k).add(fwd.multiplyScalar(py * k / Math.max(0.35, Math.sin(this.pitch))));
-    this.target.add(move);
+    this.want.target.add(move);
     this.vel.copy(move).multiplyScalar(6);
     this._clampTarget();
   }
 
+  /** Walk the target forward/sideways — WASD, and the only way to move on foot. */
+  walk(px, pz, speed){
+    const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw)).multiplyScalar(px * speed);
+    const fwd = new THREE.Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw)).multiplyScalar(pz * speed);
+    this.want.target.add(right).add(fwd);
+    this._clampTarget();
+    this.vel.set(0, 0, 0);
+    return px || pz;
+  }
+
   _clampTarget(){
-    this.target.x = Math.max(-this.bound, Math.min(this.bound, this.target.x));
-    this.target.z = Math.max(-this.bound, Math.min(this.bound, this.target.z));
-    this.target.y = 0;
+    const t = this.want.target;
+    t.x = Math.max(-this.bound, Math.min(this.bound, t.x));
+    t.z = Math.max(-this.bound, Math.min(this.bound, t.z));
+    t.y = 0;
+  }
+
+  /** Swap between the planning view and standing in the grass. */
+  setMode(mode){
+    if (!MODES[mode] || mode === this.mode) return;
+    this.mode = mode;
+    this.limits = MODES[mode];
+    this.want.pitch = this.limits.pitch;
+    this.want.dist = this.limits.dist;
+    this.rate = 3.2;                         // a slow, deliberate move in or out
+    return mode;
   }
 
   focusOn(x, z, dist){
-    this.target.set(x, 0, z);
-    if (dist) this.dist = this._clampDist(dist);
+    this.want.target.set(x, 0, z);
+    if (dist) this.want.dist = this._clampDist(dist);
+    this.rate = 5;
     this._clampTarget();
+  }
+
+  /** Snap with no easing — used once at boot so the first frame is not a swoop. */
+  settle(){
+    this.yaw = this.want.yaw;
+    this.pitch = this.want.pitch;
+    this.dist = this.want.dist;
+    this.target.copy(this.want.target);
     this.apply();
   }
 
   apply(){
     const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
+    const eye = this.limits.eye + this.bobOffset();
     this.camera.position.set(
       this.target.x + Math.sin(this.yaw) * cp * this.dist,
-      this.target.y + sp * this.dist,
+      this.target.y + eye + sp * this.dist,
       this.target.z + Math.cos(this.yaw) * cp * this.dist,
     );
-    this.camera.lookAt(this.target);
+    // Never let the lens dip under the island.
+    this.camera.position.y = Math.max(this.camera.position.y, 0.55);
+    this.camera.lookAt(this.target.x, this.target.y + eye + this.dist * 0.08, this.target.z);
+  }
+
+  bobOffset(){
+    return this.mode === 'ground' ? Math.sin(this.bob) * 0.035 : 0;
   }
 
   update(dt){
     const k = this.keys;
-    const speed = 16 * dt * (this.dist / 24);
-    let px = 0, py = 0;
+    const speed = (this.mode === 'ground' ? 5.5 : 16 * (this.want.dist / 24)) * dt;
+    let px = 0, pz = 0;
     if (k.has('a') || k.has('arrowleft')) px -= 1;
     if (k.has('d') || k.has('arrowright')) px += 1;
-    if (k.has('w') || k.has('arrowup')) py -= 1;
-    if (k.has('s') || k.has('arrowdown')) py += 1;
-    if (px || py){
-      const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw)).multiplyScalar(px * speed);
-      const fwd = new THREE.Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw)).multiplyScalar(py * speed);
-      this.target.add(right).add(fwd);
-      this._clampTarget();
-      this.vel.set(0, 0, 0);
-    }
-    if (k.has('q')) this.yaw += dt * 1.1;
-    if (k.has('e')) this.yaw -= dt * 1.1;
+    if (k.has('w') || k.has('arrowup')) pz -= 1;
+    if (k.has('s') || k.has('arrowdown')) pz += 1;
+    const walking = this.walk(px, pz, speed);
+    if (walking) this.bob += dt * 7;
+
+    if (k.has('q')) this.want.yaw += dt * 1.1;
+    if (k.has('e')) this.want.yaw -= dt * 1.1;
     if (k.has('=') || k.has('+')) this.zoom(-dt * 22);
     if (k.has('-') || k.has('_')) this.zoom(dt * 22);
 
     // Gentle glide after a flick.
     if (!this.pointers.size && this.vel.lengthSq() > 1e-5){
-      this.target.addScaledVector(this.vel, dt);
+      this.want.target.addScaledVector(this.vel, dt);
       this.vel.multiplyScalar(Math.pow(0.0025, dt));
       this._clampTarget();
     }
+
+    // Chase the wanted values. The rate creeps back up so a fly-to eases in
+    // and then hands control straight back to the finger.
+    const f = damp(this.rate, dt);
+    this.yaw += (this.want.yaw - this.yaw) * f;
+    this.pitch += (this.want.pitch - this.pitch) * f;
+    this.dist += (this.want.dist - this.dist) * f;
+    this.target.lerp(this.want.target, f);
+    this.rate = Math.min(14, this.rate + dt * 9);
+
     this.apply();
   }
 

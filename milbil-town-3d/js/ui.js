@@ -29,13 +29,17 @@ export class UI {
       orderBadge: $('orderBadge'), toasts: $('toasts'), pops: $('pops'), markers: $('markers'),
       panel: $('panel'), panelTitle: $('panelTitle'), panelBody: $('panelBody'),
       placeBar: $('placeBar'), placeName: $('placeName'), placeHint: $('placeHint'), placeOk: $('placeOk'),
+      btnLook: $('btnLook'), stick: $('stick'),
       levelUp: $('levelUp'), lvlNum: $('lvlNum'), lvlPurse: $('lvlPurse'), lvlUnlocks: $('lvlUnlocks'),
       welcome: $('welcome'), welcomeBody: $('welcomeBody'),
     };
     this.marks = new Map();
     this.ctx = null;
+    this.immersive = false;
+    this.stickVec = { x:0, y:0 };
     this._vec = new THREE.Vector3();
     this._bind();
+    this._bindStick();
   }
 
   // -------------------------------------------------------------- wiring --
@@ -58,6 +62,54 @@ export class UI {
       if (!b) return;
       this.action(b.dataset);
     });
+  }
+
+  /** The thumb-stick that walks you about when you are down in the town. */
+  _bindStick(){
+    const el = this.el.stick;
+    const knob = el.querySelector('i');
+    const R = 44;
+    let id = null;
+
+    const set = (dx, dy) => {
+      const len = Math.hypot(dx, dy) || 1;
+      const clamped = Math.min(len, R);
+      const x = (dx / len) * clamped, y = (dy / len) * clamped;
+      knob.style.transform = `translate(${x}px, ${y}px)`;
+      this.stickVec.x = x / R;
+      this.stickVec.y = y / R;
+    };
+    const reset = () => {
+      id = null;
+      knob.style.transform = '';
+      this.stickVec.x = this.stickVec.y = 0;
+    };
+
+    el.addEventListener('pointerdown', (e) => {
+      id = e.pointerId;
+      el.setPointerCapture(e.pointerId);
+      const r = el.getBoundingClientRect();
+      el._cx = r.left + r.width / 2;
+      el._cy = r.top + r.height / 2;
+      set(e.clientX - el._cx, e.clientY - el._cy);
+      e.preventDefault();
+    });
+    el.addEventListener('pointermove', (e) => {
+      if (e.pointerId !== id) return;
+      set(e.clientX - el._cx, e.clientY - el._cy);
+    });
+    el.addEventListener('pointerup', reset);
+    el.addEventListener('pointercancel', reset);
+  }
+
+  /** Step back from the HUD so the island can fill the screen. */
+  setImmersive(on){
+    this.immersive = on;
+    this.el.hud.classList.toggle('immersive', on);
+    this.el.markers.classList.toggle('quiet', on);
+    this.el.btnLook.classList.toggle('on', on);
+    this.el.btnLook.textContent = on ? '🔭' : '👁';
+    this.el.stick.classList.toggle('hidden', !on);
   }
 
   action(d){
@@ -467,6 +519,9 @@ export class UI {
       <h3>Moving around</h3>
       <ul>
         <li>Drag to move the island, pinch to zoom, twist with two fingers to turn.</li>
+        <li><b>👁 Walk around.</b> The eye at the top drops you into the town at
+        milbil height: drag to look, use the stick (or <kbd>WASD</kbd>) to walk.
+        Tap it again to climb back out.</li>
         <li>Mouse: drag to pan, right-drag or shift-drag to turn, wheel to zoom.</li>
         <li>Keyboard: <kbd>WASD</kbd> pan, <kbd>Q</kbd>/<kbd>E</kbd> turn, <kbd>+</kbd>/<kbd>-</kbd> zoom, <kbd>M</kbd> mute, <kbd>H</kbd> help.</li>
       </ul>

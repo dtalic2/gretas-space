@@ -45,6 +45,18 @@ Levels unlock everything: crops, workshops, homes and the pretty things
 | 10 | Starfruit ⭐, Milbil Plush 🧸 |
 | 12 | Star Jelly 🍮 |
 
+## Two ways to look at it
+
+The 👁 button (or <kbd>V</kbd>) drops the camera out of the planning view and
+down into the town at milbil height. Dragging turns your head instead of
+shoving the island about, a stick appears bottom-left to walk with (<kbd>WASD</kbd>
+on a keyboard), and the HUD steps back out of the way. Tap it again to climb out.
+
+Everything else is there whether you look at it or not: birds circling, butterflies
+over the fields, fireflies after dark, other islands hazy on the horizon, wind and
+birdsong by day, crickets at night, and a sky that actually changes colour from the
+horizon up. The visitors glow at night, because they were drawn in neon.
+
 ## Things worth knowing
 
 - **It runs on real time, closed or open.** Crops ripen and workshops keep
@@ -69,7 +81,7 @@ Levels unlock everything: crops, workshops, homes and the pretty things
 |---|---|
 | Phone | Drag to pan, pinch to zoom, twist with two fingers to turn |
 | Mouse | Drag to pan, wheel to zoom, right-drag or shift-drag to turn |
-| Keys | <kbd>WASD</kbd> pan · <kbd>Q</kbd>/<kbd>E</kbd> turn · <kbd>+</kbd>/<kbd>−</kbd> zoom · <kbd>B</kbd> build · <kbd>H</kbd> help · <kbd>M</kbd> mute · <kbd>Esc</kbd> close |
+| Keys | <kbd>WASD</kbd> pan or walk · <kbd>Q</kbd>/<kbd>E</kbd> turn · <kbd>+</kbd>/<kbd>−</kbd> zoom · <kbd>V</kbd> walk around · <kbd>B</kbd> build · <kbd>H</kbd> help · <kbd>M</kbd> mute · <kbd>Esc</kbd> close |
 
 Tapping anything finished — a ripe field, a workshop with goods on the shelf —
 collects it straight away. Tapping anything else opens its panel.
@@ -95,11 +107,12 @@ js/island.js      the shape of the ground: land, shore, paths, tile maths
 js/econ.js        the rules: planting, cooking, orders, XP. No DOM, no three.js
 js/save.js        localStorage, the starting town, catching up after a nap
 js/models.js      every mesh, built from boxes and balls
-js/world.js       island, sky, clouds, the day/night cycle
+js/world.js       island, gradient sky, clouds, far islands, day/night
 js/town.js        keeps the 3D town in step with the saved state
 js/milbils.js     the residents, and where they wander
 js/visitors.js    the drawn characters on the helipad, and the helicopter
-js/camera.js      drag, pinch, twist, tap
+js/wildlife.js    birds, butterflies and fireflies
+js/camera.js      drag, pinch, twist, tap — and the walk-around mode
 js/ui.js          chips, sheets, bubbles, toasts
 js/main.js        boot, wiring, the frame loop
 art/              the five visitors, as transparent PNGs

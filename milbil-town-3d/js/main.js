@@ -6,6 +6,7 @@ import { Town } from './town.js';
 import { Milbils } from './milbils.js';
 import { UI } from './ui.js';
 import { Visitors } from './visitors.js';
+import { Wildlife } from './wildlife.js';
 import { Audio } from './audio.js';
 import * as E from './econ.js';
 import * as F from './format.js';
@@ -30,6 +31,7 @@ class Game {
     this.town = new Town(this.world, this.state);
     this.milbils = new Milbils(this.world, this.state);
     this.visitors = new Visitors(this.world, this.state, this.town);
+    this.wildlife = new Wildlife(this.world);
     this.audio = new Audio(this.state.muted);
     this.ui = new UI(this);
     step(70, 'Waking the milbils…');
@@ -40,6 +42,7 @@ class Game {
       onPlaceDrag: (x, y) => this.dragGhost(x, y),
     });
     this.rig.focusOn(0, 1, 36);
+    this.rig.settle();                      // no swoop on the very first frame
 
     this.catchUp();
     this.bindGlobals();
@@ -87,22 +90,35 @@ class Game {
       this.state.seenHelp = true;
       this.save();
       this.audio.tap();
+      this.audio.startAmbient();
     };
+    document.getElementById('btnLook').onclick = () => this.toggleLook();
 
     window.addEventListener('keydown', (e) => {
       if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
       const k = e.key.toLowerCase();
       if (k === 'escape'){ this.town.place ? this.cancelPlace() : this.ui.close(); }
       if (k === 'm') this.toggleSound();
+      if (k === 'v') this.toggleLook();
       if (k === 'h') this.ui.openHelp();
       if (k === 'b') this.ui.openShop();
       if (k === 'enter' && this.town.place) this.confirmPlace();
     });
   }
 
+  /** Drop down into the town, or climb back out to the planning view. */
+  toggleLook(){
+    const ground = this.rig.mode !== 'ground';
+    this.rig.setMode(ground ? 'ground' : 'overview');
+    this.ui.setImmersive(ground);
+    this.audio.startAmbient();
+    this.audio.tap();
+    if (ground) this.ui.toast('Drag to look around · the stick walks you about', '');
+  }
+
   toggleSound(){
     this.state.muted = !this.state.muted;
-    this.audio.muted = this.state.muted;
+    this.audio.setMuted(this.state.muted);
     document.getElementById('btnSound').textContent = this.state.muted ? '🔇' : '🔊';
     if (!this.state.muted) this.audio.tap();
     this.save();
@@ -118,6 +134,7 @@ class Game {
       return;
     }
 
+    this.audio.startAmbient();
     const hit = this.rig.pick(x, y, this.town.pickables());
     if (!hit) return;
     const uid = this.town.uidOf(hit);
@@ -376,8 +393,8 @@ class Game {
 
     const controls = document.getElementById('introControls');
     controls.textContent = window.matchMedia('(pointer: coarse)').matches
-      ? 'Drag to look around, pinch to zoom, tap anything to use it.'
-      : 'Drag to pan · wheel to zoom · shift-drag to turn · tap anything to use it.';
+      ? 'Drag to move the island, pinch to zoom, tap anything to use it. The 👁 button puts you down in the town.'
+      : 'Drag to pan · wheel to zoom · shift-drag to turn · 👁 or V to walk around down there.';
 
     if (this.firstRun) document.getElementById('intro').classList.remove('hidden');
     else if (this.awayReport) this.ui.welcomeBack(this.awayReport.rep, this.awayReport.away);
@@ -390,8 +407,17 @@ class Game {
       last = t;
       const now = Date.now();
 
+      // Walking with the on-screen stick, when you are down in the grass.
+      const stick = this.ui.stickVec;
+      if (this.rig.mode === 'ground' && (stick.x || stick.y)){
+        this.rig.walk(stick.x, stick.y, 5.5 * dt);
+        this.rig.bob += dt * 7;
+      }
+
       this.rig.update(dt);
       this.world.update(dt);
+      this.wildlife.update(dt, t / 1000, this.world.night);
+      this.audio.setNight(this.world.night);
       this.town.update(dt, now);
       this.milbils.update(dt, t / 1000);
       this.visitors.update(dt, t / 1000);

@@ -18,6 +18,7 @@
 <body>
 
 <canvas id="scene"></canvas>
+<div id="grade"></div>
 <div id="markers"></div>
 
 <!-- ============================== LOADING ============================== -->
@@ -45,8 +46,8 @@
     </div>
     <button class="big" id="introGo">Start the town</button>
     <p class="lede after">Milbils are small, round and never happier than when there is
-      something to do. You have an island, a barn, a post balloon and three of them.
-      Grow things, make things, send them off, and the island fills up.</p>
+      something to do. You have an island, a barn, a helipad and three of them.
+      Grow things, make things, mail them off, and the island fills up.</p>
     <p class="tiny">The ⚙️ cog has all of this again, plus the keyboard shortcuts,
       whenever you want it.</p>
   </div>
@@ -65,6 +66,7 @@
       <div class="chip pop"><span class="ico">👥</span><b id="pop">0</b></div>
     </div>
     <div class="chips right">
+      <button class="icon-btn" id="btnLook" title="Walk around the town (V)">👁</button>
       <button class="icon-btn" id="btnSound" title="Sound (M)">🔊</button>
       <button class="icon-btn" id="btnHelp" title="How to play (H)">⚙️</button>
     </div>
@@ -85,6 +87,8 @@
       <button class="pill go" id="placeOk">Place ✓</button>
     </div>
   </div>
+
+  <div id="stick" class="hidden"><i></i></div>
 
   <div id="toasts"></div>
   <div id="pops"></div>

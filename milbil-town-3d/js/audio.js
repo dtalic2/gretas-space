@@ -7,6 +7,9 @@ export class Audio {
   constructor(muted = false){
     this.muted = muted;
     this.ctx = null;
+    this.night = 0;
+    this.ambient = null;
+    this._timer = null;
   }
 
   _wake(){
@@ -38,6 +41,82 @@ export class Audio {
     osc.connect(env).connect(this.master);
     osc.start(now);
     osc.stop(now + dur + 0.02);
+  }
+
+  // ------------------------------------------------------------ ambience --
+  /**
+   * A bed of wind, plus birds by day and crickets after dark. Started on the
+   * first tap, because browsers will not make a sound before one.
+   */
+  startAmbient(){
+    if (this.ambient) return;
+    const ctx = this._wake();
+    if (!ctx) return;
+
+    const out = ctx.createGain();
+    out.gain.value = this.muted ? 0 : 0.5;
+    out.connect(this.master);
+
+    // Wind: filtered noise, with a slow swell so it never sits still.
+    const secs = 3;
+    const buf = ctx.createBuffer(1, ctx.sampleRate * secs, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < data.length; i++){
+      const white = Math.random() * 2 - 1;
+      last = (last + 0.02 * white) / 1.02;          // brown-ish, easier on the ear
+      data[i] = last * 3.2;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 420;
+    const wind = ctx.createGain();
+    wind.gain.value = 0.16;
+
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = 0.07;
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = 200;
+    lfo.connect(lfoGain).connect(filter.frequency);
+
+    src.connect(filter).connect(wind).connect(out);
+    src.start();
+    lfo.start();
+
+    this.ambient = { out, wind, filter, src, lfo };
+    this._schedule();
+  }
+
+  /** 0 = broad daylight, 1 = deep night. Chooses who is singing. */
+  setNight(k){ this.night = k; }
+
+  _schedule(){
+    clearTimeout(this._timer);
+    const gap = 2600 + Math.random() * 5200;
+    this._timer = setTimeout(() => {
+      if (!this.muted && this.ambient) this.night > 0.55 ? this._cricket() : this._chirp();
+      this._schedule();
+    }, gap);
+  }
+
+  _chirp(){
+    const base = 2100 + Math.random() * 1500;
+    const notes = 2 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < notes; i++){
+      this.note(base * (1 + i * 0.08), 0.07, 'sine', i * 0.1, 0.13);
+    }
+  }
+
+  _cricket(){
+    for (let i = 0; i < 4; i++) this.note(4600, 0.035, 'triangle', i * 0.085, 0.07);
+  }
+
+  setMuted(muted){
+    this.muted = muted;
+    if (this.ambient) this.ambient.out.gain.value = muted ? 0 : 0.5;
   }
 
   chord(freqs, dur = 0.3, type = 'triangle'){
