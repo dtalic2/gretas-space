@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a8e0f7"/><stop offset="1" stop-color="#8fd3f4"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="110" fill="url(#sky)"/>
+  <!-- the island -->
+  <path d="M96 318 h320 l-52 92 a40 40 0 0 1 -34 20 h-148 a40 40 0 0 1 -34 -20 z" fill="#8d6242"/>
+  <ellipse cx="256" cy="318" rx="160" ry="44" fill="#8ccf5c"/>
+  <!-- a milbil -->
+  <g transform="translate(256 226)">
+    <path d="M-52 -46 l-18 -56 l44 26 z" fill="#ff9dbb"/>
+    <path d="M52 -46 l18 -56 l-44 26 z" fill="#ff9dbb"/>
+    <ellipse cx="0" cy="0" rx="78" ry="72" fill="#ffb3c7"/>
+    <ellipse cx="0" cy="18" rx="46" ry="40" fill="#fff6ee"/>
+    <circle cx="-28" cy="-12" r="15" fill="#fff"/><circle cx="28" cy="-12" r="15" fill="#fff"/>
+    <circle cx="-26" cy="-10" r="8" fill="#3b2f2a"/><circle cx="30" cy="-10" r="8" fill="#3b2f2a"/>
+    <circle cx="2" cy="12" r="8" fill="#ff9d6b"/>
+  </g>
+  <!-- a cottage on the left -->
+  <g transform="translate(118 268) scale(0.82)">
+    <rect x="-34" y="-30" width="68" height="46" rx="6" fill="#fdf1dc"/>
+    <path d="M-44 -30 l44 -36 l44 36 z" fill="#d8663f"/>
+    <rect x="-10" y="-12" width="22" height="28" rx="4" fill="#8b5a33"/>
+  </g>
+</svg>

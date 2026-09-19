@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#8fd3f4">
+<title>Milbil Town — 3D</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+<div id="markers"></div>
+
+<!-- ============================== LOADING ============================== -->
+<div id="boot">
+  <div class="boot-inner">
+    <div class="boot-mark">🏡</div>
+    <div class="boot-title">Milbil Town</div>
+    <div class="boot-sub">a floating island town</div>
+    <div class="boot-bar"><i id="bootBar"></i></div>
+    <div class="boot-msg" id="bootMsg">Waking the milbils…</div>
+  </div>
+</div>
+
+<!-- ============================== INTRO ============================== -->
+<div id="intro" class="overlay hidden">
+  <div class="card">
+    <h1>Your island. Their town.</h1>
+    <p class="lede">Milbils are small, round and never happier than when there is
+      something to do. You have an island, a barn, a post balloon and three of them.
+      Grow things, make things, send them off, and the island fills up.</p>
+    <div class="grid-4">
+      <div><span class="ico">🌾</span><p><b>Plant a field.</b> Tap it, pick a crop, wait, tap again to harvest.</p></div>
+      <div><span class="ico">🥐</span><p><b>Build a workshop.</b> Wheat becomes bread, berries become cake.</p></div>
+      <div><span class="ico">🎈</span><p><b>Fill the balloon.</b> Orders pay far better than selling raw.</p></div>
+      <div><span class="ico">🏡</span><p><b>Build homes.</b> Every workshop needs milbils to run it.</p></div>
+    </div>
+    <button class="big" id="introGo">Start the town</button>
+    <p class="tiny" id="introControls"></p>
+  </div>
+</div>
+
+<!-- ============================== HUD ============================== -->
+<div id="hud" class="hidden">
+
+  <div class="hud-top">
+    <div class="chips">
+      <div class="chip coin"><span class="ico">🪙</span><b id="coins">0</b></div>
+      <div class="chip level">
+        <span class="ico">⭐</span><b id="level">1</b>
+        <div class="xp"><i id="xpBar"></i></div>
+      </div>
+      <div class="chip pop"><span class="ico">👥</span><b id="pop">0</b></div>
+    </div>
+    <div class="chips right">
+      <button class="icon-btn" id="btnSound" title="Sound (M)">🔊</button>
+      <button class="icon-btn" id="btnHelp" title="How to play (H)">⚙️</button>
+    </div>
+  </div>
+
+  <button id="objective" class="hidden"><span class="ico">📣</span><span id="objText"></span></button>
+
+  <div class="side-buttons">
+    <button class="big-btn" id="btnShop"><span>🛒</span><small>Build</small></button>
+    <button class="big-btn" id="btnOrders"><span>🎈</span><small>Orders</small><i class="badge hidden" id="orderBadge">0</i></button>
+    <button class="big-btn" id="btnBarn"><span>📦</span><small id="barnLabel">0/60</small></button>
+  </div>
+
+  <div id="placeBar" class="hidden">
+    <div class="place-info"><b id="placeName">Cottage</b><span id="placeHint">Drag it where you want it</span></div>
+    <div class="place-actions">
+      <button class="pill ghost" id="placeCancel">Cancel</button>
+      <button class="pill go" id="placeOk">Place ✓</button>
+    </div>
+  </div>
+
+  <div id="toasts"></div>
+  <div id="pops"></div>
+</div>
+
+<!-- ============================== PANEL ============================== -->
+<div id="panel" class="overlay hidden">
+  <div class="sheet">
+    <header>
+      <h2 id="panelTitle">Panel</h2>
+      <button id="panelClose" aria-label="Close">✕</button>
+    </header>
+    <div id="panelBody"></div>
+  </div>
+</div>
+
+<!-- ============================== LEVEL UP ============================== -->
+<div id="levelUp" class="overlay hidden">
+  <div class="card center">
+    <div class="pop-mark">🎉</div>
+    <h1>Level <span id="lvlNum">2</span></h1>
+    <p class="lede" id="lvlPurse">The town council sends 60 coins.</p>
+    <div id="lvlUnlocks" class="unlocks"></div>
+    <button class="big" id="lvlGo">Lovely</button>
+  </div>
+</div>
+
+<!-- ============================== WELCOME BACK ============================== -->
+<div id="welcome" class="overlay hidden">
+  <div class="card center">
+    <div class="pop-mark">🌤️</div>
+    <h1>While you were out</h1>
+    <div id="welcomeBody" class="rows"></div>
+    <button class="big" id="welcomeGo">Back to work</button>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
