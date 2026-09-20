@@ -39,7 +39,7 @@ export class CameraRig {
     this.rate = 14;                     // how hard it chases; lowered for fly-tos
     this.vel = new THREE.Vector3();     // pan inertia
     this.bob = 0;                       // footstep sway at ground level
-    this.bound = 24;
+    this.bound = 58;        // the map is several islands wide now
 
     this.pointers = new Map();
     this.keys = new Set();

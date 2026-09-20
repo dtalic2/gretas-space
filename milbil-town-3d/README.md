@@ -46,6 +46,25 @@ Levels unlock everything: crops, workshops, homes and the pretty things
 | 10 | Starfruit ⭐, Milbil Plush 🧸 |
 | 12 | Star Jelly 🍮 |
 
+## Four islands
+
+Home is not the only island up there. Three more hang in the sky nearby, greyed
+out until you claim them from the 🗺 map (or <kbd>I</kbd>, or by tapping one):
+
+| | Opens at | Costs | Room |
+|---|---|---|---|
+| 🏠 **Home** | — | — | 158 spots |
+| 🏝 **Mossy Rock** | level 5 | 🪙 2,500 | 59 spots |
+| 🏝 **Windy Spit** | level 8 | 🪙 9,000 | 67 spots |
+| 🏝 **Star Shelf** | level 12 | 🪙 30,000 | 87 spots |
+
+Claiming one throws a rope bridge across from home, colours it in, scatters its
+shore with rocks and bushes, and sends some of your milbils over to look around.
+After that it is simply more town: fields, workshops and homes all work there,
+the barn and the helipad still serve the lot, and the population is shared. The
+price never changes, so there is no hurry — an island you cannot afford yet just
+sits there looking inviting.
+
 ## Two ways to look at it
 
 The 👁 button (or <kbd>V</kbd>) drops the camera out of the planning view and
@@ -102,7 +121,7 @@ or add it to your home screen, where it runs fullscreen with its own storage.
   rather than a formality.
 - **Everything can be moved.** Tap a building, then ✋ Move it. Fields and
   decorations can also be sold back for half.
-- **The shore is not buildable.** The outer ring of the island is grass, rocks
+- **The shore is not buildable.** The outer ring of every island is grass, rocks
   and bushes, and it stays that way.
 - **The visitors are real drawings.** `art/` holds the characters, cut out of a
   photo of the originals with the black turned transparent so the neon still
@@ -123,7 +142,7 @@ or add it to your home screen, where it runs fullscreen with its own storage.
 |---|---|
 | Phone | Drag to pan, pinch to zoom, twist with two fingers to turn |
 | Mouse | Drag to pan, wheel to zoom, right-drag or shift-drag to turn |
-| Keys | <kbd>WASD</kbd> pan or walk · <kbd>Q</kbd>/<kbd>E</kbd> turn · <kbd>+</kbd>/<kbd>−</kbd> zoom · <kbd>V</kbd> walk around · <kbd>B</kbd> build · <kbd>H</kbd> help · <kbd>M</kbd> mute · <kbd>Esc</kbd> close |
+| Keys | <kbd>WASD</kbd> pan or walk · <kbd>Q</kbd>/<kbd>E</kbd> turn · <kbd>+</kbd>/<kbd>−</kbd> zoom · <kbd>V</kbd> walk around · <kbd>B</kbd> build · <kbd>I</kbd> islands · <kbd>T</kbd> towns · <kbd>H</kbd> help · <kbd>M</kbd> mute · <kbd>Esc</kbd> close |
 
 Tapping anything finished — a ripe field, a workshop with goods on the shelf —
 collects it straight away. Tapping anything else opens its panel.
@@ -145,11 +164,11 @@ Add it to a phone home screen and it runs fullscreen like an app.
 index.html        the shell: HUD, panels, cards
 css/style.css     cream panels over a bright sky, finger-sized first
 js/data.js        every number in the game — crops, recipes, buildings, levels
-js/island.js      the shape of the ground: land, shore, paths, tile maths
+js/island.js      the four islands: land, shore, paths, tile maths
 js/econ.js        the rules: planting, cooking, orders, XP. No DOM, no three.js
 js/save.js        the three towns, the starting town, catching up after a nap
 js/models.js      every mesh, built from boxes and balls
-js/world.js       island, gradient sky, clouds, far islands, day/night
+js/world.js       the islands and their bridges, sky, clouds, day/night
 js/town.js        keeps the 3D town in step with the saved state
 js/milbils.js     the residents, and where they wander
 js/visitors.js    the drawn characters on the helipad, and the helicopter

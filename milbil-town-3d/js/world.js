@@ -1,8 +1,8 @@
 // ---------- The island, the sky above it and the clouds below ----------
 import * as THREE from 'three';
-import { GRID, TILE } from './data.js';
-import { isLand, isPath, isShore, hash2, worldX, worldZ } from './island.js';
-import { setNight, mat, ball } from './models.js';
+import { TILE, ISLANDS } from './data.js';
+import { isLand, isPath, isShore, hash2, worldX, worldZ, isleAt, isleCentre, BOUNDS } from './island.js';
+import { setNight, mat, ball, box } from './models.js';
 
 export const DAY_LENGTH = 420;        // seconds for a full day + night
 
@@ -52,7 +52,7 @@ export class World {
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
     const cam = this.sun.shadow.camera;
-    cam.left = -26; cam.right = 26; cam.top = 26; cam.bottom = -26;
+    cam.left = -30; cam.right = 30; cam.top = 30; cam.bottom = -30;
     cam.near = 1; cam.far = 90;
     this.sun.shadow.bias = -0.0009;
     this.sun.shadow.normalBias = 0.02;
@@ -64,86 +64,42 @@ export class World {
     this.town = new THREE.Group();          // everything placeable lives in here
     this.scene.add(this.town);
 
-    this._island();
-    this._scatter();
+    this._islands();
     this._horizon();
     this._sky();
     this._clouds();
 
     this.time = DAY_LENGTH * 0.28;          // open the game mid-morning
+    this.focus = new THREE.Vector3();       // what the shadow camera follows
     this.night = 0;
     this.resize();
   }
 
-  // ------------------------------------------------------------- island ---
-  _island(){
-    const pos = [], col = [], idx = [];
-    const c = new THREE.Color();
-    const H = 1.5;                          // how thick the slab of earth is
-
-    const quad = (a, b, cc, d, color) => {
-      const base = pos.length / 3;
-      for (const v of [a, b, cc, d]){
-        pos.push(v[0], v[1], v[2]);
-        c.setHex(color);
-        col.push(c.r, c.g, c.b);
-      }
-      idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
-    };
-
-    const GRASS = [0x8ccf5c, 0x82c855, 0x95d667, 0x79bf52];
-
-    for (let iz = 0; iz < GRID; iz++){
-      for (let ix = 0; ix < GRID; ix++){
-        if (!isLand(ix, iz)) continue;
-        const x0 = worldX(ix) - TILE / 2, x1 = x0 + TILE;
-        const z0 = worldZ(iz) - TILE / 2, z1 = z0 + TILE;
-        const edge = !isLand(ix + 1, iz) || !isLand(ix - 1, iz) || !isLand(ix, iz + 1) || !isLand(ix, iz - 1);
-        let color = GRASS[Math.floor(hash2(ix, iz) * GRASS.length)];
-        if (isPath(ix, iz)) color = hash2(ix + 7, iz + 3) > 0.5 ? 0xe0cfa4 : 0xd8c69a;
-        else if (edge) color = 0xa8d477;
-
-        quad([x0, 0, z1], [x1, 0, z1], [x1, 0, z0], [x0, 0, z0], color);
-
-        // Sides only where the island actually ends.
-        const dirt = hash2(ix + 31, iz + 17) > 0.5 ? 0x9a6b43 : 0x8d6242;
-        if (!isLand(ix, iz + 1)) quad([x0, -H, z1], [x1, -H, z1], [x1, 0, z1], [x0, 0, z1], dirt);
-        if (!isLand(ix, iz - 1)) quad([x1, -H, z0], [x0, -H, z0], [x0, 0, z0], [x1, 0, z0], dirt);
-        if (!isLand(ix + 1, iz)) quad([x1, -H, z1], [x1, -H, z0], [x1, 0, z0], [x1, 0, z1], dirt);
-        if (!isLand(ix - 1, iz)) quad([x0, -H, z0], [x0, -H, z1], [x0, 0, z1], [x0, 0, z0], dirt);
-      }
+  // ------------------------------------------------------------ islands ---
+  /** One group per island, so an unclaimed one can be greyed out on its own. */
+  _islands(){
+    this.isles = new Map();
+    for (const isle of ISLANDS){
+      const group = new THREE.Group();
+      const ground = this._ground(isle);
+      const rock = this._underside(isle);
+      const scatter = this._scatter(isle);
+      group.add(ground, rock, scatter);
+      this.scene.add(group);
+      this.isles.set(isle.id, { isle, group, ground, rock, scatter, bridge: null });
     }
-
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-    g.setIndex(idx);
-    g.computeVertexNormals();
-    const ground = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors:true, flatShading:true }));
-    ground.receiveShadow = true;
-    this.scene.add(ground);
-    this.ground = ground;
-
-    // The underside: a lumpy rock the whole town is sitting on.
-    const rockGeo = new THREE.ConeGeometry(GRID * TILE * 0.40, 15, 11, 3);
-    const p = rockGeo.attributes.position;
-    for (let i = 0; i < p.count; i++){
-      const y = p.getY(i);
-      if (y > -7.4){
-        const n = hash2(Math.round(p.getX(i) * 4), Math.round(p.getZ(i) * 4));
-        p.setX(i, p.getX(i) * (0.82 + n * 0.5));
-        p.setZ(i, p.getZ(i) * (0.82 + n * 0.5));
-        p.setY(i, y - n * 1.6);
-      }
+    for (const isle of ISLANDS){
+      if (isle.id === 0) continue;
+      const bridge = this._bridge(ISLANDS[0], isle);
+      this.scene.add(bridge);
+      this.isles.get(isle.id).bridge = bridge;
     }
-    rockGeo.computeVertexNormals();
-    const rock = new THREE.Mesh(rockGeo, mat(0x7d5333));
-    rock.rotation.x = Math.PI;          // apex points down, base meets the underside
-    rock.position.y = -1.45 - 7.5;
-    rock.receiveShadow = true;
-    this.scene.add(rock);
+    this._chunks();
+    this.setOwned([0]);
+  }
 
-    // Little chunks of rock that never quite fell.
+  /** Little pieces of rock that never quite fell away from the home island. */
+  _chunks(){
     this.floaters = [];
     for (let i = 0; i < 7; i++){
       const a = (i / 7) * Math.PI * 2 + 0.4;
@@ -160,8 +116,163 @@ export class World {
     }
   }
 
-  /** Rocks, bushes and tufts around the shore, always in the same places. */
-  _scatter(){
+  /** Claimed islands come to life: full colour, their props, and a way over. */
+  setOwned(ids){
+    const owned = new Set(ids);
+    for (const [id, m] of this.isles){
+      const yours = owned.has(id);
+      m.ground.material.color.setHex(yours ? 0xffffff : 0x94a0ac);
+      m.rock.material.color.setHex(yours ? 0xffffff : 0x94a0ac);
+      m.scatter.visible = yours;
+      if (m.bridge) m.bridge.visible = yours;
+    }
+  }
+
+  /** The grass, built as one vertex-coloured mesh per island. */
+  _ground(isle){
+    const pos = [], col = [], idx = [];
+    const c = new THREE.Color();
+    const H = 1.5;                          // how thick the slab of earth is
+
+    const quad = (a, b, cc, d, color) => {
+      const base = pos.length / 3;
+      for (const v of [a, b, cc, d]){
+        pos.push(v[0], v[1], v[2]);
+        c.setHex(color);
+        col.push(c.r, c.g, c.b);
+      }
+      idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
+    };
+
+    const GRASS = [0x8ccf5c, 0x82c855, 0x95d667, 0x79bf52];
+    const mine = (ix, iz) => { const at = isleAt(ix, iz); return !!at && at.id === isle.id; };
+    const reach = Math.ceil(isle.r + isle.wob[0] + isle.wob[2] + 2);
+
+    for (let iz = Math.floor(isle.cz - reach); iz <= Math.ceil(isle.cz + reach); iz++){
+      for (let ix = Math.floor(isle.cx - reach); ix <= Math.ceil(isle.cx + reach); ix++){
+        if (!mine(ix, iz)) continue;
+        const x0 = worldX(ix) - TILE / 2, x1 = x0 + TILE;
+        const z0 = worldZ(iz) - TILE / 2, z1 = z0 + TILE;
+        const edge = !mine(ix + 1, iz) || !mine(ix - 1, iz) || !mine(ix, iz + 1) || !mine(ix, iz - 1);
+        let color = GRASS[Math.floor(hash2(ix, iz) * GRASS.length)];
+        if (isPath(ix, iz)) color = hash2(ix + 7, iz + 3) > 0.5 ? 0xe0cfa4 : 0xd8c69a;
+        else if (edge) color = 0xa8d477;
+
+        quad([x0, 0, z1], [x1, 0, z1], [x1, 0, z0], [x0, 0, z0], color);
+
+        const dirt = hash2(ix + 31, iz + 17) > 0.5 ? 0x9a6b43 : 0x8d6242;
+        if (!mine(ix, iz + 1)) quad([x0, -H, z1], [x1, -H, z1], [x1, 0, z1], [x0, 0, z1], dirt);
+        if (!mine(ix, iz - 1)) quad([x1, -H, z0], [x0, -H, z0], [x0, 0, z0], [x1, 0, z0], dirt);
+        if (!mine(ix + 1, iz)) quad([x1, -H, z1], [x1, -H, z0], [x1, 0, z0], [x1, 0, z1], dirt);
+        if (!mine(ix - 1, iz)) quad([x0, -H, z0], [x0, -H, z1], [x0, 0, z1], [x0, 0, z0], dirt);
+      }
+    }
+
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors:true, flatShading:true }));
+    mesh.receiveShadow = true;
+    if (isle.id === 0) this.ground = mesh;
+    return mesh;
+  }
+
+  /** The lumpy rock each island is sitting on. */
+  _underside(isle){
+    const span = (isle.r + isle.wob[0]) * TILE;
+    const geo = new THREE.ConeGeometry(span * 0.9, span * 0.95, 11, 3);
+    const p = geo.attributes.position;
+    for (let i = 0; i < p.count; i++){
+      const y = p.getY(i);
+      if (y > -span * 0.47){
+        const n = hash2(Math.round(p.getX(i) * 4) + isle.id * 97, Math.round(p.getZ(i) * 4));
+        p.setX(i, p.getX(i) * (0.82 + n * 0.5));
+        p.setZ(i, p.getZ(i) * (0.82 + n * 0.5));
+        p.setY(i, y - n * 1.6);
+      }
+    }
+    geo.computeVertexNormals();
+    const c = isleCentre(isle);
+    const rock = new THREE.Mesh(geo, mat(0x7d5333).clone());
+    rock.rotation.x = Math.PI;
+    rock.position.set(c.x, -1.45 - span * 0.475, c.z);
+    rock.receiveShadow = true;
+    return rock;
+  }
+
+  /** A plank bridge from one island's rim to another's, sagging in the middle. */
+  _bridge(from, to){
+    const a = isleCentre(from), b = isleCentre(to);
+    const dir = new THREE.Vector3(b.x - a.x, 0, b.z - a.z).normalize();
+
+    // Walk out from each centre until the ground runs out: that is the landing.
+    const edgeOf = (isle, towards) => {
+      const c = isleCentre(isle);
+      let last = new THREE.Vector3(c.x, 0, c.z);
+      for (let d = 0; d < 40; d += 0.4){
+        const p = new THREE.Vector3(c.x + towards.x * d, 0, c.z + towards.z * d);
+        const at = isleAt(Math.round(p.x / TILE + 9), Math.round(p.z / TILE + 9));
+        if (!at || at.id !== isle.id) break;
+        last = p;
+      }
+      return last;
+    };
+    const start = edgeOf(from, dir);
+    const end = edgeOf(to, dir.clone().negate());
+
+    const group = new THREE.Group();
+    const span = start.distanceTo(end);
+    const steps = Math.max(8, Math.round(span / 0.55));
+    const sag = Math.min(2.4, span * 0.09);
+    const at = (t) => new THREE.Vector3(
+      start.x + (end.x - start.x) * t,
+      -Math.sin(Math.PI * t) * sag,
+      start.z + (end.z - start.z) * t,
+    );
+
+    const plankGeo = new THREE.BoxGeometry(1.05, 0.09, 0.3);
+    const planks = new THREE.InstancedMesh(plankGeo, mat(0xa8794a), steps + 1);
+    planks.castShadow = true;
+    planks.receiveShadow = true;
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
+    const scale = new THREE.Vector3(1, 1, 1);
+    for (let i = 0; i <= steps; i++){
+      const t = i / steps;
+      const p = at(t);
+      const ahead = at(Math.min(1, t + 0.01)).sub(at(Math.max(0, t - 0.01)));
+      q.setFromUnitVectors(new THREE.Vector3(0, 0, 1), ahead.normalize());
+      m.compose(p, q, scale);
+      planks.setMatrixAt(i, m);
+    }
+    planks.instanceMatrix.needsUpdate = true;
+    group.add(planks);
+
+    // Two rope lines, one either side, following the same sag a little higher.
+    const pts = [];
+    for (let i = 0; i <= steps; i++) pts.push(at(i / steps).add(new THREE.Vector3(0, 0.62, 0)));
+    const side = new THREE.Vector3(-dir.z, 0, dir.x).multiplyScalar(0.52);
+    for (const s of [-1, 1]){
+      const curve = new THREE.CatmullRomCurve3(pts.map(p => p.clone().addScaledVector(side, s)));
+      const rope = new THREE.Mesh(new THREE.TubeGeometry(curve, steps, 0.05, 4, false), mat(0xe8d8b8));
+      group.add(rope);
+    }
+    for (const end2 of [start, end]){
+      for (const s of [-1, 1]){
+        const post = box(0.22, 1.0, 0.22, 0x8d6242,
+          end2.x + side.x * s, 0, end2.z + side.z * s);
+        group.add(post);
+      }
+    }
+    return group;
+  }
+
+  /** Rocks, bushes and tufts around one island's shore, always in the same places. */
+  _scatter(isle){
+    const out = new THREE.Group();
     const rockGeo = new THREE.IcosahedronGeometry(0.42, 0);
     const bushGeo = new THREE.IcosahedronGeometry(0.46, 0);
     const tuftGeo = new THREE.ConeGeometry(0.1, 0.5, 4);
@@ -169,10 +280,12 @@ export class World {
     const bushMat = mat(0x4f9a46);
     const tuftMat = mat(0x76bd5c);
     const budMat = [mat(0xff8fb1), mat(0xffe08a), mat(0xd7b5ff)];
+    const reach = Math.ceil(isle.r + isle.wob[0] + isle.wob[2] + 2);
 
-    for (let iz = 0; iz < GRID; iz++){
-      for (let ix = 0; ix < GRID; ix++){
-        if (!isShore(ix, iz)) continue;
+    for (let iz = Math.floor(isle.cz - reach); iz <= Math.ceil(isle.cz + reach); iz++){
+      for (let ix = Math.floor(isle.cx - reach); ix <= Math.ceil(isle.cx + reach); ix++){
+        const at = isleAt(ix, iz);
+        if (!at || at.id !== isle.id || !isShore(ix, iz)) continue;
         const n = hash2(ix * 3 + 1, iz * 5 + 2);
         const x = worldX(ix) + (hash2(ix, iz + 90) - 0.5) * 1.2;
         const z = worldZ(iz) + (hash2(ix + 90, iz) - 0.5) * 1.2;
@@ -183,18 +296,18 @@ export class World {
           m.scale.set(1 + n, 0.7 + n, 1 + n * 0.6);
           m.rotation.y = n * 9;
           m.castShadow = true; m.receiveShadow = true;
-          this.scene.add(m);
+          out.add(m);
         } else if (n < 0.62){
           const g = new THREE.Group();
           for (let i = 0; i < 3; i++){
-            const b = new THREE.Mesh(bushGeo, bushMat);
-            b.position.set((i - 1) * 0.34, 0.26 + (i === 1 ? 0.16 : 0), (hash2(i, ix) - 0.5) * 0.4);
-            b.scale.setScalar(0.7 + hash2(i, iz) * 0.5);
-            b.castShadow = true;
-            g.add(b);
+            const bush = new THREE.Mesh(bushGeo, bushMat);
+            bush.position.set((i - 1) * 0.34, 0.26 + (i === 1 ? 0.16 : 0), (hash2(i, ix) - 0.5) * 0.4);
+            bush.scale.setScalar(0.7 + hash2(i, iz) * 0.5);
+            bush.castShadow = true;
+            g.add(bush);
           }
           g.position.set(x, 0, z);
-          this.scene.add(g);
+          out.add(g);
         } else if (n < 0.9){
           const g = new THREE.Group();
           for (let i = 0; i < 4; i++){
@@ -209,10 +322,11 @@ export class World {
             g.add(bud);
           }
           g.position.set(x, 0, z);
-          this.scene.add(g);
+          out.add(g);
         }
       }
     }
+    return out;
   }
 
   /**
@@ -379,8 +493,10 @@ export class World {
     // The sun swings from east to west and dips under the island at night.
     const ang = (t - 0.25) * Math.PI * 2;
     const sx = Math.cos(ang) * 60, sy = Math.sin(ang) * 48, sz = -26;
-    this.sun.position.set(sx, sy, sz);
-    this.sun.target.position.set(0, 0, 0);
+    // The shadow box travels with you, so an island 40 units away is lit the
+    // same as the one under your feet.
+    this.sun.position.set(this.focus.x + sx, sy, this.focus.z + sz);
+    this.sun.target.position.copy(this.focus);
     this.skyUniforms.sunDir.value.set(sx, sy, sz).normalize();
     this.sunDisc.position.set(sx * 2.4, sy * 2.4, sz * 2.4);
     this.sunDisc.lookAt(0, 0, 0);

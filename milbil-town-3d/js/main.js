@@ -14,8 +14,8 @@ import { load, save, wipe, awaySeconds, residentsFor, barnMax,
          storageWorks, exportText, importText,
          listTowns, backupTown, setActive, renameTown, deleteTown,
          townText, townName, putTown, activeSlot } from './save.js';
-import { BUILD, ITEMS, unlocksAt, barnUpgradeCost } from './data.js';
-import { footCentre } from './island.js';
+import { BUILD, ITEMS, unlocksAt, barnUpgradeCost, ISLAND } from './data.js';
+import { footCentre, isleCentre, isleAt, landTiles, isBuildable } from './island.js';
 
 const boot = document.getElementById('boot');
 const bootBar = document.getElementById('bootBar');
@@ -69,6 +69,7 @@ class Game {
     }
     E.tick(s, now);
 
+    this.world.setOwned(s.isles);          // islands you already claimed light up
     this.town.sync();
     this.milbils.refreshTaken();
     this.milbils.sync();
@@ -108,6 +109,7 @@ class Game {
       if (k === 'm') this.toggleSound();
       if (k === 'v') this.toggleLook();
       if (k === 't') this.ui.openTowns();
+      if (k === 'i') this.ui.openIslands();
       if (k === 'h') this.ui.openHelp();
       if (k === 'b') this.ui.openShop();
       if (k === 'enter' && this.town.place) this.confirmPlace();
@@ -144,7 +146,17 @@ class Game {
 
     this.audio.startAmbient();
     const hit = this.rig.pick(x, y, this.town.pickables());
-    if (!hit) return;
+    if (!hit){
+      // Tapping bare ground on an island you have not claimed asks about it.
+      const p = this.rig.groundAt(x, y);
+      if (!p) return;
+      const isle = isleAt(Math.round(p.x / 2 + 9), Math.round(p.z / 2 + 9));
+      if (isle && !E.ownsIsle(this.state, isle.id)){
+        this.audio.tap();
+        this.ui.openIslands();
+      }
+      return;
+    }
     const uid = this.town.uidOf(hit);
     const obj = uid == null ? null : E.objAt(this.state, uid);
     if (!obj) return;
@@ -353,6 +365,45 @@ class Game {
     this.after();
   }
 
+  // ----------------------------------------------------------- islands ----
+  /** Where an island's bubble floats, a little above its middle. */
+  isleAnchor(isle){
+    const c = isleCentre(isle);
+    return new THREE.Vector3(c.x, 4.2, c.z);
+  }
+
+  /** How many buildable tiles an island has — the "spots" on its card. */
+  isleRoom(id){
+    if (this._room && this._room[id] != null) return this._room[id];
+    this._room = this._room || {};
+    this._room[id] = landTiles(id).filter(([x, z]) => isBuildable(x, z)).length;
+    return this._room[id];
+  }
+
+  claimIsle(id){
+    const res = E.claimIsle(this.state, id);
+    if (!res){
+      this.audio.nope();
+      return this.ui.toast(E.isleCheck(this.state, id).why, 'bad');
+    }
+    this.world.setOwned(this.state.isles);
+    this.audio.level();
+    this.ui.close();
+    this.ui.toast(`${res.isle.name} is yours — the bridge is up`, 'good');
+    this.flyToIsle(id);
+    this.after(res.levels);
+  }
+
+  /** Swing the camera over to an island. */
+  flyToIsle(id){
+    const isle = ISLAND[id];
+    if (!isle) return;
+    const c = isleCentre(isle);
+    this.ui.close();
+    this.rig.focusOn(c.x, c.z, Math.max(26, c.r * 2.4));
+    this.audio.tap();
+  }
+
   // ------------------------------------------------------------- towns ----
   /**
    * Switching towns means reloading with a different slot active. The current
@@ -490,6 +541,7 @@ class Game {
     const step = E.objective(s);
     if (!step) return;
     if (step.want === 'shop') return this.ui.openShop();
+    if (step.want === 'isles') return this.ui.openIslands();
     const target = s.objs.find(o => o.type === step.want)
       || s.objs.find(o => o.type === 'field' && !o.crop)
       || s.objs[0];
@@ -562,6 +614,7 @@ class Game {
       }
 
       this.rig.update(dt);
+      this.world.focus.copy(this.rig.target);
       this.world.update(dt);
       this.wildlife.update(dt, t / 1000, this.world.night);
       this.audio.setNight(this.world.night);

@@ -19,30 +19,47 @@ export class Milbils {
     this.group = new THREE.Group();
     world.scene.add(this.group);
     this.list = [];
-    this.tiles = landTiles();
+    this.tilesByIsle = new Map();       // island id -> walkable tiles
     this.refreshTaken();
     this.sync();
   }
 
-  /** Match the crowd to the population, adding and removing as homes change. */
+  /** Match the crowd to the population, and spread it over the islands you own. */
   sync(){
+    const isles = E.myIsles(this.state).map(i => i.id);
+    for (const id of isles) if (!this.tilesByIsle.has(id)) this.tilesByIsle.set(id, landTiles(id));
+    this.isles = isles;
+
     const want = Math.min(MAX_WANDERERS, E.population(this.state).total);
     while (this.list.length > want){
       const m = this.list.pop();
       this.group.remove(m.mesh);
     }
     while (this.list.length < want) this.list.push(this._make(this.list.length));
+
+    // Claiming an island sends some of them over to have a look at it.
+    this.list.forEach((m, i) => {
+      const home = isles[i % isles.length];
+      if (m.isle === home) return;
+      m.isle = home;
+      const spot = this._freeSpot(home);
+      m.mesh.position.set(spot.x, 0, spot.z);
+      m.target.set(spot.x, 0, spot.z);
+      m.born = 0;                        // pops back into view on the new island
+      m.wait = Math.random() * 2;
+    });
   }
 
   _make(i){
     const color = MILBIL_COLORS[i % MILBIL_COLORS.length];
     const mesh = MODELS.milbil(color);
-    const spot = this._freeSpot();
+    const isle = this.isles[i % this.isles.length];
+    const spot = this._freeSpot(isle);
     mesh.position.set(spot.x, 0, spot.z);
     mesh.scale.setScalar(0.001);
     this.group.add(mesh);
     return {
-      mesh, color,
+      mesh, color, isle,
       name: MILBIL_NAMES[(i * 7 + 3) % MILBIL_NAMES.length],
       target: new THREE.Vector3(spot.x, 0, spot.z),
       phase: Math.random() * 6,
@@ -52,11 +69,13 @@ export class Milbils {
     };
   }
 
-  /** A walkable spot: land, and not underneath a building. */
-  _freeSpot(){
+  /** A walkable spot on one island: land, and not underneath a building. */
+  _freeSpot(isleId){
     const taken = this._taken;
+    const tiles = this.tilesByIsle.get(isleId) || this.tilesByIsle.get(0) || [];
+    if (!tiles.length) return { x:0, z:2 };
     for (let tries = 0; tries < 24; tries++){
-      const [ix, iz] = this.tiles[Math.floor(Math.random() * this.tiles.length)];
+      const [ix, iz] = tiles[Math.floor(Math.random() * tiles.length)];
       if (taken.has(ix + ',' + iz)) continue;
       return { x: worldX(ix) + (Math.random() - 0.5) * 0.9, z: worldZ(iz) + (Math.random() - 0.5) * 0.9 };
     }
@@ -108,7 +127,7 @@ export class Milbils {
         const breathe = 1 + Math.sin(t * 2 + m.phase) * 0.03;
         mesh.scale.set(1, breathe, 1);
         if (m.wait <= 0){
-          const spot = this._freeSpot();
+          const spot = this._freeSpot(m.isle);
           m.target.set(spot.x, 0, spot.z);
           m.wait = 1.5 + Math.random() * 4;
           m.lookAt = null;

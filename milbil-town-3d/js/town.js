@@ -5,8 +5,8 @@
 // animations, and handles the ghost you drag around when placing something.
 
 import * as THREE from 'three';
-import { TILE, GRID } from './data.js';
-import { footCentre, CENTRE } from './island.js';
+import { TILE } from './data.js';
+import { footCentre, CENTRE, BOUNDS } from './island.js';
 import { makeModel, cropMesh, ghostify, tilePad } from './models.js';
 import * as E from './econ.js';
 
@@ -193,8 +193,10 @@ export class Town {
     // the half-tile nudge to land on a sensible anchor.
     const ix = Math.round((point.x / TILE) + CENTRE - (p.w - 1) / 2);
     const iz = Math.round((point.z / TILE) + CENTRE - (p.d - 1) / 2);
-    const max = GRID - 1;
-    this.setGhost(Math.max(0, Math.min(max, ix)), Math.max(0, Math.min(max, iz)));
+    this.setGhost(
+      Math.max(BOUNDS.x0, Math.min(BOUNDS.x1, ix)),
+      Math.max(BOUNDS.z0, Math.min(BOUNDS.z1, iz)),
+    );
   }
 
   cancelPlace(){

@@ -145,6 +145,7 @@ export function defaultState(){
     xp: 0,
     level: 1,
     barn: { wheat: 4 },
+    isles: [0],                      // islands claimed; home is always yours
     barnUps: 0,
     nextUid: 1,
     objs: [],
@@ -217,6 +218,9 @@ function migrate(s){
   if (!Array.isArray(out.objs) || !out.objs.length) out.objs = base.objs;
   if (!Array.isArray(out.orders)) out.orders = [];
   out.objs = out.objs.filter(o => o && typeof o.type === 'string');
+  // Towns from before there were other islands own the home one.
+  out.isles = Array.isArray(s.isles) ? s.isles.map(Number).filter(n => !isNaN(n)) : [];
+  if (!out.isles.includes(0)) out.isles.unshift(0);
   // Saves from before the helipad have a post balloon doing its job.
   for (const o of out.objs){
     if (o.type === 'balloon' && o.fixed){ o.type = 'helipad'; o.x = Math.max(0, o.x - 1); o.z = Math.max(0, o.z - 1); }

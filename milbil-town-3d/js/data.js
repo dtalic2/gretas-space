@@ -7,6 +7,26 @@ export const TILE = 2;            // world units per grid square
 export const GRID = 19;           // the grid is GRID x GRID; the island is a blob inside it
 export const ISLAND_R = 7.9;      // island radius, in tiles
 
+/**
+ * The islands, in the order they open up. `cx`/`cz` are tile coordinates and
+ * `wob` is [amp, phase, amp2, phase2] for the wobble that gives each one bays
+ * and headlands. Home's numbers reproduce the original island exactly, so a
+ * town saved before there were other islands still sits where it was built.
+ */
+export const ISLANDS = [
+  { id:0, name:'Home',        cx:  9, cz:  9, r:7.9, wob:[0.95, 0.7, 0.60, -1.1], level:1,  cost:0,
+    blurb:'Where the milbils started: the paved cross, the barn and the helipad.' },
+  { id:1, name:'Mossy Rock',  cx: 26, cz:  4, r:5.2, wob:[0.70, 2.1, 0.45,  0.4], level:5,  cost:2500,
+    blurb:'A damp green lump off to the east. Flat enough for a serious farm.' },
+  { id:2, name:'Windy Spit',  cx: -7, cz: 17, r:5.6, wob:[0.85, 4.3, 0.50,  2.2], level:8,  cost:9000,
+    blurb:'Long, breezy and a long way down on every side. Good for workshops.' },
+  { id:3, name:'Star Shelf',  cx: 12, cz: 28, r:6.2, wob:[0.75, 5.5, 0.55,  3.4], level:12, cost:30000,
+    blurb:'The high one, cold and quiet, where starfruit actually grows well.' },
+];
+
+export const ISLAND = {};
+for (const i of ISLANDS) ISLAND[i.id] = i;
+
 export const START_COINS = 160;
 export const BARN_START = 60;
 export const BARN_STEP = 25;      // capacity added per upgrade

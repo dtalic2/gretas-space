@@ -5,12 +5,12 @@
 // and means offline catch-up is the same code as the live tick.
 
 import {
-  CROPS, GOODS, ITEMS, BUILD, FIXED, CATALOGUE, CHARACTERS, CHARACTER,
+  CROPS, GOODS, ITEMS, BUILD, FIXED, CATALOGUE, CHARACTERS, CHARACTER, ISLANDS, ISLAND,
   ORDER_SLOTS, ORDER_GAP, ORDER_SKIP_COOLDOWN,
   fieldCost, barnUpgradeCost, levelForXp, xpForLevel,
 } from './data.js';
 import { barnMax, newObj } from './save.js';
-import { isBuildable } from './island.js';
+import { isBuildable, isleAt } from './island.js';
 
 export const QUEUE_CAP = 4;      // recipes you can line up at one factory
 
@@ -113,6 +113,9 @@ export function canPlace(state, type, x, z, ignoreUid){
   for (let dz = 0; dz < d.d; dz++){
     for (let dx = 0; dx < d.w; dx++){
       const ix = x + dx, iz = z + dz;
+      const isle = isleAt(ix, iz);
+      if (!isle) return { ok:false, why:'That hangs off the island' };
+      if (!ownsIsle(state, isle.id)) return { ok:false, why:`${isle.name} is not yours yet` };
       if (!isBuildable(ix, iz)) return { ok:false, why:'Too close to the edge — try further in' };
       if (taken.has(ix + ',' + iz)) return { ok:false, why:'Something is already there' };
     }
@@ -178,6 +181,40 @@ export function sellObj(state, uid){
   state.objs = state.objs.filter(b => b.uid !== uid);
   state.coins += refund;
   return refund;
+}
+
+// -------------------------------------------------------------- islands ----
+
+export const ownsIsle = (state, id) => (state.isles || [0]).includes(id);
+
+/** Which islands you have, in order. Home is always one of them. */
+export const myIsles = (state) => ISLANDS.filter(i => ownsIsle(state, i.id));
+
+/** Why you can or cannot claim an island right now — the card reads this. */
+export function isleCheck(state, id){
+  const isle = ISLAND[id];
+  if (!isle) return { ok:false, why:'No such island' };
+  if (ownsIsle(state, id)) return { ok:false, why:'Already yours', owned:true };
+  if (state.level < isle.level) return { ok:false, why:`Opens up at level ${isle.level}` };
+  if (state.coins < isle.cost) return { ok:false, why:`Costs ${isle.cost} coins` };
+  return { ok:true, cost:isle.cost };
+}
+
+export function claimIsle(state, id){
+  const check = isleCheck(state, id);
+  if (!check.ok) return null;
+  state.coins -= check.cost;
+  state.isles = [...(state.isles || [0]), id];
+  state.stats.claimed = (state.stats.claimed || 0) + 1;
+  const levels = gainXp(state, Math.max(15, Math.round(check.cost / 30)));
+  return { isle: ISLAND[id], cost: check.cost, levels };
+}
+
+/** How much of an island is built on — shown on its card. */
+export function isleUse(state, id){
+  let built = 0;
+  for (const o of state.objs) if (isleAt(o.x, o.z) && isleAt(o.x, o.z).id === id) built++;
+  return built;
 }
 
 // ---------------------------------------------------------------- crops ----
@@ -463,6 +500,8 @@ export const STEPS = [
     want:'bakery', done:(s) => s.stats.made >= 1 },
   { text:'Build another cottage 🏡 — more milbils, more work',
     want:'shop', done:(s) => countOf(s, 'cottage') >= 2 },
+  { text:'Reach level 5 and claim Mossy Rock 🏝 from the map',
+    want:'isles', done:(s) => (s.isles || []).length >= 2 },
 ];
 
 /** Advances the tutorial pointer and returns the line to show, or null when done. */

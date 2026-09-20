@@ -4,7 +4,7 @@
 // into `game` for anything that actually happens.
 
 import * as THREE from 'three';
-import { CROPS, ITEMS, BUILD, ORDER_SLOTS } from './data.js';
+import { CROPS, ITEMS, BUILD, ORDER_SLOTS, ISLANDS } from './data.js';
 import { barnMax, listTowns, backupTown, SLOTS } from './save.js';
 import * as E from './econ.js';
 import * as F from './format.js';
@@ -62,6 +62,7 @@ export class UI {
     $('btnBarn').onclick = () => this.openBarn();
     $('btnHelp').onclick = () => this.openHelp();
     $('btnTowns').onclick = () => this.openTowns();
+    $('btnMap').onclick = () => this.openIslands();
     $('panelClose').onclick = () => this.close();
     this.el.panel.addEventListener('click', (e) => { if (e.target === this.el.panel) this.close(); });
     this.el.objective.onclick = () => this.game.followObjective();
@@ -151,6 +152,9 @@ export class UI {
       case 'drop':     g.deleteTown(Number(d.slot)); break;
       case 'townfile': g.saveTownToFile(Number(d.slot)); break;
       case 'restore':  g.restoreBackup(); break;
+      case 'isles':    this.openIslands(); break;
+      case 'claim':    g.claimIsle(Number(d.isle)); break;
+      case 'flyto':    g.flyToIsle(Number(d.isle)); break;
       case 'savefile': g.saveToFile(); break;
       case 'loadfile': document.getElementById('loadFileInput')?.click(); break;
       case 'copysave': g.copySave(); break;
@@ -248,9 +252,45 @@ export class UI {
       if (m._html !== info.html){ m.innerHTML = info.html; m._html = info.html; }
     }
 
+    for (const key of this._isleMarkers(state)) seen.add(key);
+
     for (const [uid, m] of this.marks){
       if (!seen.has(uid)){ m.remove(); this.marks.delete(uid); }
     }
+  }
+
+  /** Bubbles over the islands themselves: what the next one costs. */
+  _isleMarkers(state){
+    const cam = this.game.world.camera;
+    const seen = new Set();
+    for (const isle of ISLANDS){
+      if (isle.id === 0 || E.ownsIsle(state, isle.id)) continue;
+      const c = this.game.isleAnchor(isle);
+      const v = this._vec.copy(c).project(cam);
+      if (v.z > 1) continue;
+      const x = (v.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (-v.y * 0.5 + 0.5) * window.innerHeight;
+      if (x < -60 || y < -40 || x > window.innerWidth + 60 || y > window.innerHeight + 40) continue;
+      const key = 'isle' + isle.id;
+      seen.add(key);
+      let m = this.marks.get(key);
+      if (!m){
+        m = document.createElement('div');
+        m.style.pointerEvents = 'auto';
+        m.onclick = () => this.openIslands();
+        this.el.markers.appendChild(m);
+        this.marks.set(key, m);
+      }
+      m.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%,-100%)`;
+      const ready = E.isleCheck(state, isle.id).ok;
+      const cls = 'mk isle' + (ready ? ' ready' : ' empty');
+      if (m.className !== cls) m.className = cls;
+      const html = ready
+        ? `<span>🏝</span><span>Claim ${esc(isle.name)}</span>`
+        : `<span>🔒</span><span>${esc(isle.name)} · level ${isle.level}</span>`;
+      if (m._html !== html){ m.innerHTML = html; m._html = html; }
+    }
+    return seen;
   }
 
   _markerFor(obj, state, now){
@@ -541,6 +581,41 @@ export class UI {
     return `<p class="sub">${esc(d.blurb)}</p>` + this._objActions(obj);
   }
 
+  // ---- the map: which islands are yours, and what the next one costs
+  openIslands(){
+    this.reopen = () => this.openIslands();
+    const s = this.game.state;
+    let html = `<p class="sub">Your island is not the only one up here. Claim another
+      and a bridge goes across; everything you can build at home you can build there,
+      and the milbils spread out to have a look.</p><div class="towns">`;
+
+    for (const isle of ISLANDS){
+      const owned = E.ownsIsle(s, isle.id);
+      const check = E.isleCheck(s, isle.id);
+      const built = owned ? E.isleUse(s, isle.id) : 0;
+      const room = this.game.isleRoom(isle.id);
+      html += `<div class="town${owned ? ' playing' : ''}">
+        <div class="town-head">
+          <b>${isle.id === 0 ? '🏠' : '🏝'} ${esc(isle.name)}</b>
+          ${owned ? '<span class="tag">yours</span>' : `<span class="tag locked">level ${isle.level}</span>`}
+        </div>
+        <div class="town-meta">
+          <span>📐 ${room} spots</span>
+          ${owned ? `<span>🏠 ${built} built</span>` : `<span>🪙 ${F.coins(isle.cost)}</span>`}
+        </div>
+        <div class="town-when">${esc(isle.blurb)}</div>
+        <div class="actions">
+          ${owned
+            ? `<button class="pill go" data-act="flyto" data-isle="${isle.id}">Go there</button>`
+            : `<button class="pill go" data-act="claim" data-isle="${isle.id}" ${check.ok ? '' : 'disabled'}>
+                 ${check.ok ? `Claim it — 🪙 ${F.coins(isle.cost)}` : esc(check.why)}</button>`}
+        </div>
+      </div>`;
+    }
+    html += '</div><p class="tiny">An island you have not claimed sits there greyed out. Nothing is lost by waiting — the price never changes.</p>';
+    this.open('🗺 Islands', html, { kind:'isles' });
+  }
+
   // ---- the towns you have on the go
   openTowns(){
     this.reopen = () => this.openTowns();
@@ -630,6 +705,11 @@ export class UI {
         <li>Mouse: drag to pan, right-drag or shift-drag to turn, wheel to zoom.</li>
         <li>Keyboard: <kbd>WASD</kbd> pan, <kbd>Q</kbd>/<kbd>E</kbd> turn, <kbd>+</kbd>/<kbd>-</kbd> zoom, <kbd>M</kbd> mute, <kbd>H</kbd> help.</li>
       </ul>
+      <h3>Islands</h3>
+      <p>Level 5 opens a second island, and there are two more after that. Claim
+      one from the 🗺 map and a bridge goes over; it is all one town, just
+      bigger. Tapping an island you have not claimed opens the same map.</p>
+
       <h3>Your towns</h3>
       <p>You can keep ${SLOTS} towns on the go at once and swap between them
       whenever you like; the ones you are not playing carry on from where you
