@@ -57,6 +57,24 @@ over the fields, fireflies after dark, other islands hazy on the horizon, wind a
 birdsong by day, crickets at night, and a sky that actually changes colour from the
 horizon up. The visitors glow at night, because they were drawn in neon.
 
+## Where your progress lives
+
+The town saves itself into **the page you opened, in the browser you opened it
+in** — every few seconds, and again when you leave. Nothing goes to a server, so:
+
+- The Pages link above and a local `serve.py` are different places, and keep
+  different towns. So are your phone and your laptop.
+- Private windows, and some in-app viewers that show a page inside another page,
+  throw browser storage away when you close them. The game notices and says so.
+
+So the ⚙️ panel can hand you the town as a file: **Save to a file** downloads
+`milbil-town-YYYY-MM-DD.json`, **Load a save file** takes one back, and there is
+a text box underneath for copying it somewhere by hand when a file is awkward
+(phones, mostly). Loading replaces the town you are in, so it asks first.
+
+For a town that sticks around, open the Pages link in a normal browser tab —
+or add it to your home screen, where it runs fullscreen with its own storage.
+
 ## Things worth knowing
 
 - **It runs on real time, closed or open.** Crops ripen and workshops keep

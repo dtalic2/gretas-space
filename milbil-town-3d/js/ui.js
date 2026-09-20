@@ -131,6 +131,10 @@ export class UI {
       case 'upgrade':  g.upgradeBarn(); break;
       case 'close':    this.close(); break;
       case 'wipe':     g.wipe(); break;
+      case 'savefile': g.saveToFile(); break;
+      case 'loadfile': document.getElementById('loadFileInput')?.click(); break;
+      case 'copysave': g.copySave(); break;
+      case 'pastesave':g.loadFromText(document.getElementById('saveText')?.value || ''); break;
     }
   }
 
@@ -267,6 +271,15 @@ export class UI {
     this.el.panelBody.innerHTML = html;
     this.el.panel.classList.remove('hidden');
     this.el.panelBody.scrollTop = 0;
+
+    const file = document.getElementById('loadFileInput');
+    if (file) file.onchange = () => {
+      const f = file.files && file.files[0];
+      if (f) this.game.loadFromFile(f);
+      file.value = '';
+    };
+    const box = document.getElementById('saveText');
+    if (box) box.value = this.game.saveText();
   }
 
   close(){
@@ -525,6 +538,32 @@ export class UI {
         <li>Mouse: drag to pan, right-drag or shift-drag to turn, wheel to zoom.</li>
         <li>Keyboard: <kbd>WASD</kbd> pan, <kbd>Q</kbd>/<kbd>E</kbd> turn, <kbd>+</kbd>/<kbd>-</kbd> zoom, <kbd>M</kbd> mute, <kbd>H</kbd> help.</li>
       </ul>
+      <h3>Where your town is kept</h3>
+      <p>It saves itself into <b>this page, in this browser</b>, every few
+      seconds and whenever you leave. That means a town built here does not
+      follow you to another browser, another device, or a different link — and
+      some embedded viewers throw it away when you close them. For anything you
+      care about, keep a copy.</p>
+      <div class="actions">
+        <button class="pill go" data-act="savefile">💾 Save to a file</button>
+        <button class="pill" data-act="loadfile">📂 Load a save file</button>
+      </div>
+      <input type="file" id="loadFileInput" accept="application/json,.json,text/plain" style="display:none">
+      <details class="savebox">
+        <summary>Or move it as text</summary>
+        <p class="tiny">Copy this and keep it anywhere. Pasting a save in here
+        and pressing Load replaces the town you are in now.</p>
+        <textarea id="saveText" spellcheck="false"></textarea>
+        <div class="actions">
+          <button class="pill" data-act="copysave">Copy it</button>
+          <button class="pill warn" data-act="pastesave">Load what is in the box</button>
+        </div>
+      </details>
+      <h3>Somewhere to play it</h3>
+      <p><a href="https://dtalic2.github.io/gretas-space/milbil-town-3d/" target="_blank" rel="noopener">dtalic2.github.io/gretas-space/milbil-town-3d</a>
+      — open that in a normal browser tab and the town sticks around. On a phone,
+      add it to your home screen and it runs fullscreen like an app.</p>
+
       <h3>This town so far</h3>
       <div class="rows">
         <div class="row"><span>Harvests</span><b>${s.stats.harvest}</b></div>

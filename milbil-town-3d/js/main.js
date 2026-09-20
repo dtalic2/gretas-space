@@ -10,7 +10,8 @@ import { Wildlife } from './wildlife.js';
 import { Audio } from './audio.js';
 import * as E from './econ.js';
 import * as F from './format.js';
-import { load, save, wipe, awaySeconds, residentsFor, barnMax } from './save.js';
+import { load, save, wipe, awaySeconds, residentsFor, barnMax,
+         storageWorks, exportText, importText } from './save.js';
 import { BUILD, ITEMS, unlocksAt, barnUpgradeCost } from './data.js';
 import { footCentre } from './island.js';
 
@@ -345,8 +346,67 @@ class Game {
     this.after();
   }
 
+  // -------------------------------------------------- carrying it around --
+  saveText(){ return exportText(this.state); }
+
+  /** Hand the browser a .json of the town. */
+  saveToFile(){
+    try {
+      const text = exportText(this.state);
+      const blob = new Blob([text], { type:'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `milbil-town-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      this.audio.coins();
+      this.ui.toast('Saved — keep that file somewhere safe', 'good');
+    } catch (err){
+      console.warn('download failed', err);
+      this.ui.toast('This page will not download — copy the text instead', 'bad');
+    }
+  }
+
+  loadFromFile(file){
+    const reader = new FileReader();
+    reader.onload = () => this.loadFromText(String(reader.result || ''));
+    reader.onerror = () => this.ui.toast('Could not read that file', 'bad');
+    reader.readAsText(file);
+  }
+
+  /** Replace the town with a saved one. Asks first, because it is a big undo. */
+  loadFromText(text){
+    if (!text.trim()) return this.ui.toast('Nothing to load', 'bad');
+    if (!window.confirm('Load this save? The town you are in now is replaced.')) return;
+    try {
+      importText(text);
+      this.frozen = true;                    // do not save over what we just loaded
+      this.ui.toast('Loading that town…', 'good');
+      setTimeout(() => location.reload(), 400);
+    } catch (err){
+      this.audio.nope();
+      this.ui.toast(err.message, 'bad');
+    }
+  }
+
+  async copySave(){
+    const text = exportText(this.state);
+    try {
+      await navigator.clipboard.writeText(text);
+      this.ui.toast('Save copied', 'good');
+    } catch {
+      const box = document.getElementById('saveText');
+      if (box){ box.focus(); box.select(); }
+      this.ui.toast('Select the text and copy it yourself', '');
+    }
+  }
+
   wipe(){
     if (!window.confirm('Start again? This town and everything in it goes away.')) return;
+    this.frozen = true;                      // or the unload save would bring it back
     wipe();
     location.reload();
   }
@@ -383,7 +443,15 @@ class Game {
     this.save();
   }
 
-  save(){ save(this.state); }
+  /**
+   * Leaving the page saves it, which is what you want right up until you are
+   * leaving *because* you replaced the town — at which point the old one would
+   * be written straight back over the new one. `frozen` stops that.
+   */
+  save(){
+    if (this.frozen) return;
+    save(this.state);
+  }
 
   // ---------------------------------------------------------------- loop --
   start(){
@@ -398,6 +466,11 @@ class Game {
 
     if (this.firstRun) document.getElementById('intro').classList.remove('hidden');
     else if (this.awayReport) this.ui.welcomeBack(this.awayReport.rep, this.awayReport.away);
+
+    // Better to say so now than after an afternoon of building.
+    if (!storageWorks()){
+      setTimeout(() => this.ui.toast('This page cannot save — ⚙️ has a file you can keep', 'bad'), 2500);
+    }
 
     let last = performance.now();
     let sinceSave = 0, sinceTick = 0;

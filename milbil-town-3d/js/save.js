@@ -107,6 +107,47 @@ export function save(state){
   }
 }
 
+/** Can this page actually keep a save? Private windows and some embedded
+ *  viewers say yes to localStorage and then quietly drop everything. */
+export function storageWorks(){
+  try {
+    localStorage.setItem(KEY + '.probe', '1');
+    const ok = localStorage.getItem(KEY + '.probe') === '1';
+    localStorage.removeItem(KEY + '.probe');
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+/** The whole town as text, for a file or the clipboard. */
+export function exportText(state){
+  return JSON.stringify({ ...state, lastSeen: Date.now() }, null, 1);
+}
+
+/**
+ * Take a town back in. Throws with something readable if the text is not a
+ * save, so a mistyped paste says so instead of wiping the island.
+ */
+export function importText(text){
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error('That is not a save file — the text is not readable.');
+  }
+  if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.objs) || typeof parsed.coins !== 'number'){
+    throw new Error('That file is not a Milbil Town save.');
+  }
+  const state = migrate(parsed);
+  try {
+    localStorage.setItem(KEY, JSON.stringify(state));
+  } catch {
+    throw new Error('This page is not allowed to save — try a normal browser tab.');
+  }
+  return state;
+}
+
 export function wipe(){
   try { localStorage.removeItem(KEY); } catch { /* ignore */ }
 }
