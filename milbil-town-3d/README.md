@@ -26,7 +26,8 @@ helipad wanting things, and the visitors are Greta's drawings.
    that moves the town up a level. This is the whole economy — selling raw crops
    is what you do when the barn is full.
 4. **Grow.** Every workshop needs free milbils to run it, and milbils come from
-   homes. A cottage houses two, a mushroom burrow four, a sky tower seven, and
+   homes. The 👥 bar in the corner fills as they are put to work, so a full bar
+   means the next workshop needs a home first. A cottage houses two, a mushroom burrow four, a sky tower seven, and
    Cloud Manor twelve with a very serious front door.
 
 Levels unlock everything: crops, workshops, homes and the pretty things
@@ -56,6 +57,21 @@ Everything else is there whether you look at it or not: birds circling, butterfl
 over the fields, fireflies after dark, other islands hazy on the horizon, wind and
 birdsong by day, crickets at night, and a sky that actually changes colour from the
 horizon up. The visitors glow at night, because they were drawn in neon.
+
+## Three towns
+
+⚙️ → **Your towns**, or the 🗂 button, or <kbd>T</kbd>. You can keep three towns
+on the go and swap whenever you like: the ones you are not playing sit exactly
+as you left them and carry on from that moment when you come back — crops and
+workshop queues included, up to the usual eight hours. Each town can be renamed,
+saved to its own file, or deleted; the one you are in cannot be deleted out from
+under you.
+
+**Upgrading from an older build never loses the game you had going.** The first
+time this version opens, it finds the old single save, copies it into the first
+town, and then leaves the original key alone forever — it shows up in the picker
+as the 🛟 safety copy, which can be restored into any free slot. Nothing in the
+game ever writes to it.
 
 ## Where your progress lives
 
@@ -88,10 +104,18 @@ or add it to your home screen, where it runs fullscreen with its own storage.
   decorations can also be sold back for half.
 - **The shore is not buildable.** The outer ring of the island is grass, rocks
   and bushes, and it stays that way.
-- **The visitors are real drawings.** `art/` holds the five characters, cut out
-  of a photo of the originals with the black turned transparent so the neon
-  still glows. To add another: drop a PNG in `art/` and add a line to
-  `CHARACTERS` in `js/data.js`. Renaming them is the same one line.
+- **The visitors are real drawings.** `art/` holds the characters, cut out of a
+  photo of the originals with the black turned transparent so the neon still
+  glows. To add more, run the cutter over a photo of them and add a line each to
+  `CHARACTERS` in `js/data.js`:
+
+  ```sh
+  python3 tools/cutout.py ~/drawings.png --cols 4 --rows 2 --names bill,swish,bullet,kriss
+  ```
+
+  It finds the dark card inside each grid cell, so cells that are not drawings
+  are skipped, and prints the lines to paste. Renaming a character is that same
+  one line.
 
 ## Getting around
 
@@ -123,7 +147,7 @@ css/style.css     cream panels over a bright sky, finger-sized first
 js/data.js        every number in the game — crops, recipes, buildings, levels
 js/island.js      the shape of the ground: land, shore, paths, tile maths
 js/econ.js        the rules: planting, cooking, orders, XP. No DOM, no three.js
-js/save.js        localStorage, the starting town, catching up after a nap
+js/save.js        the three towns, the starting town, catching up after a nap
 js/models.js      every mesh, built from boxes and balls
 js/world.js       island, gradient sky, clouds, far islands, day/night
 js/town.js        keeps the 3D town in step with the saved state
@@ -133,7 +157,8 @@ js/wildlife.js    birds, butterflies and fireflies
 js/camera.js      drag, pinch, twist, tap — and the walk-around mode
 js/ui.js          chips, sheets, bubbles, toasts
 js/main.js        boot, wiring, the frame loop
-art/              the five visitors, as transparent PNGs
+art/              the visitors, as transparent PNGs
+tools/cutout.py   turns a photo of neon drawings into more of them
 vendor/           three.js r160
 ```
 

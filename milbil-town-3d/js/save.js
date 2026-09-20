@@ -1,7 +1,140 @@
 // ---------- Persistence, the starting town, and coming back later ----------
-import { START_COINS, BARN_START, BARN_STEP, OFFLINE_CAP, MILBIL_NAMES } from './data.js';
+import { START_COINS, BARN_START, BARN_STEP, OFFLINE_CAP, MILBIL_NAMES, BUILD } from './data.js';
 
-const KEY = 'milbiltown.save.v1';
+// Where a town is kept. `LEGACY` is the single-save key every build before
+// this one used: a game may be part-played under it right now, in somebody's
+// browser, so it is read once, copied into a slot, and then left alone forever
+// as a backup. Nothing in here ever writes to it or deletes it.
+const LEGACY = 'milbiltown.save.v1';
+const INDEX = 'milbiltown.towns.v1';
+export const SLOTS = 3;
+const slotKey = (n) => `milbiltown.town.${n}`;
+
+function readJSON(key){
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeJSON(key, value){
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** The card shown for a town in the picker. */
+function metaOf(state){
+  if (!state) return null;
+  let pop = 0;
+  for (const o of state.objs || []){
+    const d = BUILD[o.type];
+    if (d && d.gives) pop += d.gives;
+  }
+  return {
+    level: state.level || 1,
+    coins: Math.floor(state.coins || 0),
+    pop,
+    buildings: (state.objs || []).length,
+    savedAt: state.lastSeen || 0,
+  };
+}
+
+/**
+ * The list of towns and which one is being played. Creating it is also the one
+ * moment the old single save is adopted — copied into town 1, original intact.
+ */
+export function index(){
+  let idx = readJSON(INDEX);
+  if (!idx || typeof idx !== 'object' || typeof idx.towns !== 'object'){
+    idx = { active: 1, towns: {} };
+    const legacy = localStorage.getItem(LEGACY);
+    if (legacy && !localStorage.getItem(slotKey(1))){
+      try {
+        localStorage.setItem(slotKey(1), legacy);      // the game in progress
+        idx.towns[1] = { name: 'My town', adopted: true };
+      } catch { /* storage refused; the legacy save is still where it was */ }
+    }
+    writeJSON(INDEX, idx);
+  }
+  if (!idx.towns) idx.towns = {};
+  if (!idx.active || idx.active < 1 || idx.active > SLOTS) idx.active = 1;
+  return idx;
+}
+
+export const activeSlot = () => index().active;
+
+export function townName(n){
+  const idx = index();
+  return (idx.towns[n] && idx.towns[n].name) || `Town ${n}`;
+}
+
+/** Every slot, filled or not, for the picker. */
+export function listTowns(){
+  const idx = index();
+  const out = [];
+  for (let n = 1; n <= SLOTS; n++){
+    const state = readJSON(slotKey(n));
+    out.push({
+      slot: n,
+      name: townName(n),
+      active: n === idx.active,
+      empty: !state,
+      meta: metaOf(state),
+    });
+  }
+  return out;
+}
+
+/** The pre-slots save, if one is still sitting there. Read-only, always. */
+export function backupTown(){
+  const state = readJSON(LEGACY);
+  return state ? { meta: metaOf(state), text: localStorage.getItem(LEGACY) } : null;
+}
+
+export function setActive(n){
+  const idx = index();
+  idx.active = Math.max(1, Math.min(SLOTS, n));
+  return writeJSON(INDEX, idx);
+}
+
+export function renameTown(n, name){
+  const idx = index();
+  idx.towns[n] = { ...(idx.towns[n] || {}), name: String(name).slice(0, 24) };
+  return writeJSON(INDEX, idx);
+}
+
+/** Empty one slot. The active town cannot be deleted out from under you. */
+export function deleteTown(n){
+  const idx = index();
+  if (n === idx.active) return false;
+  try { localStorage.removeItem(slotKey(n)); } catch { return false; }
+  delete idx.towns[n];
+  return writeJSON(INDEX, idx);
+}
+
+/** Text of any town, active or not — used by the per-town file button. */
+export function townText(n){
+  return localStorage.getItem(slotKey(n));
+}
+
+/** Drop a saved town into a slot. Refuses to land on one that is not empty. */
+export function putTown(n, text){
+  if (localStorage.getItem(slotKey(n))) return false;
+  try {
+    localStorage.setItem(slotKey(n), text);
+  } catch {
+    return false;
+  }
+  const idx = index();
+  idx.towns[n] = { ...(idx.towns[n] || {}), name: townName(n) };
+  return writeJSON(INDEX, idx);
+}
 
 /** The town every new player wakes up in: a barn, a helipad, a home, three fields. */
 export function defaultState(){
@@ -64,7 +197,7 @@ export function barnMax(state){ return BARN_START + state.barnUps * BARN_STEP; }
 
 export function load(){
   let raw = null;
-  try { raw = localStorage.getItem(KEY); } catch { /* private mode */ }
+  try { raw = localStorage.getItem(slotKey(activeSlot())); } catch { /* private mode */ }
   if (!raw) return defaultState();
   try {
     const parsed = JSON.parse(raw);
@@ -101,7 +234,11 @@ function migrate(s){
 export function save(state){
   try {
     state.lastSeen = Date.now();
-    localStorage.setItem(KEY, JSON.stringify(state));
+    const idx = index();
+    localStorage.setItem(slotKey(idx.active), JSON.stringify(state));
+    // Keep the card in the picker honest without reading the whole town back.
+    idx.towns[idx.active] = { ...(idx.towns[idx.active] || {}), name: townName(idx.active) };
+    writeJSON(INDEX, idx);
   } catch (err){
     console.warn('could not save', err);
   }
@@ -111,9 +248,9 @@ export function save(state){
  *  viewers say yes to localStorage and then quietly drop everything. */
 export function storageWorks(){
   try {
-    localStorage.setItem(KEY + '.probe', '1');
-    const ok = localStorage.getItem(KEY + '.probe') === '1';
-    localStorage.removeItem(KEY + '.probe');
+    localStorage.setItem(INDEX + '.probe', '1');
+    const ok = localStorage.getItem(INDEX + '.probe') === '1';
+    localStorage.removeItem(INDEX + '.probe');
     return ok;
   } catch {
     return false;
@@ -141,15 +278,16 @@ export function importText(text){
   }
   const state = migrate(parsed);
   try {
-    localStorage.setItem(KEY, JSON.stringify(state));
+    localStorage.setItem(slotKey(activeSlot()), JSON.stringify(state));
   } catch {
     throw new Error('This page is not allowed to save — try a normal browser tab.');
   }
   return state;
 }
 
+/** Start the active town over. Other towns, and the backup, are untouched. */
 export function wipe(){
-  try { localStorage.removeItem(KEY); } catch { /* ignore */ }
+  try { localStorage.removeItem(slotKey(activeSlot())); } catch { /* ignore */ }
 }
 
 /** How long the player was away, capped so a week off is not an instant win. */

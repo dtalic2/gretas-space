@@ -130,8 +130,14 @@ button.big:active{ transform:translateY(3px); box-shadow:0 3px 0 var(--coin-dk);
 .chip .ico{ font-size:15px; }
 .chip.coin b{ color:#b5820c; }
 .chip.level{ padding-right:14px; }
-.chip .xp{ width:46px; height:6px; border-radius:99px; background:rgba(90,70,50,.18); overflow:hidden; }
+.chip .xp, .chip .bar{ width:46px; height:6px; border-radius:99px; background:rgba(90,70,50,.18); overflow:hidden; }
 .chip .xp i{ display:block; height:100%; width:0%; background:var(--xp); border-radius:99px; transition:width .3s ease; }
+/* Population: the filled part is milbils already working, so what is left is
+   what you have spare for the next workshop. */
+.chip.pop{ padding-right:14px; }
+.chip .bar i{ display:block; height:100%; width:0%; background:var(--pop); border-radius:99px; transition:width .3s ease, background .3s ease; }
+.chip.pop.none .bar i{ background:var(--bad); }
+.chip.pop.none b{ color:#a5301f; }
 .icon-btn{
   width:42px; height:42px; border:0; border-radius:14px; font-size:19px; cursor:pointer;
   background:rgba(255,248,236,.94); box-shadow:0 3px 10px rgba(58,40,24,.18);
@@ -228,7 +234,9 @@ button.big:active{ transform:translateY(3px); box-shadow:0 3px 0 var(--coin-dk);
 @keyframes toastOut{ to{ opacity:0; transform:translateY(-8px) } }
 
 #pops{ position:absolute; inset:0; overflow:hidden; }
-.pop{
+/* The floating "+12" numbers. Named `floater`, not `pop`, because the
+   population chip is `.chip.pop` and was being flung off-screen by this. */
+.floater{
   position:absolute; transform:translate(-50%,-50%); font-weight:900; font-size:17px;
   color:#fff; text-shadow:0 2px 0 rgba(70,45,20,.55), 0 0 10px rgba(255,220,120,.5);
   animation:popUp 1.15s ease-out both; white-space:nowrap;
@@ -293,6 +301,23 @@ button.big:active{ transform:translateY(3px); box-shadow:0 3px 0 var(--coin-dk);
 .needs .ing .em{ font-size:15px; }
 .needs .ing small{ font-weight:700; opacity:.75; margin-left:3px; }
 .needs .ing.short{ background:rgba(226,96,79,.2); color:#a5301f; }
+
+/* the towns picker */
+.towns{ display:grid; gap:10px; }
+.town{ padding:12px 13px; border-radius:16px; background:var(--cream-2); }
+.town.playing{ box-shadow:inset 0 0 0 2px var(--leaf); }
+.town.empty{ opacity:.85; }
+.town.backup{ margin-top:12px; background:rgba(99,187,82,.13); }
+.town-head{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.town-head b{ font-size:16px; }
+.tag{
+  font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+  padding:3px 8px; border-radius:99px; background:var(--leaf); color:#123a0e;
+}
+.town-meta{ display:flex; flex-wrap:wrap; gap:10px; font-size:13px; font-weight:700; }
+.town-when{ font-size:12px; color:var(--ink-dim); margin-top:4px; }
+.town .actions{ margin-top:10px; }
+.town .actions .pill{ min-width:0; flex:1 1 92px; padding:10px 12px; font-size:13px; }
 
 /* barn */
 .cap{ height:12px; border-radius:99px; background:rgba(90,70,50,.15); overflow:hidden; margin:2px 0 14px; }

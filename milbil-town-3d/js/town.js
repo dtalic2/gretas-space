@@ -223,12 +223,13 @@ export class Town {
       const wobble = ready ? Math.abs(Math.sin(t * 3.2 + obj.uid)) * 0.12 : 0;
       e.group.position.y = wobble;
 
-      // A new building drops in with a small squash.
+      // A new building drops in with a small squash. It stays close to full
+      // size throughout, so a tap in that first half second still lands on it.
       if (e.born){
         const age = (performance.now() - e.born) / 1000;
         if (age < 0.5){
           const k = age / 0.5;
-          e.group.scale.setScalar(0.6 + 0.4 * k + Math.sin(k * Math.PI) * 0.12);
+          e.group.scale.setScalar(0.88 + 0.12 * k + Math.sin(k * Math.PI) * 0.1);
         } else if (e.group.scale.x !== 1){
           e.group.scale.setScalar(1);
           e.born = null;

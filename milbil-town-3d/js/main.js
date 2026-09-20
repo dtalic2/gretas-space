@@ -11,7 +11,9 @@ import { Audio } from './audio.js';
 import * as E from './econ.js';
 import * as F from './format.js';
 import { load, save, wipe, awaySeconds, residentsFor, barnMax,
-         storageWorks, exportText, importText } from './save.js';
+         storageWorks, exportText, importText,
+         listTowns, backupTown, setActive, renameTown, deleteTown,
+         townText, townName, putTown, activeSlot } from './save.js';
 import { BUILD, ITEMS, unlocksAt, barnUpgradeCost } from './data.js';
 import { footCentre } from './island.js';
 
@@ -73,7 +75,11 @@ class Game {
     this.visitors.sync();
     this.ui.hud();
 
-    this.firstRun = !s.seenHelp;
+    // Somebody who already has a town going is not a first-time player, even
+    // when the town they just started has never seen the card.
+    const played = listTowns().some(t => !t.empty && !t.active);
+    this.firstRun = !s.seenHelp && !played;
+    if (played && !s.seenHelp) s.seenHelp = true;
     this.awayReport = away > 120 ? { rep: E.report(s, now), away } : null;
   }
 
@@ -101,6 +107,7 @@ class Game {
       if (k === 'escape'){ this.town.place ? this.cancelPlace() : this.ui.close(); }
       if (k === 'm') this.toggleSound();
       if (k === 'v') this.toggleLook();
+      if (k === 't') this.ui.openTowns();
       if (k === 'h') this.ui.openHelp();
       if (k === 'b') this.ui.openShop();
       if (k === 'enter' && this.town.place) this.confirmPlace();
@@ -346,18 +353,85 @@ class Game {
     this.after();
   }
 
+  // ------------------------------------------------------------- towns ----
+  /**
+   * Switching towns means reloading with a different slot active. The current
+   * one is written out first, and saving is frozen afterwards so the unload
+   * does not put this town on top of the one being opened.
+   */
+  resumeTown(slot){
+    if (slot === activeSlot()){
+      this.ui.close();
+      return;
+    }
+    this.save();                       // the town you are leaving, as it stands
+    if (!setActive(slot)){
+      this.audio.nope();
+      return this.ui.toast('This page will not let towns be saved', 'bad');
+    }
+    this.frozen = true;
+    this.audio.build();
+    this.ui.toast(`Opening ${townName(slot)}…`, 'good');
+    setTimeout(() => location.reload(), 400);
+  }
+
+  renameTown(slot){
+    const name = window.prompt('What is this town called?', townName(slot));
+    if (name === null) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    renameTown(slot, trimmed);
+    this.ui.refresh();
+  }
+
+  deleteTown(slot){
+    const name = townName(slot);
+    if (!window.confirm(`Delete ${name}? Everything in it goes, and it cannot be undone.`)) return;
+    if (!deleteTown(slot)){
+      this.audio.nope();
+      return this.ui.toast('That town cannot be deleted right now', 'bad');
+    }
+    this.audio.coins();
+    this.ui.toast(`${name} is gone`, '');
+    this.ui.refresh();
+  }
+
+  /** A file for any town, not only the one you are standing in. */
+  saveTownToFile(slot){
+    const text = slot === activeSlot() ? exportText(this.state) : townText(slot);
+    if (!text) return this.ui.toast('Nothing saved in that one yet', 'bad');
+    this.downloadSave(text, townName(slot));
+  }
+
+  /** Copy the pre-slots save into the first free town. */
+  restoreBackup(){
+    const backup = backupTown();
+    const free = listTowns().find(t => t.empty);
+    if (!backup || !free) return;
+    if (!putTown(free.slot, backup.text)){
+      this.audio.nope();
+      return this.ui.toast('Could not put it there', 'bad');
+    }
+    renameTown(free.slot, 'Restored town');
+    this.audio.level();
+    this.ui.toast(`The safety copy is now ${townName(free.slot)}`, 'good');
+    this.ui.refresh();
+  }
+
   // -------------------------------------------------- carrying it around --
   saveText(){ return exportText(this.state); }
 
   /** Hand the browser a .json of the town. */
-  saveToFile(){
+  saveToFile(){ this.downloadSave(exportText(this.state), townName(activeSlot())); }
+
+  downloadSave(text, name){
     try {
-      const text = exportText(this.state);
+      const slug = String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'town';
       const blob = new Blob([text], { type:'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `milbil-town-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `milbil-${slug}-${new Date().toISOString().slice(0, 10)}.json`;
       document.body.appendChild(a);
       a.click();
       a.remove();

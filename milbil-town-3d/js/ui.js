@@ -5,7 +5,7 @@
 
 import * as THREE from 'three';
 import { CROPS, ITEMS, BUILD, ORDER_SLOTS } from './data.js';
-import { barnMax } from './save.js';
+import { barnMax, listTowns, backupTown, SLOTS } from './save.js';
 import * as E from './econ.js';
 import * as F from './format.js';
 
@@ -18,6 +18,18 @@ function needChip(id, need, have, cls = 'want-item'){
   return `<span class="${cls}${short ? ' short' : ''}">
     <span class="em">${it.emoji}</span>×${need}${short ? `<small>have ${have}</small>` : ''}</span>`;
 }
+/** "3 minutes ago", "yesterday" — enough to tell two towns apart. */
+function ago(ts){
+  const secs = Math.max(0, (Date.now() - ts) / 1000);
+  if (secs < 90) return 'just now';
+  const mins = Math.round(secs / 60);
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs} ${hrs === 1 ? 'hour' : 'hours'} ago`;
+  const days = Math.round(hrs / 24);
+  return days === 1 ? 'yesterday' : `${days} days ago`;
+}
+
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
 
 export class UI {
@@ -26,6 +38,7 @@ export class UI {
     this.el = {
       hud: $('hud'), coins: $('coins'), level: $('level'), xpBar: $('xpBar'), pop: $('pop'),
       barnLabel: $('barnLabel'), objective: $('objective'), objText: $('objText'),
+      popChip: $('popChip'), popBar: $('popBar'),
       orderBadge: $('orderBadge'), toasts: $('toasts'), pops: $('pops'), markers: $('markers'),
       panel: $('panel'), panelTitle: $('panelTitle'), panelBody: $('panelBody'),
       placeBar: $('placeBar'), placeName: $('placeName'), placeHint: $('placeHint'), placeOk: $('placeOk'),
@@ -48,6 +61,7 @@ export class UI {
     $('btnOrders').onclick = () => this.openOrders();
     $('btnBarn').onclick = () => this.openBarn();
     $('btnHelp').onclick = () => this.openHelp();
+    $('btnTowns').onclick = () => this.openTowns();
     $('panelClose').onclick = () => this.close();
     this.el.panel.addEventListener('click', (e) => { if (e.target === this.el.panel) this.close(); });
     this.el.objective.onclick = () => this.game.followObjective();
@@ -131,6 +145,12 @@ export class UI {
       case 'upgrade':  g.upgradeBarn(); break;
       case 'close':    this.close(); break;
       case 'wipe':     g.wipe(); break;
+      case 'towns':    this.openTowns(); break;
+      case 'resume':   g.resumeTown(Number(d.slot)); break;
+      case 'rename':   g.renameTown(Number(d.slot)); break;
+      case 'drop':     g.deleteTown(Number(d.slot)); break;
+      case 'townfile': g.saveTownToFile(Number(d.slot)); break;
+      case 'restore':  g.restoreBackup(); break;
       case 'savefile': g.saveToFile(); break;
       case 'loadfile': document.getElementById('loadFileInput')?.click(); break;
       case 'copysave': g.copySave(); break;
@@ -147,6 +167,14 @@ export class UI {
     this.el.level.textContent = s.level;
     this.el.xpBar.style.width = (prog.frac * 100).toFixed(1) + '%';
     this.el.pop.textContent = `${p.free}/${p.total}`;
+    // The bar fills as milbils are put to work, so an empty-looking bar means
+    // there is somebody spare and a full one means the next workshop needs homes.
+    const working = p.total ? Math.min(1, p.used / p.total) : 0;
+    this.el.popBar.style.width = (working * 100).toFixed(1) + '%';
+    this.el.popChip.classList.toggle('none', p.total > 0 && p.free === 0);
+    this.el.popChip.title = p.total
+      ? `${p.free} of ${p.total} milbils free — ${p.used} already working`
+      : 'No milbils yet — build a home';
     this.el.barnLabel.textContent = `${E.barnCount(s)}/${barnMax(s)}`;
 
     const ready = s.orders.filter(o => E.canFill(s, o)).length;
@@ -174,7 +202,7 @@ export class UI {
     const v = this._vec.copy(world).project(this.game.world.camera);
     if (v.z > 1) return;
     const d = document.createElement('div');
-    d.className = 'pop';
+    d.className = 'floater';
     d.textContent = text;
     d.style.left = ((v.x * 0.5 + 0.5) * window.innerWidth) + 'px';
     d.style.top = ((-v.y * 0.5 + 0.5) * window.innerHeight) + 'px';
@@ -513,6 +541,68 @@ export class UI {
     return `<p class="sub">${esc(d.blurb)}</p>` + this._objActions(obj);
   }
 
+  // ---- the towns you have on the go
+  openTowns(){
+    this.reopen = () => this.openTowns();
+    const towns = listTowns();
+    const backup = backupTown();
+    const free = towns.find(t => t.empty);
+
+    let html = `<p class="sub">Up to ${SLOTS} towns, side by side. Only one runs at a
+      time — the others sit exactly as you left them, timers and all, and carry on
+      growing from the moment you come back to them.</p><div class="towns">`;
+
+    for (const t of towns){
+      const m = t.meta;
+      html += `<div class="town${t.active ? ' playing' : ''}${t.empty ? ' empty' : ''}">
+        <div class="town-head">
+          <b>${esc(t.name)}</b>
+          ${t.active ? '<span class="tag">playing now</span>' : ''}
+        </div>`;
+      if (t.empty){
+        html += `<div class="town-meta">Nothing here yet — a fresh island.</div>
+          <div class="actions">
+            <button class="pill go" data-act="resume" data-slot="${t.slot}">Start a town here</button>
+          </div>`;
+      } else {
+        html += `<div class="town-meta">
+            <span>⭐ Level ${m.level}</span><span>🪙 ${F.coins(m.coins)}</span>
+            <span>👥 ${m.pop}</span><span>🏠 ${m.buildings}</span>
+          </div>
+          <div class="town-when">${m.savedAt ? 'Last played ' + ago(m.savedAt) : 'Never played'}</div>
+          <div class="actions">
+            ${t.active
+              ? '<button class="pill" data-act="close">Keep playing it</button>'
+              : `<button class="pill go" data-act="resume" data-slot="${t.slot}">Resume this town</button>`}
+            <button class="pill" data-act="rename" data-slot="${t.slot}">Rename</button>
+            <button class="pill" data-act="townfile" data-slot="${t.slot}">💾 File</button>
+            ${t.active ? '' : `<button class="pill warn" data-act="drop" data-slot="${t.slot}">Delete</button>`}
+          </div>`;
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+
+    if (backup && backup.meta){
+      html += `<div class="town backup">
+        <div class="town-head"><b>🛟 Safety copy</b></div>
+        <div class="town-meta">
+          <span>⭐ Level ${backup.meta.level}</span><span>🪙 ${F.coins(backup.meta.coins)}</span>
+          <span>🏠 ${backup.meta.buildings}</span>
+        </div>
+        <div class="town-when">The town that was here before towns could be
+          swapped. It is kept exactly as it was and never written over.</div>
+        <div class="actions">
+          <button class="pill" data-act="restore" ${free ? '' : 'disabled'}>
+            ${free ? 'Put a copy in ' + esc(free.name) : 'Free up a slot first'}</button>
+        </div>
+      </div>`;
+    }
+
+    html += '<p class="tiny">Towns live in this browser. The 💾 button hands one over as a file, which is how you move it somewhere else.</p>';
+    this.open('🗂 Your towns', html, { kind:'towns' });
+  }
+
   // ---- help
   openHelp(){
     this.reopen = () => this.openHelp();
@@ -526,7 +616,9 @@ export class UI {
         <li><b>Fields.</b> Tap an empty field to plant, tap it again when the bubble shows ✓.</li>
         <li><b>Workshops.</b> Tap one, pick a recipe, and it cooks through its queue. Tap to collect.</li>
         <li><b>The helipad 🚁.</b> Visitors land with a list. Mailing it pays about 1.6× what the barn pays, plus XP.</li>
-        <li><b>Homes 🏡.</b> Every workshop needs free milbils. Homes are where they come from.</li>
+        <li><b>Homes 🏡.</b> Every workshop needs free milbils. The 👥 bar at the
+        top fills up as they are put to work — when it is full, the next workshop
+        needs a home built first.</li>
         <li><b>The barn 📦.</b> Limited space. Upgrade it, or sell the surplus.</li>
       </ul>
       <h3>Moving around</h3>
@@ -538,6 +630,12 @@ export class UI {
         <li>Mouse: drag to pan, right-drag or shift-drag to turn, wheel to zoom.</li>
         <li>Keyboard: <kbd>WASD</kbd> pan, <kbd>Q</kbd>/<kbd>E</kbd> turn, <kbd>+</kbd>/<kbd>-</kbd> zoom, <kbd>M</kbd> mute, <kbd>H</kbd> help.</li>
       </ul>
+      <h3>Your towns</h3>
+      <p>You can keep ${SLOTS} towns on the go at once and swap between them
+      whenever you like; the ones you are not playing carry on from where you
+      left them.</p>
+      <div class="actions"><button class="pill go" data-act="towns">🗂 Open your towns</button></div>
+
       <h3>Where your town is kept</h3>
       <p>It saves itself into <b>this page, in this browser</b>, every few
       seconds and whenever you leave. That means a town built here does not
