@@ -278,6 +278,76 @@ const GEN = {
     () => { const x = ri(20, 160); return q(`Angles on a straight line add to 180°. One angle is ${x}°. What is the other?`, 180 - x, { fmt: v => v + '°', spread: [1, -1, 10, -10, 5], why: `180 − ${x} = ${180 - x}` }); },
   ]
 };
+// ---------- more questions ----------
+const choose = (text, ans, wrong, why = '') => q(text, String(ans), { options: wrong.map(String), why });
+const wrap12 = h => ((h - 1 + 12) % 12) + 1;
+const pad2 = n => String(n).padStart(2, '0');
+const distinct = (n, make) => { const s = new Set(); while (s.size < n) s.add(make()); return [...s]; };
+const NAMES = ['Sam', 'Mia', 'Leo', 'Ava', 'Noah', 'Zoe', 'Greta', 'Ollie'];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+GEN[1].push(
+  () => { const b = ri(1, 9); return q(`? + ${b} = 10`, 10 - b, { why: `${10 - b} + ${b} = 10` }); },
+  () => { const nums = distinct(4, () => ri(1, 50)), big = Math.max(...nums); return choose('Which number is the biggest?', big, nums.filter(n => n !== big)); },
+  () => { const [s, n] = pick([['triangle', 3], ['square', 4], ['rectangle', 4], ['pentagon', 5], ['hexagon', 6]]); return q(`How many sides does a ${s} have?`, n, { min: 1, spread: [1, -1, 2, -2, 3] }); },
+  () => { const h = ri(1, 12); return choose(`The long hand points to 12 and the short hand points to ${h}. What time is it?`, `${h} o'clock`, [`${wrap12(h + 1)} o'clock`, `${wrap12(h - 1)} o'clock`, `half past ${h}`], `When the long hand points to 12, it is o'clock`); },
+  () => { const n = ri(1, 89); return q(`What is 10 more than ${n}?`, n + 10, { spread: [1, -1, 10, -10, 2] }); },
+  () => { const s = 10 * ri(0, 6); return q(`Count by tens: ${s}, ${s + 10}, ${s + 20}, ?`, s + 30, { unit: 10, spread: [1, -1, 2, -2] }); },
+);
+GEN[2].push(
+  () => { const e = 2 * ri(2, 49), odds = distinct(3, () => 2 * ri(1, 49) + 1); return choose('Which number is even?', e, odds, `${e} can be shared into 2 equal groups`); },
+  () => { const n = ri(15, 99); return q(`What is 10 less than ${n}?`, n - 10, { spread: [1, -1, 10, -10, 2] }); },
+  () => { const h = ri(1, 12); return choose(`The long hand points to 6 and the short hand is just past ${h}. What time is it?`, `half past ${h}`, [`${h} o'clock`, `half past ${wrap12(h + 1)}`, `half past ${wrap12(h - 1)}`], 'When the long hand points to 6, it is half past'); },
+  () => { const i = ri(0, 6); return choose(`What day comes after ${DAYS[i]}?`, DAYS[(i + 1) % 7], [DAYS[(i + 6) % 7], DAYS[(i + 2) % 7], DAYS[(i + 3) % 7]]); },
+  () => { const g = ri(2, 5), n = ri(2, 5); return q(`${g} bags with ${n} apples in each. How many apples altogether?`, g * n, { min: 1, why: `${g} groups of ${n} = ${g * n}` }); },
+  () => { const t = ri(1, 9), o = ri(0, 9); return q(`What number is ${t} tens and ${o} ones?`, 10 * t + o, { options: [String(10 * o + t), String(t + o), String(10 * t + o + 10)] }); },
+);
+GEN[3].push(
+  () => { const a = ri(30, 95), b = ri(11, a - 5); return q(`${pick(NAMES)} has ${a} stickers and gives away ${b}. How many are left?`, a - b, { spread: [1, -1, 10, -10, 2], why: `${a} − ${b} = ${a - b}` }); },
+  () => { const [t, a] = pick([['centimetres in 1 metre', 100], ['grams in 1 kilogram', 1000], ['millilitres in 1 litre', 1000], ['metres in 1 kilometre', 1000], ['seconds in 1 minute', 60]]);
+    return choose(`How many ${t}?`, a, shuffle([10, 60, 100, 1000, 24].filter(v => v !== a)).slice(0, 3)); },
+  () => { const t = pick([2, 3, 4, 5, 10]), n = ri(2, 10); return q(`? × ${t} = ${n * t}`, n, { min: 1, why: `${n * t} ÷ ${t} = ${n}` }); },
+  () => { const cost = 5 * ri(21, 99), pay = (Math.floor(cost / 100) + 1 + ri(0, 1)) * 100;
+    return q(`Something costs ${money(cost / 100)}. You pay with ${money(pay / 100)}. How much change do you get?`, (pay - cost) / 100, { unit: 0.05, fmt: money, spread: [1, -1, 2, -2, 10, -10, 20], why: `${money(pay / 100)} − ${money(cost / 100)}` }); },
+  () => { const ds = distinct(4, () => ri(2, 10)), low = Math.min(...ds); return choose('Which fraction is the biggest?', `1/${low}`, ds.filter(d => d !== low).map(d => `1/${d}`), 'With 1 on top, the smaller the bottom number, the bigger the piece'); },
+  () => { const h = ri(1, 11), m1 = pick([0, 5, 10, 15, 20]), d = 5 * ri(2, 7); return q(`How many minutes from ${h}:${pad2(m1)} to ${h}:${pad2(m1 + d)}?`, d, { unit: 5, min: 5, spread: [1, -1, 2, -2] }); },
+);
+GEN[4].push(
+  () => { const a = ri(2, 10), b = ri(2, 10); return q(`? × ${a} = ${a * b}`, b, { min: 1, why: `${a * b} ÷ ${a} = ${b}` }); },
+  () => { const [c, cs, items, k] = pick([['box', 'boxes', 'eggs', 6], ['bag', 'bags', 'marbles', 8], ['packet', 'packets', 'stickers', 9], ['team', 'teams', 'players', 7]]), n = ri(3, 10);
+    return q(`Each ${c} has ${k} ${items}. How many ${items} are in ${n} ${cs}?`, k * n, { spread: [1, -1, k, -k, 10], why: `${n} × ${k} = ${n * k}` }); },
+  () => { const k = ri(3, 9), ans = k * ri(2, 9), wrong = distinct(3, () => { let v; do v = ri(10, 90); while (v % k === 0); return v; });
+    return choose(`Which number is a multiple of ${k}?`, ans, wrong, `${ans} = ${ans / k} × ${k}`); },
+  () => { const types = [['smaller than a right angle', 'acute'], ['exactly 90°', 'right'], ['bigger than a right angle but smaller than a straight line', 'obtuse'], ['exactly 180°', 'straight']];
+    const [desc, name] = pick(types); return choose(`What do we call an angle that is ${desc}?`, name, types.map(t => t[1]).filter(n => n !== name)); },
+  () => { const n = ri(101, 899); return q(`1000 − ${n} = ?`, 1000 - n, { spread: [1, -1, 10, -10, 100, -100] }); },
+  () => { const t = ri(1, 9); return choose(`Which fraction is the same as 0.${t}?`, `${t}/10`, [`${t}/100`, `10/${t}`, `${t}/1`], `0.${t} means ${t} tenths`); },
+);
+GEN[5].push(
+  () => { const h = ri(1, 11), m = pick(['00', '15', '30', '45']); return choose(`What is ${h}:${m} pm in 24-hour time?`, `${h + 12}:${m}`, [`${pad2(h)}:${m}`, `${h + 10}:${m}`, `${h + 2}:${m}`], 'Add 12 to the hour for pm times'); },
+  () => { const pairs = [['0.25', '1/4'], ['0.5', '1/2'], ['0.75', '3/4'], ['0.2', '1/5'], ['0.1', '1/10']], [dec, frac] = pick(pairs);
+    return choose(`Which fraction is the same as ${dec}?`, frac, shuffle(['1/4', '1/2', '3/4', '1/5', '1/10', '2/5', '1/3'].filter(f => f !== frac)).slice(0, 3)); },
+  () => { const a = ri(31, 99), b = ri(11, a - 5); return q(`${(a / 10).toFixed(1)} − ${(b / 10).toFixed(1)} = ?`, (a - b) / 10, { unit: 0.1, fmt: v => v.toFixed(1), spread: [1, -1, 10, -10, 2] }); },
+  () => { const d = ri(3, 9), n = ri(11, 30); return q(`${d * n} ÷ ${d} = ?`, n, { min: 1, why: `${n} × ${d} = ${d * n}` }); },
+  () => { const x = ri(101, 999) / 100; return q(`Round ${x.toFixed(2)} to the nearest whole number`, Math.round(x), { spread: [1, -1, 2, -2], why: `Look at the tenths digit: 5 or more rounds up` }); },
+  () => { const price = 50 * ri(4, 40), n = ri(2, 5); return q(`A book costs ${money(price / 100)}. How much do ${n} books cost?`, price * n / 100, { unit: 0.5, fmt: money, spread: [1, -1, 2, -2, 10, -10], why: `${money(price / 100)} × ${n}` }); },
+  () => { const a = ri(3, 9), b = ri(1, a - 1); return choose('Which decimal is the largest?', `0.${a}0${b}`, [`0.${a}`, `0.${b}${a}`, `0.0${a}${b}`], 'Compare tenths first, then hundredths, then thousandths'); },
+);
+GEN[6].push(
+  () => { const n = pick([3, 4]), m = ri(4, 20); let nums;
+    do { nums = Array.from({ length: n - 1 }, () => ri(1, 2 * m)); nums.push(m * n - nums.reduce((s, v) => s + v, 0)); } while (nums[n - 1] < 1 || nums[n - 1] > 40);
+    return q(`What is the mean (average) of ${nums.join(', ')}?`, m, { why: `Add them to get ${m * n}, then ÷ ${n} = ${m}` }); },
+  () => { const [f, p] = pick([['1/2', 50], ['1/4', 25], ['3/4', 75], ['1/5', 20], ['1/10', 10], ['2/5', 40], ['3/10', 30]]); return q(`${f} = ?%`, p, { unit: 5, min: 5, fmt: v => v + '%', spread: [1, -1, 2, -2, 5] }); },
+  () => { const b = 2 * ri(2, 10), h = ri(2, 12); return q(`A triangle has a base of ${b} cm and a height of ${h} cm. What is its area?`, b * h / 2, { fmt: v => v + ' cm²', options: [b * h, b + h, b * h / 2 + h].map(v => v + ' cm²'), why: `${b} × ${h} ÷ 2 = ${b * h / 2}` }); },
+  () => { const price = pick([20, 40, 60, 80, 100, 120]), p = pick([10, 25, 50]), now = price * (100 - p) / 100;
+    return q(`A $${price} toy has ${p}% off. What is the new price?`, now, { fmt: v => '$' + v, options: [price * p / 100, price - p, now + price / 10].filter(v => v > 0).map(v => '$' + v), why: `${p}% of $${price} is $${price * p / 100}, so $${price} − $${price * p / 100} = $${now}` }); },
+  () => { const r = ri(2, 4), bl = ri(2, 6), k = ri(2, 6); if (r === bl) return GEN[6][0]();
+    return q(`For every ${r} red beads there are ${bl} blue beads. If there are ${r * k} red beads, how many blue beads are there?`, bl * k, { spread: [1, -1, 2, -2, bl, -bl], why: `${r * k} is ${k} lots of ${r}, so ${k} × ${bl} = ${bl * k}` }); },
+  () => { const n = ri(2, 5); return q(`${n}³ = ?`, n ** 3, { options: [n * 3, n * n, n ** 3 + n].map(String), why: `${n} × ${n} × ${n} = ${n ** 3}` }); },
+  () => { if (Math.random() < .5) { const a = ri(3, 30), n = ri(2, 40); return q(`If n + ${a} = ${n + a}, what is n?`, n, { why: `${n + a} − ${a} = ${n}` }); }
+    const a = ri(2, 9), n = ri(2, 12); return q(`If ${a} × n = ${a * n}, what is n?`, n, { min: 1, why: `${a * n} ÷ ${a} = ${n}` }); },
+);
+
 const YEAR_TOPICS = { 1: 'add & count', 2: 'to 100', 3: 'tables', 4: 'all tables', 5: 'big ×', 6: '% & primes' };
 
 function makeQuestion(year) {
