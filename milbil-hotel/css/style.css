@@ -386,3 +386,7 @@ kbd{
 .book .who .n{ font-weight:900; color:#b5820c; font-size:13px; }
 .totals{ display:flex; flex-wrap:wrap; gap:8px; margin:0 0 14px; }
 .totals span{ padding:7px 11px; border-radius:99px; background:var(--cream-2); font-size:13px; font-weight:800; }
+.tag{
+  font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; vertical-align:2px;
+  padding:3px 8px; border-radius:99px; background:#ffd777; color:#4a3208;
+}

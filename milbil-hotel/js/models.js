@@ -488,6 +488,23 @@ export function suitcase(color = 0xe2604f){
   return g;
 }
 
+let halo = null;
+function haloTexture(){
+  if (halo) return halo;
+  const cv = document.createElement('canvas');
+  cv.width = 128; cv.height = 128;
+  const ctx = cv.getContext('2d');
+  const g = ctx.createRadialGradient(64, 64, 10, 64, 64, 64);
+  g.addColorStop(0, 'rgba(22,18,31,0.92)');
+  g.addColorStop(0.6, 'rgba(22,18,31,0.7)');
+  g.addColorStop(1, 'rgba(22,18,31,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 128, 128);
+  halo = new THREE.CanvasTexture(cv);
+  halo.colorSpace = THREE.SRGBColorSpace;
+  return halo;
+}
+
 /** A drawn character as a billboard sprite, plus the smudge of shade under it. */
 export function characterSprite(texture, height = 1.9){
   const group = new THREE.Group();
@@ -496,7 +513,16 @@ export function characterSprite(texture, height = 1.9){
   const aspect = (texture.image && texture.image.width / texture.image.height) || 0.75;
   sprite.scale.set(height * aspect, height, 1);
   sprite.position.y = height / 2;
+  sprite.renderOrder = 2;
   group.add(sprite);
+  // The drawings are neon on black. Indoors against a pale wall they vanish,
+  // so each carries a soft dark glow of the page it was drawn on.
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map:haloTexture(), transparent:true, depthWrite:false, opacity:0.9 }));
+  halo.scale.set(height * aspect * 1.25, height * 1.12, 1);
+  halo.position.y = height / 2;
+  halo.renderOrder = 1;
+  group.add(halo);
+  group.userData.halo = halo;
   const shade = new THREE.Mesh(new THREE.CircleGeometry(height * 0.24, 14),
     new THREE.MeshBasicMaterial({ color:0x2e2418, transparent:true, opacity:0.22, depthWrite:false }));
   shade.rotation.x = -Math.PI / 2;

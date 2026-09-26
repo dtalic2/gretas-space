@@ -29,8 +29,9 @@ const raycaster = new THREE.Raycaster();
 
 const rig = new CameraRig(world.camera, $('scene'), { onTap: (x, y) => tapAt(x, y) });
 rig.fit();
-rig.setTop(state.floors * FLOOR_H + 2);
+rig.setTop(state.floors * FLOOR_H + 2, state.floors * FLOOR_H / 2 + 1);
 rig.goal.set(-1, 3.4, 0);
+rig._clamp();
 rig.target.copy(rig.goal);
 
 let placing = null;              // { id, kind } while choosing where a room goes
@@ -55,7 +56,7 @@ function persist(){ if (!resetting) S.save(state); }
 
 function changed(){
   hotel.sync();
-  rig.setTop(state.floors * FLOOR_H + 2);
+  rig.setTop(state.floors * FLOOR_H + 2, state.floors * FLOOR_H / 2 + 1);
   hud();
   persist();
 }
@@ -507,6 +508,8 @@ function frame(now){
   world.update(dt);
   audio.setNight(world.night);
   rig.update(dt);
+  world.scene.fog.near = rig.dist + 40;
+  world.scene.fog.far = rig.dist + 150;
   hotel.update(dt, t);
   updateMarkers();
   world.render();

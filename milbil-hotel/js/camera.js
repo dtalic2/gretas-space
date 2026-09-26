@@ -31,9 +31,10 @@ export class CameraRig {
     this.dist = this.goalDist;
   }
 
-  setTop(y){ this.top = y; }
+  /** How high the view may go, and the middle of the building to rest on when zoomed out. */
+  setTop(y, mid = y){ this.top = y; this.mid = mid; }
 
-  lookAt(y){ this.goal.y = THREE.MathUtils.clamp(y, 2, this.top); }
+  lookAt(y){ this.goal.y = y; this._clamp(); }
 
   _wire(){
     const c = this.canvas;
@@ -90,7 +91,9 @@ export class CameraRig {
 
   _clamp(){
     this.goal.x = THREE.MathUtils.clamp(this.goal.x, -16, 16);
-    this.goal.y = THREE.MathUtils.clamp(this.goal.y, 2, this.top);
+    // Zoomed right out, a view of the pavement is mostly grass: keep the hotel in frame.
+    const low = Math.min(this.mid ?? this.top, 2 + Math.max(0, this.goalDist - 26) * 0.3);
+    this.goal.y = THREE.MathUtils.clamp(this.goal.y, low, this.top);
   }
 
   update(dt){

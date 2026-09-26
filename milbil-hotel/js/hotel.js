@@ -512,7 +512,7 @@ export class Hotel {
       if (a.path.length && a.path[0].lift) liftTarget = a.obj.position.y;
       if (a.gone){
         a.obj.parent && a.obj.parent.remove(a.obj);
-        if (a.guest.who) a.obj.userData.sprite.material.dispose();
+        if (a.guest.who){ a.obj.userData.sprite.material.dispose(); a.obj.userData.halo.material.dispose(); }
         this.actors.delete(uid);
       }
     }
@@ -565,6 +565,7 @@ export class Hotel {
     if (sprite){
       const h = sprite.scale.y;
       sprite.position.y = h / 2 + hop;
+      o.userData.halo.position.y = sprite.position.y;
       sprite.material.rotation = moving ? Math.sin(t * 9 + a.phase) * 0.08 : Math.sin(t * 0.9 + a.phase) * 0.03;
     }
     if (a.mode === 'room' && !a.path.length && o.userData.bag.visible) o.userData.bag.visible = false;
@@ -572,7 +573,7 @@ export class Hotel {
     if (a.mode === 'leaving' && !a.path.length) a.gone = true;
     if (a.mode === 'leaving' && o.position.x > 14){
       a.fade = Math.max(0, 1 - (o.position.x - 14) / 9);
-      if (sprite) sprite.material.opacity = a.fade;
+      if (sprite){ sprite.material.opacity = a.fade; o.userData.halo.material.opacity = 0.9 * a.fade; }
       else o.scale.setScalar(Math.max(0.01, a.fade));
     }
   }
