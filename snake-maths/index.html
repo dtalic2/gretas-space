@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Snake Maths</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%}
+body{background:radial-gradient(circle at 50% 0%,#1f3d24,#0c1a0f 70%);color:#ecfdf5;
+  font-family:-apple-system,'Segoe UI',Tahoma,sans-serif;
+  display:flex;flex-direction:column;align-items:center;min-height:100vh;
+  padding:max(10px,env(safe-area-inset-top)) 16px max(14px,env(safe-area-inset-bottom));
+  -webkit-user-select:none;user-select:none;touch-action:manipulation;overscroll-behavior:none}
+.wrap{width:100%;max-width:440px;display:flex;flex-direction:column;align-items:center;gap:10px}
+
+/* Header */
+.top{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px}
+h1{font-size:1.6rem;font-weight:900;letter-spacing:1px;color:#4ade80;
+  text-shadow:0 0 18px rgba(74,222,128,.45)}
+.chip{display:flex;align-items:center;gap:6px;font-weight:800;padding:6px 12px;border-radius:20px;
+  background:rgba(120,80,10,.4);border:1px solid #fbbf2466;color:#fde68a;white-space:nowrap}
+.mini-coin{width:18px;height:18px;border-radius:50%;display:inline-block;
+  background:radial-gradient(circle at 38% 35%,#fef3c7,#fbbf24 45%,#d97706);border:1px solid #b45309}
+.iconbtn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#ecfdf5;
+  border-radius:50%;width:36px;height:36px;font-size:1.05rem;cursor:pointer}
+
+/* Year picker */
+.years{display:flex;gap:6px;width:100%;justify-content:center;flex-wrap:wrap}
+.year{flex:1;min-width:0;padding:8px 0;border-radius:12px;border:2px solid #4ade8044;
+  background:rgba(13,30,16,.7);color:#bbf7d0;font-weight:800;font-size:.9rem;cursor:pointer}
+.year small{display:block;font-size:.62rem;font-weight:600;opacity:.75}
+.year.on{background:#16a34a;border-color:#86efac;color:#fff;box-shadow:0 0 12px rgba(74,222,128,.5)}
+
+/* Stats */
+.stats{display:flex;gap:8px;width:100%;justify-content:space-between;font-size:.8rem;color:#bbf7d0}
+.stats b{color:#fff;font-size:.95rem}
+
+/* Board */
+.board{position:relative;width:100%;aspect-ratio:1;border-radius:16px;overflow:hidden;
+  border:4px solid #365314;box-shadow:0 8px 30px rgba(0,0,0,.5),inset 0 0 0 2px #65a30d55;
+  display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr)}
+.cell{position:relative;display:flex;align-items:center;justify-content:center}
+.cell.a{background:#4d7c0f}
+.cell.b{background:#5a8f14}
+.cell::after{content:"";position:absolute;inset:0;border:1px solid rgba(0,0,0,.08)}
+.coin{width:46%;height:46%;border-radius:50%;position:relative;
+  background:radial-gradient(circle at 38% 32%,#fffbeb,#fcd34d 40%,#f59e0b 75%,#b45309);
+  border:2px solid #92400e;box-shadow:0 3px 0 #78350f,0 0 14px rgba(253,224,71,.55);
+  animation:bob 1.6s ease-in-out infinite;display:flex;align-items:center;justify-content:center;
+  color:#92400e;font-weight:900;font-size:clamp(.8rem,4vw,1.2rem)}
+.coin::before{content:"★"}
+.coin.big{width:60%;height:60%;background:radial-gradient(circle at 38% 32%,#fff,#fde047 35%,#eab308 70%,#a16207)}
+.coin.big::before{content:"5"}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8%)}}
+.coin.got{animation:grab .45s ease-out forwards}
+@keyframes grab{to{transform:scale(1.8) translateY(-40%);opacity:0}}
+
+.snake{position:absolute;width:20%;height:20%;left:0;top:0;pointer-events:none;
+  transition:left .38s ease-in-out,top .38s ease-in-out;z-index:5}
+.snake svg{width:100%;height:100%;transition:transform .3s ease;filter:drop-shadow(0 4px 3px rgba(0,0,0,.35))}
+.snake.moving svg{animation:wiggle .38s ease-in-out}
+@keyframes wiggle{0%,100%{scale:1 1}40%{scale:1.15 .85}70%{scale:.92 1.08}}
+.snake.bump{animation:bump .3s}
+@keyframes bump{25%{translate:4px 0}50%{translate:-4px 0}75%{translate:3px 0}}
+.snake.happy svg{animation:happy .6s ease-in-out}
+@keyframes happy{50%{scale:1.25}}
+
+.float{position:absolute;z-index:8;font-weight:900;color:#fef08a;font-size:1.4rem;
+  text-shadow:0 2px 0 #713f12;pointer-events:none;animation:up 1s ease-out forwards;transform:translate(-50%,-50%)}
+@keyframes up{to{margin-top:-50px;opacity:0}}
+
+/* D-pad */
+.pad{display:grid;grid-template-columns:repeat(3,72px);grid-template-rows:repeat(2,64px);gap:8px;margin-top:2px}
+.dir{border:none;border-radius:16px;font-size:1.9rem;font-weight:900;color:#052e16;cursor:pointer;
+  background:linear-gradient(180deg,#86efac,#22c55e);box-shadow:0 5px 0 #15803d;transition:transform .06s}
+.dir:active{transform:translateY(4px);box-shadow:0 1px 0 #15803d}
+.dir:disabled{background:#334155;color:#64748b;box-shadow:0 5px 0 #1e293b;cursor:not-allowed}
+.dir.up{grid-column:2;grid-row:1}
+.dir.left{grid-column:1;grid-row:2}
+.dir.down{grid-column:2;grid-row:2}
+.dir.right{grid-column:3;grid-row:2}
+.tip{font-size:.8rem;color:#a7f3d0;opacity:.85;text-align:center}
+
+/* Question popup */
+.overlay{position:fixed;inset:0;background:rgba(2,10,4,.7);display:none;align-items:center;justify-content:center;
+  padding:16px;z-index:50;backdrop-filter:blur(3px)}
+.overlay.show{display:flex}
+.card{width:100%;max-width:400px;background:linear-gradient(180deg,#fffbeb,#fef3c7);color:#1c1917;
+  border-radius:22px;padding:18px 18px 20px;box-shadow:0 20px 50px rgba(0,0,0,.5);border:4px solid #f59e0b;
+  animation:pop .25s ease-out}
+@keyframes pop{from{transform:scale(.8);opacity:0}}
+.card.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+.qhead{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;font-weight:800;color:#92400e;margin-bottom:10px}
+.qdir{background:#16a34a;color:#fff;border-radius:12px;padding:3px 10px;font-size:.85rem}
+.qtext{font-size:1.45rem;font-weight:800;text-align:center;line-height:1.35;margin:6px 0 16px;min-height:2.6em;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;word-break:break-word}
+.qtext .emo{font-size:1.6rem;letter-spacing:2px;line-height:1.4}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ans{padding:14px 6px;font-size:1.35rem;font-weight:900;border-radius:14px;cursor:pointer;
+  border:3px solid #fcd34d;background:#fff;color:#1c1917;box-shadow:0 4px 0 #f59e0b}
+.ans:active{transform:translateY(3px);box-shadow:0 1px 0 #f59e0b}
+.ans.right{background:#22c55e;border-color:#15803d;color:#fff;box-shadow:0 4px 0 #166534}
+.ans.wrong{background:#ef4444;border-color:#b91c1c;color:#fff;box-shadow:0 4px 0 #991b1b}
+.ans:disabled{cursor:default}
+.feedback{margin-top:14px;text-align:center;font-weight:800;font-size:1.05rem;min-height:1.4em}
+.feedback.good{color:#15803d}
+.feedback.bad{color:#b91c1c}
+.why{font-size:.9rem;font-weight:600;color:#57534e;margin-top:4px}
+.okbtn{display:none;margin:12px auto 0;padding:10px 28px;border:none;border-radius:14px;font-size:1.1rem;font-weight:900;
+  background:#f59e0b;color:#fff;box-shadow:0 4px 0 #b45309;cursor:pointer}
+.okbtn.show{display:block}
+
+/* Board-cleared banner */
+.banner{position:absolute;inset:0;z-index:10;display:none;align-items:center;justify-content:center;flex-direction:column;
+  background:rgba(5,46,22,.8);text-align:center;padding:16px}
+.banner.show{display:flex;animation:pop .3s ease-out}
+.banner h2{font-size:1.8rem;color:#fde047;text-shadow:0 2px 0 #713f12}
+.banner p{margin:8px 0 14px;color:#dcfce7}
+.banner button{padding:10px 24px;border:none;border-radius:14px;font-size:1.1rem;font-weight:900;
+  background:linear-gradient(180deg,#86efac,#22c55e);color:#052e16;box-shadow:0 4px 0 #15803d;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>🐍 Snake Maths</h1>
+    <div style="display:flex;gap:6px;align-items:center">
+      <div class="chip"><span class="mini-coin"></span><span id="bank">0</span></div>
+      <button class="iconbtn" id="mute" title="Sound on/off">🔊</button>
+    </div>
+  </div>
+
+  <div class="years" id="years"></div>
+
+  <div class="stats">
+    <span>Board <b id="boardNo">1</b></span>
+    <span>Coins left <b id="left">0</b></span>
+    <span>Streak <b id="streak">0</b>🔥</span>
+    <span>Correct <b id="acc">–</b></span>
+  </div>
+
+  <div class="board" id="board">
+    <div class="snake" id="snake"></div>
+    <div class="banner" id="banner">
+      <h2>Board cleared! 🎉</h2>
+      <p id="bannerText"></p>
+      <button id="nextBoard">Next board ➜</button>
+    </div>
+  </div>
+
+  <div class="pad">
+    <button class="dir up" data-dir="up" aria-label="Up">▲</button>
+    <button class="dir left" data-dir="left" aria-label="Left">◀</button>
+    <button class="dir down" data-dir="down" aria-label="Down">▼</button>
+    <button class="dir right" data-dir="right" aria-label="Right">▶</button>
+  </div>
+  <div class="tip">Press an arrow, answer the question, and the snake slithers that way. Collect every coin!</div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="card" id="card">
+    <div class="qhead"><span id="qyear">Year 1</span><span class="qdir" id="qdir">Move ▲</span></div>
+    <div class="qtext" id="qtext"></div>
+    <div class="answers" id="answers"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="okbtn" id="ok">OK</button>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+// ---------- helpers ----------
+const ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const shuffle = arr => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
+const $ = id => document.getElementById(id);
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('snakeMaths.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('snakeMaths.' + k, JSON.stringify(v)); } catch (e) {} }
+};
+
+// Wrong answers that sit near the right one, so guessing doesn't work.
+// `unit` is the smallest step (1 for whole numbers, 0.1 for tenths, ...).
+function nearOptions(ans, { unit = 1, min = 0, fmt = String, spread } = {}) {
+  const steps = spread || [1, 2, 3, 10, -1, -2, -3, -10, 5, -5, 4, -4];
+  const decimals = unit < 1 ? String(unit).split('.')[1].length : 0;
+  const round = x => Number(x.toFixed(decimals));
+  const seen = new Set([fmt(round(ans))]);
+  const out = [];
+  for (const s of shuffle(steps.slice())) {
+    const v = round(ans + s * unit);
+    if (v < min) continue;
+    const f = fmt(v);
+    if (seen.has(f)) continue;
+    seen.add(f); out.push(f);
+    if (out.length === 3) break;
+  }
+  let k = 6;
+  while (out.length < 3) { const f = fmt(round(ans + k++ * unit)); if (!seen.has(f)) { seen.add(f); out.push(f); } }
+  return out;
+}
+const money = v => '$' + v.toFixed(2);
+const q = (text, ans, extra = {}) => {
+  const a = extra.fmt ? extra.fmt(ans) : String(ans);
+  // hand-picked wrong answers can clash on small numbers, so dedupe and top up
+  let wrong = [...new Set(extra.options || [])].filter(o => o !== a);
+  if (wrong.length < 3 && typeof ans === 'number')
+    wrong = wrong.concat(nearOptions(ans, extra).filter(o => o !== a && !wrong.includes(o)));
+  wrong = wrong.slice(0, 3);
+  return { text, answer: a, options: shuffle([a, ...wrong]), why: extra.why || '' };
+};
+
+// ---------- questions, Year 1 to Year 6 ----------
+const EMOJI = ['🍎', '⭐', '🐸', '🌸', '🍓', '🐞', '⚽', '🦋'];
+const GEN = {
+  1: [
+    () => { const a = ri(1, 10), b = ri(0, 10); return q(`${a} + ${b} = ?`, a + b); },
+    () => { const a = ri(5, 20), b = ri(0, Math.min(10, a)); return q(`${a} − ${b} = ?`, a - b); },
+    () => { const n = ri(3, 12), e = pick(EMOJI); return q(`How many?<div class="emo">${e.repeat(n)}</div>`, n, { min: 1, spread: [1, 2, -1, -2, 3, -3] }); },
+    () => { const n = ri(5, 98); return q(`What number comes after ${n}?`, n + 1, { spread: [-1, -2, 1, 2, 10, -10] }); },
+    () => { const n = ri(6, 99); return q(`What number comes before ${n}?`, n - 1, { spread: [1, 2, -1, 10, -10, 3] }); },
+    () => { const n = ri(1, 10); return q(`Double ${n} = ?`, n * 2, { why: `${n} + ${n} = ${n * 2}` }); },
+    () => { const a = ri(1, 9), s = ri(a + 1, 15); return q(`${a} + ? = ${s}`, s - a, { why: `${s} − ${a} = ${s - a}` }); },
+  ],
+  2: [
+    () => { const a = ri(11, 60), b = ri(5, 39); return q(`${a} + ${b} = ?`, a + b); },
+    () => { const a = ri(30, 99), b = ri(5, a - 5); return q(`${a} − ${b} = ?`, a - b); },
+    () => { const by = pick([2, 5, 10]), s = by * ri(0, 6); return q(`Skip count: ${s}, ${s + by}, ${s + 2 * by}, ?`, s + 3 * by, { unit: by, spread: [1, -1, 2, 3] }); },
+    () => { const t = pick([2, 5, 10]), n = ri(1, 10); return q(`${n} × ${t} = ?`, n * t, { why: `${n} groups of ${t} makes ${n * t}` }); },
+    () => { const n = 2 * ri(2, 10); return q(`What is half of ${n}?`, n / 2, { min: 1, why: `${n / 2} + ${n / 2} = ${n}` }); },
+    () => { const have = pick([50, 60, 80, 100]), spend = 10 * ri(1, have / 10 - 1); return q(`You have ${have}c and spend ${spend}c. How many cents are left?`, have - spend, { unit: 5, fmt: v => v + 'c' }); },
+    () => { const t = ri(2, 9); return q(`How many tens are in ${t * 10}?`, t, { min: 1, spread: [1, -1, 2, -2, 10] }); },
+  ],
+  3: [
+    () => { const t = pick([2, 3, 4, 5, 10]), n = ri(2, 10); return q(`${n} × ${t} = ?`, n * t); },
+    () => { const t = pick([2, 3, 4, 5, 10]), n = ri(2, 10); return q(`${n * t} ÷ ${t} = ?`, n, { min: 1, why: `${n} × ${t} = ${n * t}` }); },
+    () => { const a = ri(100, 499), b = ri(100, 399); return q(`${a} + ${b} = ?`, a + b, { spread: [1, -1, 10, -10, 100, -100] }); },
+    () => { const a = ri(300, 999), b = ri(100, a - 50); return q(`${a} − ${b} = ?`, a - b, { spread: [1, -1, 10, -10, 100, -100] }); },
+    () => { const [name, d] = pick([['half', 2], ['a quarter', 4], ['a third', 3]]), n = d * ri(2, 10); return q(`What is ${name} of ${n}?`, n / d, { min: 1, why: `${n} ÷ ${d} = ${n / d}` }); },
+    () => { const [t, a] = pick([['minutes in 1 hour', 60], ['days in 1 week', 7], ['months in 1 year', 12], ['hours in 1 day', 24], ['minutes in half an hour', 30]]); return q(`How many ${t}?`, a, { min: 1 }); },
+    () => { const n = ri(11, 99); const r = Math.round(n / 10) * 10; return q(`Round ${n} to the nearest 10`, r, { unit: 10, spread: [1, -1, 2] , why: `${n} is closer to ${r}` }); },
+  ],
+  4: [
+    () => { const a = ri(2, 10), b = ri(2, 10); return q(`${a} × ${b} = ?`, a * b); },
+    () => { const a = ri(2, 10), b = ri(2, 10); return q(`${a * b} ÷ ${a} = ?`, b, { min: 1, why: `${a} × ${b} = ${a * b}` }); },
+    () => { const n = ri(110, 990); const r = Math.round(n / 100) * 100; return q(`Round ${n} to the nearest 100`, r, { unit: 100, spread: [1, -1, 2], why: `${n} is closer to ${r}` }); },
+    () => { const d = pick([3, 4, 5]), top = ri(2, d - 1), n = d * ri(2, 8); return q(`What is ${top}/${d} of ${n}?`, n / d * top, { min: 1, why: `${n} ÷ ${d} = ${n / d}, then × ${top} = ${n / d * top}` }); },
+    () => { const a = ri(4, 40) * 25, b = ri(2, 30) * 5; return q(`${money(a / 100)} + ${money(b / 100)} = ?`, (a + b) / 100, { unit: 0.05, fmt: money, spread: [1, -1, 2, -2, 5, 20, -20] }); },
+    () => { const n = ri(1000, 9999), places = [['thousands', 0], ['hundreds', 1], ['tens', 2], ['ones', 3]]; const [p, i] = pick(places); const digits = String(n).split(''); const a = digits[i];
+      const others = shuffle([...new Set(digits.filter(d => d !== a))]); const wrong = others.slice(0, 3); for (let k = 0; wrong.length < 3; k++) { const d = String(k); if (d !== a && !wrong.includes(d)) wrong.push(d); }
+      return q(`Which digit is in the <u>${p}</u> place of ${n.toLocaleString('en-AU')}?`, a, { options: wrong }); },
+    () => { const l = ri(3, 12), w = ri(2, 9); return q(`A rectangle is ${l} cm long and ${w} cm wide. What is its perimeter?`, 2 * (l + w), { fmt: v => v + ' cm', spread: [1, -1, 2, -2], options: [...new Set([l * w, l + w, 2 * (l + w) + 2, 2 * (l + w) - 2].filter(v => v !== 2 * (l + w)))].slice(0, 3).map(v => v + ' cm'), why: `${l} + ${w} + ${l} + ${w} = ${2 * (l + w)}` }); },
+  ],
+  5: [
+    () => { const a = ri(12, 99), b = ri(3, 9); return q(`${a} × ${b} = ?`, a * b, { spread: [1, -1, 10, -10, b, -b] }); },
+    () => { const d = ri(3, 9), n = ri(d + 1, d * 9 + d - 1); return q(`${n} ÷ ${d} = ${Math.floor(n / d)} remainder ?`, n % d, { spread: [1, -1, 2, -2, 3], why: `${Math.floor(n / d)} × ${d} = ${Math.floor(n / d) * d}, and ${n} − ${Math.floor(n / d) * d} = ${n % d}` }); },
+    () => { const a = ri(11, 89), b = ri(11, 89); return q(`${(a / 10).toFixed(1)} + ${(b / 10).toFixed(1)} = ?`, (a + b) / 10, { unit: 0.1, fmt: v => v.toFixed(1), spread: [1, -1, 10, -10, 2] }); },
+    () => { const m = pick([10, 100, 1000]), n = ri(3, 99); return q(`${n} × ${m} = ?`, n * m, { options: [n * m * 10, n * m / 10, n + m].filter(v => Number.isInteger(v)).concat([n * m * 100]).slice(0, 3).map(String) }); },
+    () => { const n = pick([12, 18, 20, 24, 30, 36]); const facs = []; for (let i = 2; i < n; i++) if (n % i === 0) facs.push(i); const a = pick(facs);
+      const non = shuffle([5, 7, 8, 9, 11, 13, 14, 16].filter(v => n % v !== 0)).slice(0, 3); return q(`Which number is a factor of ${n}?`, a, { options: non.map(String), why: `${n} ÷ ${a} = ${n / a}` }); },
+    () => { const l = ri(3, 12), w = ri(3, 12); return q(`A rectangle is ${l} m by ${w} m. What is its area?`, l * w, { fmt: v => v + ' m²', options: [...new Set([2 * (l + w), l + w, l * w + l, l * w - w].filter(v => v !== l * w))].slice(0, 3).map(v => v + ' m²'), why: `${l} × ${w} = ${l * w}` }); },
+    () => { const top = ri(1, 3), bot = pick([2, 3, 4, 5]), k = ri(2, 4); if (top >= bot) return GEN[5][0](); return q(`${top}/${bot} = ?/${bot * k}`, top * k, { min: 1, spread: [1, -1, 2, -2, 3], why: `Multiply top and bottom by ${k}` }); },
+  ],
+  6: [
+    () => { const a = ri(2, 20), b = ri(2, 9), c = ri(2, 9); return q(`${a} + ${b} × ${c} = ?`, a + b * c, { options: [String((a + b) * c), String(a + b * c + 1), String(a * b + c)].filter((v, i, s) => v !== String(a + b * c) && s.indexOf(v) === i).concat([String(a + b * c + 10)]).slice(0, 3), why: `Multiply first: ${b} × ${c} = ${b * c}, then + ${a}` }); },
+    () => { const p = pick([10, 20, 25, 50]), n = pick([20, 40, 60, 80, 100, 120, 200, 300, 400]); return q(`What is ${p}% of ${n}?`, n * p / 100, { unit: 5, spread: [1, -1, 2, -2, 4], why: p === 10 ? `Divide by 10` : p === 50 ? `Half of ${n}` : p === 25 ? `A quarter of ${n}` : `10% is ${n / 10}, so 20% is ${n / 5}` }); },
+    () => { const a = ri(-9, 5), b = ri(2, 12); const sign = Math.random() < .5; const ans = sign ? a + b : a - b; return q(`${a < 0 ? '(' + a + ')' : a} ${sign ? '+' : '−'} ${b} = ?`, ans, { min: -100, fmt: v => String(v).replace('-', '−'), spread: [1, -1, 2, -2] , options: [ -ans, ans + 1, ans - 2 ].filter(v => v !== ans).concat([ans + 2]).slice(0, 3).map(v => String(v).replace('-', '−')) }); },
+    () => { const m = pick([10, 100]), n = ri(101, 999); return q(`${(n / 100).toFixed(2)} × ${m} = ?`, n * m / 100, { options: [n * m / 1000, n * m / 10, n / 1000].map(v => String(Number(v.toFixed(3)))), fmt: v => String(Number(v.toFixed(2))), why: `Move the digits ${m === 10 ? 'one place' : 'two places'} to the left` }); },
+    () => { const n = ri(2, 12); return q(`${n}² = ?`, n * n, { options: [...new Set([n * 2, n * n + n, n * n - 1].filter(v => v !== n * n))].slice(0, 3).map(String), why: `${n} × ${n} = ${n * n}` }); },
+    () => { const p = pick([2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37]); const comp = shuffle([4, 6, 8, 9, 10, 12, 14, 15, 21, 25, 27, 33, 35]).slice(0, 3); return q(`Which of these is a prime number?`, p, { options: comp.map(String), why: `${p} can only be divided by 1 and ${p}` }); },
+    () => { const d = pick([5, 7, 8, 9, 10]), a = ri(1, d - 2), b = ri(1, d - 1 - a); return q(`${a}/${d} + ${b}/${d} = ?`, `${a + b}/${d}`, { fmt: v => v, options: [`${a + b}/${d * 2}`, `${a + b + 1}/${d}`, `${Math.max(1, Math.abs(a - b))}/${d}`].filter(v => v !== `${a + b}/${d}`).concat([`${a * b}/${d}`]).slice(0, 3), why: `Same bottom number, so add the tops: ${a} + ${b} = ${a + b}` }); },
+    () => { const x = ri(20, 160); return q(`Angles on a straight line add to 180°. One angle is ${x}°. What is the other?`, 180 - x, { fmt: v => v + '°', spread: [1, -1, 10, -10, 5], why: `180 − ${x} = ${180 - x}` }); },
+  ]
+};
+const YEAR_TOPICS = { 1: 'add & count', 2: 'to 100', 3: 'tables', 4: 'all tables', 5: 'big ×', 6: '% & primes' };
+
+function makeQuestion(year) {
+  for (let tries = 0; tries < 10; tries++) {
+    const item = pick(GEN[year])();
+    const uniq = new Set(item.options);
+    if (item.options.length === 4 && uniq.size === 4) return item;
+  }
+  return GEN[1][0]();
+}
+
+// ---------- sound ----------
+let muted = store.get('muted', false), actx = null;
+function beep(freqs, dur = 0.12, type = 'triangle') {
+  if (muted) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    freqs.forEach((f, i) => {
+      const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime + i * dur;
+      o.type = type; o.frequency.value = f;
+      g.gain.setValueAtTime(0.15, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur * 1.4);
+      o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dur * 1.5);
+    });
+  } catch (e) {}
+}
+const sfx = {
+  right: () => beep([660, 880]), wrong: () => beep([220, 160], .18, 'sawtooth'),
+  coin: () => beep([988, 1319], .08, 'square'), clear: () => beep([523, 659, 784, 1047], .12)
+};
+
+// ---------- the coiled snake ----------
+function snakeSVG() {
+  const cx = 50, cy = 54, pts = [];
+  const t0 = 0.6, t1 = Math.PI * 4;
+  for (let i = 0; i <= 90; i++) {
+    const t = t0 + (t1 - t0) * i / 90, r = 4 + 26 * (t - t0) / (t1 - t0);
+    pts.push([cx + r * Math.cos(t), cy - r * Math.sin(t)]);
+  }
+  const end = pts[pts.length - 1];
+  const neck = `L${end[0]} ${end[1] - 12}`;
+  const d = 'M' + pts.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' L') + neck;
+  const hx = end[0], hy = end[1] - 22;
+  return `<svg viewBox="0 0 100 100" id="snakeSvg">
+    <path d="${d}" fill="none" stroke="#14532d" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="${d}" fill="none" stroke="#22c55e" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="${d}" fill="none" stroke="#facc15" stroke-width="3" stroke-dasharray="2 5" stroke-linecap="round"/>
+    <path d="M${hx} ${hy - 9} l0 -6 m0 0 l-3 -3 m3 3 l3 -3" stroke="#ef4444" stroke-width="1.8" fill="none" stroke-linecap="round" class="tongue"/>
+    <ellipse cx="${hx}" cy="${hy}" rx="9.5" ry="11" fill="#16a34a" stroke="#14532d" stroke-width="1.8"/>
+    <circle cx="${hx - 4}" cy="${hy - 3}" r="3.2" fill="#fff"/><circle cx="${hx + 4}" cy="${hy - 3}" r="3.2" fill="#fff"/>
+    <circle cx="${hx - 4}" cy="${hy - 4}" r="1.6" fill="#111"/><circle cx="${hx + 4}" cy="${hy - 4}" r="1.6" fill="#111"/>
+    <circle cx="${hx - 3}" cy="${hy + 5}" r=".9" fill="#14532d"/><circle cx="${hx + 3}" cy="${hy + 5}" r=".9" fill="#14532d"/>
+  </svg>`;
+}
+
+// ---------- game state ----------
+const N = 5;
+const DIRS = { up: [-1, 0, '▲'], down: [1, 0, '▼'], left: [0, -1, '◀'], right: [0, 1, '▶'] };
+const ANGLE = { up: 0, right: 90, down: 180, left: 270 };
+const COINS_PER_BOARD = 5;
+
+const S = {
+  year: store.get('year', 1),
+  bank: store.get('bank', 0),
+  record: store.get('record', { right: 0, total: 0 }),
+  pos: { r: 2, c: 2 },
+  angle: 0,
+  coins: new Map(),       // "r,c" -> value
+  board: 1,
+  streak: 0,
+  busy: false,            // a question or animation is running
+  pending: null           // direction waiting on the answer
+};
+
+const boardEl = $('board'), snakeEl = $('snake');
+const cells = [];
+for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+  const el = document.createElement('div');
+  el.className = 'cell ' + ((r + c) % 2 ? 'b' : 'a');
+  boardEl.insertBefore(el, snakeEl);
+  cells.push(el);
+}
+snakeEl.innerHTML = snakeSVG();
+const cellEl = (r, c) => cells[r * N + c];
+
+function placeSnake() {
+  snakeEl.style.left = (S.pos.c * 20) + '%';
+  snakeEl.style.top = (S.pos.r * 20) + '%';
+  $('snakeSvg').style.transform = `rotate(${S.angle}deg)`;
+}
+
+function newBoard() {
+  S.coins.clear();
+  cells.forEach(el => el.innerHTML = '');
+  const free = [];
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (r !== S.pos.r || c !== S.pos.c) free.push([r, c]);
+  shuffle(free).slice(0, COINS_PER_BOARD).forEach(([r, c], i) => {
+    const val = i === 0 && S.board > 1 ? 5 : 1;   // a big coin shows up from board 2
+    S.coins.set(r + ',' + c, val);
+    const coin = document.createElement('div');
+    coin.className = 'coin' + (val === 5 ? ' big' : '');
+    cellEl(r, c).appendChild(coin);
+  });
+  render();
+}
+
+function render() {
+  $('bank').textContent = S.bank;
+  $('boardNo').textContent = S.board;
+  $('left').textContent = S.coins.size;
+  $('streak').textContent = S.streak;
+  $('acc').textContent = S.record.total ? Math.round(100 * S.record.right / S.record.total) + '%' : '–';
+  document.querySelectorAll('.dir').forEach(b => {
+    const [dr, dc] = DIRS[b.dataset.dir];
+    const r = S.pos.r + dr, c = S.pos.c + dc;
+    b.disabled = r < 0 || r >= N || c < 0 || c >= N;
+  });
+  document.querySelectorAll('.year').forEach(b => b.classList.toggle('on', +b.dataset.year === S.year));
+}
+
+// ---------- year picker ----------
+for (let y = 1; y <= 6; y++) {
+  const b = document.createElement('button');
+  b.className = 'year'; b.dataset.year = y;
+  b.innerHTML = `Year ${y}<small>${YEAR_TOPICS[y]}</small>`;
+  b.onclick = () => { S.year = y; store.set('year', y); render(); };
+  $('years').appendChild(b);
+}
+
+// ---------- asking a question ----------
+let current = null;
+function ask(dir) {
+  if (S.busy) return;
+  const [dr, dc, arrow] = DIRS[dir];
+  const r = S.pos.r + dr, c = S.pos.c + dc;
+  if (r < 0 || r >= N || c < 0 || c >= N) {
+    snakeEl.classList.remove('bump'); void snakeEl.offsetWidth; snakeEl.classList.add('bump');
+    return;
+  }
+  S.busy = true; S.pending = dir;
+  // turn to face the way we want to go (shortest way round)
+  let target = ANGLE[dir], diff = ((target - S.angle) % 360 + 540) % 360 - 180;
+  S.angle += diff; placeSnake();
+
+  current = makeQuestion(S.year);
+  $('qyear').textContent = 'Year ' + S.year;
+  $('qdir').textContent = 'Move ' + arrow;
+  $('qtext').innerHTML = current.text;
+  $('feedback').textContent = ''; $('feedback').className = 'feedback';
+  $('ok').classList.remove('show');
+  const box = $('answers'); box.innerHTML = '';
+  current.options.forEach((opt, i) => {
+    const b = document.createElement('button');
+    b.className = 'ans'; b.textContent = opt; b.dataset.i = i;
+    b.onclick = () => answer(b, opt);
+    box.appendChild(b);
+  });
+  const card = $('card'); card.classList.remove('shake');
+  card.style.animation = 'none'; void card.offsetWidth; card.style.animation = '';
+  $('overlay').classList.add('show');
+}
+
+function answer(btn, opt) {
+  if (!current || current.done) return;
+  current.done = true;
+  const buttons = [...document.querySelectorAll('.ans')];
+  buttons.forEach(b => b.disabled = true);
+  S.record.total++;
+  if (opt === current.answer) {
+    S.record.right++; S.streak++;
+    btn.classList.add('right');
+    const cheers = ['Great!', 'Brilliant!', 'Yes!', 'Super!', 'Correct!', 'Well done!'];
+    $('feedback').textContent = pick(cheers) + (S.streak >= 3 ? ` ${S.streak} in a row! 🔥` : '');
+    $('feedback').className = 'feedback good';
+    sfx.right();
+    store.set('record', S.record);
+    setTimeout(() => { $('overlay').classList.remove('show'); move(S.pending); }, 650);
+  } else {
+    S.streak = 0;
+    btn.classList.add('wrong');
+    buttons.find(b => b.textContent === current.answer)?.classList.add('right');
+    $('feedback').innerHTML = `The answer is ${current.answer}.` + (current.why ? `<div class="why">${current.why}</div>` : '');
+    $('feedback').className = 'feedback bad';
+    $('card').classList.add('shake');
+    $('ok').textContent = 'Try again';
+    $('ok').classList.add('show');
+    sfx.wrong();
+    store.set('record', S.record);
+    render();
+  }
+}
+
+$('ok').onclick = closeWrong;
+function closeWrong() {
+  $('overlay').classList.remove('show');
+  S.busy = false; S.pending = null; current = null;
+  render();
+}
+
+// ---------- moving and collecting ----------
+function move(dir) {
+  const [dr, dc] = DIRS[dir];
+  S.pos.r += dr; S.pos.c += dc;
+  snakeEl.classList.remove('moving'); void snakeEl.offsetWidth; snakeEl.classList.add('moving');
+  placeSnake();
+  setTimeout(() => {
+    const key = S.pos.r + ',' + S.pos.c;
+    if (S.coins.has(key)) {
+      const val = S.coins.get(key);
+      S.coins.delete(key);
+      S.bank += val; store.set('bank', S.bank);
+      const coin = cellEl(S.pos.r, S.pos.c).querySelector('.coin');
+      if (coin) { coin.classList.add('got'); setTimeout(() => coin.remove(), 450); }
+      floatText('+' + val, S.pos.r, S.pos.c);
+      sfx.coin();
+      snakeEl.classList.remove('happy'); void snakeEl.offsetWidth; snakeEl.classList.add('happy');
+    }
+    S.busy = false; S.pending = null; current = null;
+    render();
+    if (S.coins.size === 0) boardCleared();
+  }, 400);
+}
+
+function floatText(txt, r, c) {
+  const f = document.createElement('div');
+  f.className = 'float'; f.textContent = txt;
+  f.style.left = (c * 20 + 10) + '%'; f.style.top = (r * 20 + 10) + '%';
+  boardEl.appendChild(f);
+  setTimeout(() => f.remove(), 1000);
+}
+
+function boardCleared() {
+  const bonus = 5;
+  S.bank += bonus; store.set('bank', S.bank);
+  S.busy = true;
+  sfx.clear();
+  $('bannerText').textContent = `You found every coin! Bonus +${bonus} coins. You now have ${S.bank} coins.` +
+    (S.year < 6 && S.streak >= 5 ? ` You're on fire — try Year ${S.year + 1}?` : '');
+  $('banner').classList.add('show');
+  render();
+}
+$('nextBoard').onclick = () => {
+  $('banner').classList.remove('show');
+  S.board++; S.busy = false;
+  newBoard();
+};
+
+// ---------- controls ----------
+document.querySelectorAll('.dir').forEach(b => b.addEventListener('click', () => ask(b.dataset.dir)));
+const KEYS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right' };
+document.addEventListener('keydown', e => {
+  if ($('overlay').classList.contains('show')) {
+    const n = parseInt(e.key, 10);
+    if (n >= 1 && n <= 4 && current && !current.done) { const b = document.querySelectorAll('.ans')[n - 1]; if (b) answer(b, b.textContent); }
+    else if ((e.key === 'Enter' || e.key === ' ') && $('ok').classList.contains('show')) { e.preventDefault(); closeWrong(); }
+    return;
+  }
+  if ($('banner').classList.contains('show')) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('nextBoard').click(); }
+    return;
+  }
+  const dir = KEYS[e.key];
+  if (dir) { e.preventDefault(); ask(dir); }
+});
+$('mute').textContent = muted ? '🔇' : '🔊';
+$('mute').onclick = () => { muted = !muted; store.set('muted', muted); $('mute').textContent = muted ? '🔇' : '🔊'; };
+
+// expose the question maker for testing
+window.__snakeMaths = { makeQuestion, GEN };
+
+placeSnake();
+newBoard();
+})();
+</script>
+</body>
+</html>
