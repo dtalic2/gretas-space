@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3f86d8"/>
+      <stop offset="1" stop-color="#bfe2f6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="104" fill="url(#sky)"/>
+  <!-- sea -->
+  <rect y="380" width="512" height="132" fill="#2d8fb3"/>
+  <!-- island -->
+  <ellipse cx="256" cy="392" rx="210" ry="46" fill="#e8d49a"/>
+  <ellipse cx="256" cy="380" rx="180" ry="38" fill="#7fb04a"/>
+  <!-- castle -->
+  <g fill="#9d978c" stroke="#6f6a62" stroke-width="4">
+    <rect x="176" y="230" width="160" height="150"/>
+    <rect x="140" y="190" width="56" height="190"/>
+    <rect x="316" y="190" width="56" height="190"/>
+  </g>
+  <g fill="#9d978c">
+    <rect x="176" y="214" width="22" height="18"/><rect x="214" y="214" width="22" height="18"/>
+    <rect x="252" y="214" width="22" height="18"/><rect x="290" y="214" width="22" height="18"/>
+  </g>
+  <path d="M130 192 L168 112 L206 192 Z" fill="#b2352e"/>
+  <path d="M306 192 L344 112 L382 192 Z" fill="#2f5da8"/>
+  <path d="M256 300 a30 30 0 0 1 30 30 v50 h-60 v-50 a30 30 0 0 1 30 -30z" fill="#4b3223"/>
+  <rect x="160" y="240" width="16" height="30" fill="#ffb04a"/>
+  <rect x="336" y="240" width="16" height="30" fill="#ffb04a"/>
+  <!-- flag -->
+  <line x1="344" y1="112" x2="344" y2="62" stroke="#4b3223" stroke-width="6"/>
+  <path d="M347 64 L400 76 L347 90 Z" fill="#e8c547"/>
+  <!-- tree -->
+  <path d="M80 380 L104 300 L128 380 Z" fill="#2f6a3a"/>
+  <path d="M400 380 L426 290 L452 380 Z" fill="#3d7d45"/>
+</svg>

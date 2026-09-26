@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#2b1d12">
+<title>Middle Island</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+<div id="night"></div>
+<div id="hurt"></div>
+<div id="fade"></div>
+
+<!-- ============================== LOADING ============================== -->
+<div id="boot">
+  <div class="boot-inner">
+    <div class="boot-mark">🏰</div>
+    <div class="boot-title">Middle Island</div>
+    <div class="boot-bar"><i id="bootBar"></i></div>
+    <div class="boot-msg" id="bootMsg">Raising the island from the sea…</div>
+  </div>
+</div>
+
+<!-- ============================== TITLE ============================== -->
+<div id="title" class="overlay hidden">
+  <div class="scroll">
+    <div class="crest">🏰</div>
+    <h1>Middle Island</h1>
+    <p class="lede">A storm threw your ship onto the rocks. You crawl up the sand with nothing
+      but an axe and a few loaves of bread. The island is wild — thick woods, a stony hill,
+      and wolves that come out when the sun goes down.</p>
+    <div class="how">
+      <div><span>🪓</span><p><b>Gather</b> wood, stone, iron and food. Hold <kbd>E</kbd> by a tree, rock or bush.</p></div>
+      <div><span>🔨</span><p><b>Build</b> a campfire, a hut, farms and timber cottages. Press <kbd data-touch="🔨">B</kbd>.</p></div>
+      <div><span>🌙</span><p><b>Survive</b> the nights. Stay warm by a fire, keep fed, and chase off wolves with <kbd data-touch="⚔️">Space</kbd>.</p></div>
+      <div><span>👑</span><p><b>Grow a village</b> until you can build the Castle Keep and rule Middle Island.</p></div>
+    </div>
+    <div class="title-btns">
+      <button class="big" id="btnContinue">Continue</button>
+      <button class="big" id="btnNew">New Game</button>
+    </div>
+    <p class="tiny" id="titleControls"></p>
+  </div>
+</div>
+
+<!-- ============================== HUD ============================== -->
+<div id="hud" class="hidden">
+  <div class="top">
+    <div class="res" id="res"></div>
+    <div class="clock"><b id="dayNum">Day 1</b><span id="clockTime">06:00</span><i id="clockIco">☀️</i></div>
+    <div class="top-btns">
+      <button class="chip-btn" id="btnBuildTop" title="Build (B)">🔨</button>
+      <button class="chip-btn" id="btnMusic" title="Music">🎵</button>
+      <button class="chip-btn" id="btnSound" title="Sound (M)">🔊</button>
+      <button class="chip-btn" id="btnHelp" title="Help (H)">❔</button>
+    </div>
+  </div>
+
+  <div id="objective">
+    <div class="q" id="qText"></div><div class="hint" id="qHint"></div>
+    <!-- which way to the thing the objective is talking about -->
+    <div id="guide" class="hidden"><i id="guideArrow">▲</i><span id="guideText"></span></div>
+  </div>
+
+  <div id="bars">
+    <div class="bar hp"><span>❤️</span><div><i id="barHp"></i></div></div>
+    <div class="bar food"><span>🍗</span><div><i id="barFood"></i></div></div>
+    <div class="bar warm"><span>🔥</span><div><i id="barWarm"></i></div></div>
+  </div>
+
+  <div id="prompt" class="hidden">
+    <span class="key">E</span><span id="promptText"></span>
+    <div class="hold"><i id="holdBar"></i></div>
+  </div>
+
+  <div id="buildBar" class="hidden">
+    <div class="bb-name" id="bbName"></div>
+    <div class="bb-reason" id="bbReason"></div>
+    <div class="bb-btns">
+      <button id="bbRotate">⟳ <small>R</small></button>
+      <button id="bbPlace" class="ok">✓ Place <small>E</small></button>
+      <button id="bbCancel">✕ <small>Esc</small></button>
+    </div>
+  </div>
+
+  <div id="toasts"></div>
+  <div id="pops"></div>
+
+  <div class="controls">
+    <div id="stick"><i></i></div>
+    <div class="btn-grid">
+      <button id="tBuild" class="round small">🔨</button>
+      <button id="tRun" class="round small">RUN</button>
+      <button id="tAttack" class="round">⚔️</button>
+      <button id="tAct" class="round act">E</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== PANEL ============================== -->
+<div id="panel" class="overlay hidden">
+  <div class="sheet">
+    <header>
+      <h2 id="panelTitle">Build</h2>
+      <button id="panelClose" aria-label="Close">✕</button>
+    </header>
+    <div id="panelBody"></div>
+  </div>
+</div>
+
+<!-- ============================== WIN ============================== -->
+<div id="win" class="overlay hidden">
+  <div class="scroll">
+    <div class="crest">👑</div>
+    <h1>Lord of Middle Island</h1>
+    <div id="winBody"></div>
+    <button class="big" id="winGo">Keep building</button>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
