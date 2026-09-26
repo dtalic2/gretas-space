@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a8e0f7"/><stop offset="1" stop-color="#8fd3f4"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="110" fill="url(#sky)"/>
+  <!-- the hotel -->
+  <rect x="116" y="112" width="280" height="330" rx="10" fill="#f4a58a"/>
+  <rect x="100" y="96" width="312" height="30" rx="8" fill="#d8663f"/>
+  <rect x="150" y="60" width="212" height="42" rx="8" fill="#fff6e2"/>
+  <text x="256" y="90" font-family="system-ui,sans-serif" font-size="30" font-weight="900" text-anchor="middle" fill="#8d4a2f">HOTEL</text>
+  <g fill="#ffe0a0">
+    <rect x="146" y="150" width="60" height="50" rx="6"/><rect x="226" y="150" width="60" height="50" rx="6"/><rect x="306" y="150" width="60" height="50" rx="6"/>
+    <rect x="146" y="226" width="60" height="50" rx="6"/><rect x="306" y="226" width="60" height="50" rx="6"/>
+  </g>
+  <rect x="100" y="442" width="312" height="18" rx="6" fill="#e9dcc4"/>
+  <rect x="206" y="330" width="100" height="112" rx="10" fill="#8b5a33"/>
+  <path d="M190 330 h132 l-12 -24 h-108 z" fill="#e2604f"/>
+  <!-- a milbil at the window -->
+  <g transform="translate(256 262) scale(0.42)">
+    <path d="M-52 -46 l-18 -56 l44 26 z" fill="#ff9dbb"/>
+    <path d="M52 -46 l18 -56 l-44 26 z" fill="#ff9dbb"/>
+    <ellipse cx="0" cy="0" rx="78" ry="72" fill="#ffb3c7"/>
+    <ellipse cx="0" cy="18" rx="46" ry="40" fill="#fff6ee"/>
+    <circle cx="-28" cy="-12" r="15" fill="#fff"/><circle cx="28" cy="-12" r="15" fill="#fff"/>
+    <circle cx="-26" cy="-10" r="8" fill="#3b2f2a"/><circle cx="30" cy="-10" r="8" fill="#3b2f2a"/>
+    <circle cx="2" cy="12" r="8" fill="#ff9d6b"/>
+  </g>
+</svg>

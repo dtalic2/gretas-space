@@ -1,0 +1,15 @@
+{
+  "name": "Milbil Hotel",
+  "short_name": "Milbil Hotel",
+  "description": "Run a hotel for the milbils and the visitors from Milbil Town. Check guests in, collect their coins, build rooms, floors, a café, a spa and a pool on the roof.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#8fd3f4",
+  "theme_color": "#8fd3f4",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#8fd3f4">
+<title>Milbil Hotel</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+<div id="grade"></div>
+<div id="markers"></div>
+
+<!-- ============================== LOADING ============================== -->
+<div id="boot">
+  <div class="boot-inner">
+    <div class="boot-mark">🏨</div>
+    <div class="boot-title">Milbil Hotel</div>
+    <div class="boot-sub">rooms for every milbil</div>
+    <div class="boot-bar"><i id="bootBar"></i></div>
+    <div class="boot-msg" id="bootMsg">Fluffing the pillows…</div>
+  </div>
+</div>
+
+<!-- ============================== INTRO ============================== -->
+<div id="intro" class="overlay hidden">
+  <div class="card">
+    <div class="eyebrow">Milbil Hotel</div>
+    <h1>How to play</h1>
+    <div class="grid-4">
+      <div><span class="ico">🛎️</span><p><b>Check guests in.</b> Milbils, Petal, Chomp, Hattie, Sunny and Scoop wait in the lobby. Tap one and they head up to a room.</p></div>
+      <div><span class="ico">🪙</span><p><b>Get paid.</b> When they check out, tap the coins over their room.</p></div>
+      <div><span class="ico">🧹</span><p><b>Tidy up.</b> Tap the broom so the room is ready for the next guest.</p></div>
+      <div><span class="ico">🛠</span><p><b>Build.</b> More rooms, new floors, a café, a spa, a pool on the roof. Guests whose wish comes true pay more.</p></div>
+      <div><span class="ico">🖐️</span><p><b>Getting around.</b> Drag to go up and down the hotel, pinch or scroll to zoom.</p></div>
+    </div>
+    <button class="big" id="introGo">Open the doors</button>
+    <p class="lede after">Milbil Town is full of visitors and they all need somewhere to sleep.
+      You have a lobby, two little rooms and a bell on the desk.</p>
+  </div>
+</div>
+
+<!-- ============================== HUD ============================== -->
+<div id="hud" class="hidden">
+
+  <div class="hud-top">
+    <div class="chips">
+      <div class="chip coin"><span class="ico">🪙</span><b id="coins">0</b></div>
+      <div class="chip level">
+        <span class="ico">⭐</span><b id="level">1</b>
+        <div class="xp"><i id="xpBar"></i></div>
+      </div>
+      <div class="chip guests" title="Guests waiting in the lobby"><span class="ico">🛎️</span><b id="waiting">0/3</b></div>
+    </div>
+    <div class="chips right">
+      <button class="icon-btn" id="btnSound" title="Sound (M)">🔊</button>
+      <button class="icon-btn" id="btnHelp" title="How to play (H)">⚙️</button>
+    </div>
+  </div>
+
+  <button id="objective" class="hidden"><span class="ico">📣</span><span id="objText"></span></button>
+
+  <div class="side-buttons">
+    <button class="big-btn" id="btnShop"><span>🛠</span><small>Build</small></button>
+    <button class="big-btn" id="btnLobby"><span>🛎️</span><small>Lobby</small><i class="badge hidden" id="lobbyBadge">0</i></button>
+    <button class="big-btn" id="btnBook"><span>📖</span><small>Guests</small></button>
+  </div>
+
+  <div id="placeBar" class="hidden">
+    <div class="place-info"><b id="placeName">Cosy Room</b><span>Tap a ＋ space to put it there</span></div>
+    <div class="place-actions"><button class="pill ghost" id="placeCancel">Cancel</button></div>
+  </div>
+
+  <div id="toasts"></div>
+  <div id="pops"></div>
+</div>
+
+<!-- ============================== PANEL ============================== -->
+<div id="panel" class="overlay hidden">
+  <div class="sheet">
+    <header>
+      <h2 id="panelTitle">Panel</h2>
+      <button id="panelClose" aria-label="Close">✕</button>
+    </header>
+    <div id="panelBody"></div>
+  </div>
+</div>
+
+<!-- ============================== LEVEL UP ============================== -->
+<div id="levelUp" class="overlay hidden">
+  <div class="card center">
+    <div class="pop-mark">🎉</div>
+    <h1>Level <span id="lvlNum">2</span></h1>
+    <p class="lede" id="lvlPurse">Milbil Town sends 80 coins.</p>
+    <div id="lvlUnlocks" class="unlocks"></div>
+    <button class="big" id="lvlGo">Lovely</button>
+  </div>
+</div>
+
+<!-- ============================== WELCOME BACK ============================== -->
+<div id="welcome" class="overlay hidden">
+  <div class="card center">
+    <div class="pop-mark">🌙</div>
+    <h1>While you were out</h1>
+    <div id="welcomeBody" class="rows"></div>
+    <button class="big" id="welcomeGo">Back to the desk</button>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
