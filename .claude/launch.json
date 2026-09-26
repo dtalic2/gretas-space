@@ -12,6 +12,12 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["middle-island-3d/serve.py", "8125"],
       "port": 8125
+    },
+    {
+      "name": "coconut-cove",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["tropical-island-3d/serve.py", "8126"],
+      "port": 8126
     }
   ]
 }

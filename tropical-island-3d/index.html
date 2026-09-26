@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f6f86">
+<title>Coconut Cove</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+<div id="under"></div>
+<div id="fade"></div>
+
+<!-- ============================== LOADING ============================== -->
+<div id="boot">
+  <div class="boot-inner">
+    <div class="boot-mark">🥥</div>
+    <div class="boot-title">Coconut Cove</div>
+    <div class="boot-bar"><i id="bootBar"></i></div>
+    <div class="boot-msg" id="bootMsg">Warming up the sand…</div>
+  </div>
+</div>
+
+<!-- ============================== TITLE ============================== -->
+<div id="title" class="overlay hidden">
+  <div class="card title-card">
+    <h1>Coconut Cove</h1>
+    <p class="lede">Your own little island in a warm blue sea. No hurry, no danger. Just fishing off the dock,
+      swimming in the lagoon, and making friends with the animals who live here.</p>
+    <div class="how">
+      <div><span>🎣</span><p><b>Fish</b> from the dock or the beach. Wait for the bobber to dip, then stop the needle in the green.</p></div>
+      <div><span>🏊</span><p><b>Swim</b> in the lagoon. Get a snorkel and <b>dive</b> for pearls and seaweed.</p></div>
+      <div><span>🐶</span><p><b>Make friends</b> with Coco, Pip, Momo, Shelly, Pinch and Splash. Pet them and bring their favourite food.</p></div>
+      <div><span>🕹️</span><p><b>Move</b> with the joystick (or <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>). Drag the scene to look around.</p></div>
+    </div>
+    <div class="title-btns">
+      <button class="big" id="btnContinue">Keep playing</button>
+      <button class="big" id="btnNew">Start</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== HUD ============================== -->
+<div id="hud" class="hidden">
+  <div class="top">
+    <div class="res">
+      <div class="chip coins"><span>🪙</span><b id="coins">0</b></div>
+      <div id="bagChips" class="bag-chips"></div>
+    </div>
+    <div class="clock"><b id="dayNum">Day 1</b><span id="clockTime">08:00</span><i id="clockIco">☀️</i></div>
+    <div class="top-btns">
+      <button class="chip-btn" id="btnJournal" title="Journal (J)">📔</button>
+      <button class="chip-btn" id="btnMusic" title="Music">🎵</button>
+      <button class="chip-btn" id="btnSound" title="Sound (M)">🔊</button>
+      <button class="chip-btn" id="btnHelp" title="Help (H)">❔</button>
+    </div>
+  </div>
+
+  <div id="goal">
+    <div class="q" id="goalText"></div>
+    <div class="hint" id="goalHint"></div>
+    <div id="guide" class="hidden"><i id="guideArrow">▲</i><span id="guideText"></span></div>
+  </div>
+
+  <div id="breath" class="hidden"><span>🫧</span><div><i id="breathBar"></i></div></div>
+
+  <div id="bite" class="hidden">!</div>
+  <div id="reel" class="hidden">
+    <div class="reel-label" id="reelLabel">Stop the needle in the green!</div>
+    <div class="reel-track"><i id="reelZone"></i><b id="reelNeedle"></b></div>
+  </div>
+
+  <div id="prompt" class="hidden"><span class="key">E</span><span id="promptText"></span></div>
+
+  <div id="toasts"></div>
+  <div id="pops"></div>
+
+  <div class="controls">
+    <div id="stick" aria-label="Joystick"><i></i></div>
+    <div class="btn-grid">
+      <button id="tUke" class="round small hidden" title="Play ukulele (U)">🎸</button>
+      <button id="tRun" class="round small" title="Run (Shift)">🏃</button>
+      <button id="tJump" class="round" title="Jump / dive (Space)">⤒</button>
+      <button id="tAct" class="round act" title="Action (E)">E</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== PANEL ============================== -->
+<div id="panel" class="overlay hidden">
+  <div class="sheet">
+    <header>
+      <h2 id="panelTitle">Kai's Tiki Shack</h2>
+      <button id="panelClose" aria-label="Close">✕</button>
+    </header>
+    <div id="panelBody"></div>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
