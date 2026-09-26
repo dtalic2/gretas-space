@@ -16,6 +16,7 @@ import { Audio } from './audio.js';
 import { UI } from './ui.js';
 import { QUESTS } from './quests.js';
 import { BUILDERS } from './models.js';
+import { DEFAULT_LOOK } from './looks.js';
 import {
   DAY_SECONDS, DAY_SPLIT, RES, NODES, BUILDINGS, UPGRADES, BODY, FARM,
   SETTLER_EVERY, SETTLER_EATS, SETTLER_BUILD,
@@ -97,6 +98,7 @@ async function boot(){
   } else {
     player.spawn(world.spawnPoint.x, world.spawnPoint.z, Math.PI);
   }
+  player.setLook(state.look);
   village.sync(settlers());
   ui.boot(1, 'Ready');
   // Warm the shaders up so the first frame of play doesn't hitch.
@@ -109,10 +111,10 @@ async function boot(){
 
   const autostart = sessionStorage.getItem('mi-autostart');
   sessionStorage.removeItem('mi-autostart');
-  if (autostart) start(false);
+  if (autostart) openCreator(true);
   else ui.title(hasSave && state.started, () => start(true), () => {
     if (hasSave){ state.wipe(); sessionStorage.setItem('mi-autostart', '1'); location.reload(); }
-    else start(false);
+    else openCreator(true);
   });
 }
 
@@ -125,9 +127,50 @@ function start(resumed){
     ui.toast('🌊 You wash up on the shore of <b>Middle Island</b>.', 'good');
     setTimeout(() => ui.toast('Hold <b>E</b> next to a tree to chop it.'), 1800);
   } else {
-    ui.toast(`Welcome back. Day ${state.day}.`, 'good');
+    ui.toast(`Welcome back${state.look.name ? `, ${state.look.name}` : ''}. Day ${state.day}.`, 'good');
   }
   save();
+}
+
+/** Your full title once you rule the island: "Lady Greta", or just "Lady". */
+function ruler(){ return [state.look.title ?? 'Lord', state.look.name].filter(Boolean).join(' '); }
+
+/**
+ * The character creator. `first` is the new-game version, which starts play
+ * when you're done; otherwise it's the wardrobe, which pauses the game.
+ */
+function openCreator(first){
+  if (s.creator) return;
+  audio.unlock();
+  cancelBuild();
+  ui.closePanel();
+  s.creator = true;
+  s.paused = true;
+  ui.showHud(false);
+  if (first){
+    state.look = { ...DEFAULT_LOOK, ...state.look };
+    const sp = world.spawnPoint;
+    player.spawn(sp.x, sp.z, Math.PI);
+  }
+  // Face the camera, three-quarters on.
+  player.camYaw = player.facing + 0.45;
+  s.creatorCam = { dist: player.camDist, pitch: player.camPitch };
+  player.setLook(state.look);
+  ui.creator(state.look, {
+    first, won: state.won,
+    onChange: (look) => { player.setLook(look); audio.ui(); },
+    onDone: () => {
+      s.creator = false;
+      studio.intensity = 0;
+      camera.clearViewOffset();
+      player.camDist = s.creatorCam.dist;
+      player.camPitch = s.creatorCam.pitch;
+      player.camYaw = player.facing + Math.PI;
+      audio.place();
+      if (first) start(false);
+      else { s.paused = false; ui.showHud(true); ui.toast('👤 Looking good!'); save(); }
+    },
+  });
 }
 
 // ---------------------------------------------------------------- rules
@@ -247,13 +290,14 @@ function onBuilt(b){
   if (b.type === 'castle' && !state.won){
     state.won = true;
     audio.fanfare();
+    setTimeout(() => ui.toast('👑 You can wear the crown now. Tap 👤 to put it on.', 'good'), 5000);
     setTimeout(() => audio.bell(), 1600);
     setTimeout(() => {
       s.paused = true;
       ui.win([
         ['📅', `Day ${state.day}`], ['🏠', `${world.buildings.length} buildings`], ['👥', `${settlers()} settlers`],
         ['🪵', `${state.gathered.wood} wood cut`], ['🪨', `${state.gathered.stone} stone mined`],
-      ], () => { s.paused = false; });
+      ], () => { s.paused = false; }, ruler());
     }, 2600);
   }
   save();
@@ -420,7 +464,8 @@ function settlersWork(){
 function bindInput(){
   addEventListener('keydown', (e) => {
     if (e.repeat) return;
-    if (!state.started) return;
+    if (e.target.tagName === 'INPUT') return;      // typing your name
+    if (!state.started || s.creator) return;
     audio.unlock();
     if (e.code === 'Escape'){ if (ui.panelOpen) ui.closePanel(); else cancelBuild(); return; }
     if (ui.panelOpen){ if (e.code === 'KeyB' || e.code === 'KeyH') ui.closePanel(); return; }
@@ -430,6 +475,7 @@ function bindInput(){
     if (e.code === 'KeyR' && s.build){ s.build.rotOff += Math.PI / 2; audio.ui(); }
     if (e.code === 'Space') attack();
     if (e.code === 'KeyH') openHelp();
+    if (e.code === 'KeyC') openCreator(false);
     if (e.code === 'KeyM') toggleSound();
   });
   addEventListener('keyup', (e) => { if (e.code === 'KeyE' || e.code === 'Enter') s.eHeld = false; });
@@ -452,6 +498,7 @@ function bindInput(){
   document.getElementById('bbPlace').onclick = () => placeBuild();
   document.getElementById('bbCancel').onclick = () => cancelBuild();
   document.getElementById('btnHelp').onclick = () => openHelp();
+  document.getElementById('btnLook').onclick = () => { if (!s.paused) openCreator(false); };
   document.getElementById('btnSound').onclick = () => toggleSound();
   const mus = document.getElementById('btnMusic');
   mus.onclick = () => { audio.unlock(); audio.setMusic(!audio.music); mus.classList.toggle('off', !audio.music); };
@@ -521,7 +568,7 @@ function tick(dt){
   const night = nightOf(state.t);
 
   // Before the game starts, the camera drifts slowly around the island.
-  if (!state.started){
+  if (!state.started && !s.creator){
     const a = t * 0.05;
     camera.position.set(Math.sin(a) * 70, 34, Math.cos(a) * 70);
     camera.lookAt(0, 2, 0);
@@ -667,7 +714,7 @@ function tick(dt){
     let hint = q.hint;
     if (night > 0.6 && !world.warmAt(player.position.x, player.position.z) && state.warmth < 70) hint = '🥶 It is cold! Get near a fire or into a house.';
     if (wolves.nearestDist(player.position) < 16) hint = '🐺 A wolf! Stand in the firelight, or swing at it (Space / ⚔️).';
-    ui.setObjective(q.text, hint, goal);
+    ui.setObjective(q.text.replace('Lord', state.look.title ?? 'Lord'), hint, goal);
 
     const tgt = q.target(g);
     if (tgt && !s.build){
@@ -682,6 +729,28 @@ function tick(dt){
     if (playing && action && !s.build) ui.prompt(action.text, holdFrac, !!action.locked);
     else ui.prompt(null);
   }
+
+  if (s.creator) creatorCamera();
+}
+
+// A soft light from beside the camera, so your face isn't lost in shadow.
+const studio = new THREE.PointLight(0xfff0dc, 0, 12, 1.5);
+scene.add(studio);
+
+/** A close, front-on view of your character, framed beside the wardrobe panel. */
+function creatorCamera(){
+  const p = player.position;
+  studio.intensity = s.creator ? 5 : 0;
+  const pitch = THREE.MathUtils.clamp(player.camPitch, 0.02, 0.5);
+  const d = 4.4;
+  camera.position.set(p.x + Math.sin(player.camYaw) * Math.cos(pitch) * d, p.y + 1.15 + Math.sin(pitch) * d, p.z + Math.cos(player.camYaw) * Math.cos(pitch) * d);
+  camera.lookAt(p.x, p.y + 1.05, p.z);
+  studio.position.copy(camera.position).add(new THREE.Vector3(0, 1, 0));
+  // Slide the picture so you stand in the middle of the space the panel leaves.
+  const panel = document.querySelector('.wardrobe').getBoundingClientRect();
+  const W = innerWidth, H = innerHeight;
+  if (panel.top > 10) camera.setViewOffset(W, H, 0, panel.height / 2, W, H);
+  else camera.setViewOffset(W, H, panel.width / 2, 0, W, H);
 }
 
 // Debugging: `__mi.sim(30)` runs thirty seconds of game without drawing, and

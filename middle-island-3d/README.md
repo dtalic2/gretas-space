@@ -11,6 +11,16 @@ top, berry bushes round a flat meadow, and wolves that come out after dark.
 
 ---
 
+## Your character
+
+Before you land, you make your castaway. Choose a name, Lord or Lady, and a
+skin tone, then a hairstyle (short, long, ponytail, braids, curly or bald) and
+hair colour. Add a beard if you like, and something on your head: a hood, a
+straw hat, a feather cap or a helmet. Then pick colours for your tunic,
+trousers and cape. 🎲 picks everything at random. The **crown** unlocks once
+you build the Castle Keep. Press <kbd>C</kbd> or tap 👤 to change your look at
+any time. The choices are in [`js/looks.js`](js/looks.js).
+
 ## The loop
 
 1. **Gather.** Hold <kbd>E</kbd> by a tree (🪵 wood), a rock (🪨 stone), an orange-flecked
@@ -56,6 +66,7 @@ arrow under it points the way.
 | Fight wolves | <kbd>Space</kbd> | ⚔️ |
 | Build menu | <kbd>B</kbd> | 🔨 |
 | Turn a building | <kbd>R</kbd> | ⟳ |
+| Change your look | <kbd>C</kbd> | 👤 |
 | Help | <kbd>H</kbd> | ❔ |
 
 ## Running it
@@ -86,6 +97,7 @@ made from oscillators and filtered noise.
 | [`js/creatures.js`](js/creatures.js) | Wolves, sheep, and the settlers walking round the village. |
 | [`js/sky.js`](js/sky.js) | Sun, moon, stars, clouds, and the day/night palette. |
 | [`js/quests.js`](js/quests.js) | The steps from shipwreck to castle, and where the arrow points for each one. |
+| [`js/looks.js`](js/looks.js) | The character creator's options: colours, hairstyles, beards and hats. |
 | [`js/player.js`](js/player.js) | You, your tools, and the camera. |
 | [`js/state.js`](js/state.js) | The save: one plain object in `localStorage`. |
 | [`js/ui.js`](js/ui.js) | All the DOM. Knows nothing about three.js. |

@@ -66,6 +66,7 @@
       <button class="chip-btn" id="btnBuildTop" title="Build (B)">🔨</button>
       <button class="chip-btn" id="btnMusic" title="Music">🎵</button>
       <button class="chip-btn" id="btnSound" title="Sound (M)">🔊</button>
+      <button class="chip-btn" id="btnLook" title="Change your look (C)">👤</button>
       <button class="chip-btn" id="btnHelp" title="Help (H)">❔</button>
     </div>
   </div>
@@ -111,6 +112,23 @@
   </div>
 </div>
 
+<!-- ============================== CHARACTER ============================== -->
+<div id="creator" class="hidden">
+  <div class="wardrobe">
+    <h2 id="creatorTitle">Who washed ashore?</h2>
+    <div class="w-row name-row">
+      <label for="lookName">Name</label>
+      <input id="lookName" maxlength="16" autocomplete="off" spellcheck="false" placeholder="Your name">
+    </div>
+    <div id="creatorBody"></div>
+    <div class="w-btns">
+      <button id="lookRandom" class="w-small">🎲 Surprise me</button>
+      <button id="lookDone" class="big">Set foot on the island</button>
+    </div>
+    <p class="tiny">Drag the picture to turn around. You can change your look later with 👤.</p>
+  </div>
+</div>
+
 <!-- ============================== PANEL ============================== -->
 <div id="panel" class="overlay hidden">
   <div class="sheet">
@@ -126,7 +144,7 @@
 <div id="win" class="overlay hidden">
   <div class="scroll">
     <div class="crest">👑</div>
-    <h1>Lord of Middle Island</h1>
+    <h1 id="winTitle">Lord of Middle Island</h1>
     <div id="winBody"></div>
     <button class="big" id="winGo">Keep building</button>
   </div>

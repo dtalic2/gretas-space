@@ -1,5 +1,6 @@
 // ---------- All the DOM. Knows nothing about three.js ----------
 import { RES, RES_KEYS, BUILDINGS, UPGRADES } from './econ.js';
+import { SKIN, HAIR_COLORS, CLOTH, HAIR_STYLES, HEADWEAR, BEARDS, TITLES, randomLook } from './looks.js';
 
 const $ = (id) => document.getElementById(id);
 const costHtml = (cost, have) => Object.entries(cost).map(([k, v]) =>
@@ -226,7 +227,64 @@ export class UI {
     twoTap($('hRestart'), 'Tap again — this island will be lost', actions.restart);
   }
 
-  win(stats, onGo){
+  // ------------------------------------------------------------ character creator
+  get creatorOpen(){ return !$('creator').classList.contains('hidden'); }
+
+  /**
+   * @param look     the current choices; edited in place
+   * @param opts     { first, won, onChange(look), onDone(look) }
+   */
+  creator(look, { first, won, onChange, onDone }){
+    const hex = (c) => '#' + c.toString(16).padStart(6, '0');
+    const sw = (field, list, none = false) => `<div class="swatches" role="radiogroup">${none ? `<button class="sw none ${look[field] === -1 ? 'on' : ''}" data-f="${field}" data-v="-1" aria-label="None" title="None">✕</button>` : ''}${
+      list.map((c, i) => `<button class="sw ${look[field] === i ? 'on' : ''}" data-f="${field}" data-v="${i}" style="background:${hex(c)}" aria-label="Colour ${i + 1}"></button>`).join('')}</div>`;
+    const chips = (field, list) => `<div class="chips">${list.map((o) => {
+      const locked = o.locked && !won;
+      return `<button class="chip-opt ${look[field] === o.key ? 'on' : ''}" data-f="${field}" data-v="${o.key}" ${locked ? `disabled title="${o.locked}"` : ''}>${locked ? '🔒 ' : ''}${o.name}</button>`;
+    }).join('')}</div>`;
+    const row = (label, html) => `<div class="w-row"><span class="lbl">${label}</span>${html}</div>`;
+    const hasColour = ['hood', 'strawhat', 'feather'].includes(look.headwear);
+
+    const render = () => {
+      $('creatorBody').innerHTML = [
+        row('Call me', chips('title', TITLES.map((t) => ({ key: t, name: t })))),
+        row('Skin', sw('skin', SKIN)),
+        row('Hair', chips('hairStyle', HAIR_STYLES)),
+        look.hairStyle !== 'bald' || look.beard !== 'none' ? row('Hair colour', sw('hair', HAIR_COLORS)) : '',
+        row('Beard', chips('beard', BEARDS)),
+        row('On your head', chips('headwear', HEADWEAR)),
+        hasColour ? row('Hat colour', sw('hood', CLOTH)) : '',
+        row('Tunic', sw('tunic', CLOTH)),
+        row('Trousers', sw('pants', CLOTH)),
+        row('Cape', sw('cape', CLOTH, true)),
+      ].join('');
+      for (const el of $('creatorBody').querySelectorAll('[data-f]')){
+        el.onclick = () => {
+          const f = el.dataset.f;
+          look[f] = /^-?\d+$/.test(el.dataset.v) ? Number(el.dataset.v) : el.dataset.v;
+          onChange(look);
+          this.creator(look, { first, won, onChange, onDone });
+        };
+      }
+    };
+    render();
+
+    $('creatorTitle').textContent = first ? 'Who washed ashore?' : 'Change your look';
+    $('lookDone').textContent = first ? 'Set foot on the island' : 'Done';
+    const name = $('lookName');
+    if (name.value !== look.name) name.value = look.name ?? '';
+    name.oninput = () => { look.name = name.value.trim().slice(0, 16); onChange(look); };
+    $('lookRandom').onclick = () => {
+      Object.assign(look, randomLook(look));
+      onChange(look);
+      this.creator(look, { first, won, onChange, onDone });
+    };
+    $('lookDone').onclick = () => { $('creator').classList.add('hidden'); onDone(look); };
+    $('creator').classList.remove('hidden');
+  }
+
+  win(stats, onGo, who){
+    if (who) $('winTitle').textContent = `${who} of Middle Island`;
     $('winBody').innerHTML = `<p>The flags go up over the Castle Keep and the chapel bell rings out across the water.
       From one shipwrecked sailor to a whole village — Middle Island is yours.</p>
       <div class="stats">${stats.map(([i, v]) => `<div>${i} ${v}</div>`).join('')}</div>`;

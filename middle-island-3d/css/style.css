@@ -219,3 +219,43 @@ body.desktop #buildBar{ bottom:70px; }
   #bars{ width:min(170px,30vw); }
 }
 @keyframes qflash-l{ 0%{ transform:scale(1.06); background:#fff2b0; } }
+
+/* ============================== character creator ============================== */
+/* The 3D scene shows your character on the left; the wardrobe sits on the right. */
+#creator{ position:fixed; inset:0; z-index:45; pointer-events:none; }
+.wardrobe{
+  position:absolute; top:0; right:0; bottom:0; width:min(420px,52vw); overflow:auto; pointer-events:auto;
+  padding:max(16px,env(safe-area-inset-top)) 18px max(16px,env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,rgba(243,230,198,.97),rgba(230,211,166,.97)); color:var(--ink-dk);
+  box-shadow:-10px 0 30px rgba(0,0,0,.35), inset 3px 0 0 #c9a868;
+  display:flex; flex-direction:column; gap:10px;
+}
+.wardrobe h2{ margin:0; font-family:var(--title); font-weight:400; font-size:28px; color:#6b3a10; }
+.w-row{ display:grid; gap:5px; }
+.w-row > label, .w-row > .lbl{ font-size:11.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; opacity:.7; }
+.name-row input{
+  font:inherit; font-family:var(--title); font-size:20px; color:var(--ink-dk); padding:7px 12px; border-radius:10px;
+  border:2px solid rgba(107,58,16,.25); background:rgba(255,255,255,.6); outline:none; width:100%;
+}
+.name-row input:focus{ border-color:#b0801c; }
+.swatches, .chips{ display:flex; flex-wrap:wrap; gap:6px; }
+.sw{ width:30px; height:30px; border-radius:50%; border:2px solid rgba(0,0,0,.2); padding:0; }
+.sw.on{ box-shadow:0 0 0 3px #fff6e3, 0 0 0 5px #b0801c; }
+.sw.none{ background:repeating-linear-gradient(45deg,#fff 0 4px,#d9c9a3 4px 8px); font-size:12px; }
+.chip-opt{ padding:6px 11px; border-radius:99px; border:2px solid rgba(107,58,16,.2); background:rgba(255,255,255,.45); color:var(--ink-dk); font-size:13.5px; font-weight:600; }
+.chip-opt.on{ background:#6b3a10; border-color:#6b3a10; color:#fff3d6; }
+.chip-opt:disabled{ opacity:.45; cursor:default; }
+.w-btns{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:auto;
+  position:sticky; bottom:-16px; padding:10px 0 12px; background:linear-gradient(180deg,rgba(236,220,182,0),rgba(236,220,182,.98) 30%); }
+#creatorBody{ display:grid; gap:10px; }
+.w-small{ padding:10px 14px; border-radius:12px; border:2px solid rgba(107,58,16,.25); background:rgba(255,255,255,.5); color:var(--ink-dk); font-weight:700; }
+.wardrobe .sw:focus-visible, .wardrobe .chip-opt:focus-visible, .wardrobe button:focus-visible{ outline:3px solid #2f5da8; outline-offset:2px; }
+@media (max-width:600px) and (orientation:portrait){
+  .wardrobe{ top:auto; left:0; width:auto; height:56vh; box-shadow:0 -10px 30px rgba(0,0,0,.35), inset 0 3px 0 #c9a868; }
+}
+@media (max-height:520px){
+  .wardrobe{ gap:6px; padding-top:10px; }
+  .wardrobe h2{ font-size:22px; }
+  .sw{ width:26px; height:26px; }
+  .chip-opt{ padding:4px 9px; font-size:12.5px; }
+}

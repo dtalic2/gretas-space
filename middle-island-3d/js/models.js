@@ -378,10 +378,20 @@ export function makeWreck(){
 }
 
 // ------------------------------------------------------------ people and animals
-/** A blocky person. Returns parts the animator swings. */
-export function makePerson({ tunic = 0x3d6aa8, pants = 0x5a4632, skin = 0xe3b48a, hair = 0x5a3a22, hat = null, hood = null, belt = 0x3a2616 } = {}){
+/**
+ * A blocky person. Returns parts the animator swings.
+ *
+ * `hairStyle`, `beard` and `headwear` are the character-creator choices (see
+ * looks.js). Villagers still pass the older `hat` / `hood` colours.
+ */
+export function makePerson({
+  tunic = 0x3d6aa8, pants = 0x5a4632, skin = 0xe3b48a, hair = 0x5a3a22, belt = 0x3a2616,
+  hat = null, hood = null, hairStyle = 'short', beard = 'none', headwear = null, headColor = null,
+} = {}){
+  if (!headwear) headwear = hood ? 'hood' : hat ? 'hat' : 'none';
+  headColor = headColor ?? hood ?? hat ?? 0x6d5a40;
   const g = new THREE.Group();
-  const t = lam(tunic), s = lam(skin);
+  const t = lam(tunic), s = lam(skin), hm = lam(hair), hc = lam(headColor), dark = lam(0x231a12);
   const legs = [], arms = [];
   for (const k of [-1, 1]){
     const hip = new THREE.Group();
@@ -395,7 +405,8 @@ export function makePerson({ tunic = 0x3d6aa8, pants = 0x5a4632, skin = 0xe3b48a
   const body = box(0.64, 0.74, 0.4, t, 0, 1.02, 0);
   g.add(body);
   g.add(box(0.66, 0.1, 0.42, lam(belt), 0, 0.72, 0));
-  g.add(box(0.7, 0.26, 0.44, t, 0, 0.58, 0));      // skirt of the tunic
+  g.add(box(0.1, 0.1, 0.05, MAT.gold, 0, 0.72, 0.22));             // buckle
+  g.add(box(0.7, 0.26, 0.44, t, 0, 0.58, 0));                        // skirt of the tunic
   for (const k of [-1, 1]){
     const sh = new THREE.Group();
     sh.position.set(k * 0.43, 1.34, 0);
@@ -404,25 +415,91 @@ export function makePerson({ tunic = 0x3d6aa8, pants = 0x5a4632, skin = 0xe3b48a
     g.add(sh);
     arms.push(sh);
   }
+
   const head = new THREE.Group();
   head.position.y = 1.62;
   head.add(box(0.46, 0.44, 0.42, s, 0, 0, 0));
-  head.add(box(0.48, 0.14, 0.44, lam(hair), 0, 0.2, -0.01));
-  head.add(box(0.48, 0.3, 0.12, lam(hair), 0, 0.06, -0.19));
-  for (const k of [-1, 1]) head.add(box(0.07, 0.08, 0.04, lam(0x231a12), k * 0.11, 0.03, 0.21));
-  head.add(box(0.08, 0.1, 0.08, lam(skin - 0x101010), 0, -0.05, 0.23));
-  if (hat){
-    head.add(cyl(0.34, 0.34, 0.05, 10, lam(hat), 0, 0.24, 0));
-    head.add(cyl(0.2, 0.26, 0.24, 10, lam(hat), 0, 0.36, 0));
+  const covered = headwear === 'hood' || headwear === 'helmet';
+  const eyeZ = headwear === 'hood' ? 0.29 : 0.21;
+  for (const k of [-1, 1]) head.add(box(0.07, 0.08, 0.04, dark, k * 0.11, 0.03, eyeZ));
+  head.add(box(0.08, 0.1, 0.08, lam(skin - 0x101010), 0, -0.05, eyeZ + 0.02));
+
+  // Hair.
+  const top = () => head.add(box(0.48, 0.14, 0.44, hm, 0, 0.2, -0.01));
+  if (hairStyle === 'short'){ top(); head.add(box(0.48, 0.3, 0.12, hm, 0, 0.06, -0.19)); }
+  else if (hairStyle === 'long'){
+    top();
+    head.add(box(0.5, 0.64, 0.14, hm, 0, -0.1, -0.2));
+    for (const k of [-1, 1]) head.add(box(0.07, 0.46, 0.32, hm, k * 0.25, -0.02, -0.05));
+  } else if (hairStyle === 'ponytail'){
+    top();
+    head.add(box(0.48, 0.24, 0.1, hm, 0, 0.1, -0.19));
+    head.add(box(0.12, 0.1, 0.1, MAT.red, 0, 0.08, -0.27));
+    const tail = box(0.14, 0.5, 0.14, hm, 0, -0.14, -0.33);
+    tail.rotation.x = 0.35;
+    head.add(tail);
+  } else if (hairStyle === 'braids'){
+    top();
+    head.add(box(0.48, 0.3, 0.12, hm, 0, 0.06, -0.19));
+    // Braids fall forward over the shoulders, where you can see them.
+    for (const k of [-1, 1]){
+      const br = cyl(0.065, 0.05, 0.56, 6, hm, k * 0.21, -0.36, 0.22);
+      br.rotation.x = 0.12;
+      head.add(br);
+      head.add(box(0.1, 0.07, 0.1, MAT.yellow, k * 0.21, -0.62, 0.25));
+      head.add(box(0.12, 0.3, 0.12, hm, k * 0.22, -0.08, 0.13));
+    }
+  } else if (hairStyle === 'curly'){
+    const geo = new THREE.IcosahedronGeometry(0.12, 0);
+    for (const [x, y, z] of [[-0.16, 0.22, 0.1], [0, 0.26, 0.12], [0.16, 0.22, 0.1], [-0.2, 0.24, -0.08], [0, 0.28, -0.06],
+      [0.2, 0.24, -0.08], [-0.14, 0.1, -0.2], [0.14, 0.1, -0.2], [0, 0.18, -0.2], [-0.24, 0.08, -0.02], [0.24, 0.08, -0.02]]){
+      head.add(mesh(geo, hm, x, y, z));
+    }
   }
-  if (hood){
-    head.add(box(0.54, 0.5, 0.5, lam(hood), 0, 0.06, -0.04));
-    head.add(box(0.36, 0.3, 0.1, s, 0, -0.02, 0.23));   // face shows through
-    for (const k of [-1, 1]) head.add(box(0.07, 0.08, 0.04, lam(0x231a12), k * 0.11, 0.03, 0.29));
-    const tip = cone(0.16, 0.4, 4, lam(hood), 0, 0.1, -0.38);
+
+  // Beard, in the hair colour.
+  if (beard === 'short') head.add(box(0.42, 0.14, 0.06, hm, 0, -0.17, eyeZ - 0.01));
+  if (beard === 'long'){
+    head.add(box(0.26, 0.05, 0.05, hm, 0, -0.1, eyeZ + 0.02));
+    const b = box(0.38, 0.38, 0.1, hm, 0, -0.3, eyeZ - 0.03);
+    b.rotation.x = -0.15;
+    head.add(b);
+  }
+
+  // Headwear.
+  if (headwear === 'hood'){
+    head.add(box(0.54, 0.5, 0.5, hc, 0, 0.06, -0.04));
+    head.add(box(0.36, 0.3, 0.1, s, 0, -0.02, 0.23));      // face shows through
+    const tip = cone(0.16, 0.4, 4, hc, 0, 0.1, -0.38);
     tip.rotation.x = -1.2;
     head.add(tip);
+  } else if (headwear === 'hat' || headwear === 'strawhat'){
+    const m = headwear === 'hat' ? hc : MAT.straw;
+    head.add(cyl(headwear === 'hat' ? 0.34 : 0.46, headwear === 'hat' ? 0.34 : 0.46, 0.05, 12, m, 0, 0.24, 0));
+    head.add(cyl(0.2, 0.26, 0.24, 10, m, 0, 0.36, 0));
+    if (headwear === 'strawhat') head.add(cyl(0.265, 0.265, 0.06, 10, hc, 0, 0.29, 0));
+  } else if (headwear === 'feather'){
+    head.add(box(0.52, 0.16, 0.48, hc, 0, 0.27, -0.01));
+    head.add(box(0.52, 0.05, 0.16, hc, 0, 0.2, 0.28));
+    const f = cone(0.07, 0.7, 5, MAT.red, 0.2, 0.52, -0.12);
+    f.rotation.set(-0.6, 0, -0.3);
+    head.add(f);
+  } else if (headwear === 'helmet'){
+    const iron = lam(0x8e949c);
+    head.add(cyl(0.29, 0.29, 0.26, 10, iron, 0, 0.16, 0));
+    head.add(mesh(new THREE.SphereGeometry(0.29, 10, 5, 0, Math.PI * 2, 0, Math.PI / 2), iron, 0, 0.29, 0));
+    head.add(box(0.06, 0.26, 0.06, iron, 0, 0.0, 0.3));
+    head.add(cyl(0.035, 0.035, 0.18, 5, MAT.red, 0, 0.62, 0));
+  } else if (headwear === 'crown'){
+    head.add(mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.12, 12, 1, true), lam(0xe0b53c, { side: THREE.DoubleSide }), 0, 0.3, 0));
+    for (let i = 0; i < 6; i++){
+      const a = (i / 6) * Math.PI * 2;
+      head.add(cone(0.06, 0.16, 4, MAT.gold, Math.sin(a) * 0.25, 0.43, Math.cos(a) * 0.25));
+    }
+    head.add(mesh(new THREE.OctahedronGeometry(0.06, 0), MAT.berry, 0, 0.3, 0.27));
   }
+  if (covered) for (const c of head.children) if (c.material === hm && c.position.y > 0.05 && Math.abs(c.position.z) < 0.25) c.visible = false;
+
   g.add(head);
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   return { root: g, legs, arms, head, body };

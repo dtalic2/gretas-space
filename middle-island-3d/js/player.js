@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { height, BOUND } from './terrain.js';
 import { makePerson, makeTools, MAT } from './models.js';
 import { SPEED } from './econ.js';
+import { DEFAULT_LOOK, CLOTH, personOptions } from './looks.js';
 
 const DEEP = -0.9;          // you wade in the shallows but won't walk out to sea
 
@@ -28,25 +29,12 @@ export class Player {
     this.stick = { x: 0, y: 0 };
     this.wantRun = false;
 
-    const m = makePerson({ tunic: 0x7a4e2c, pants: 0x3f3a33, hood: 0x3f6b3a, belt: 0x2a1c10 });
-    this.parts = m;
-    this.root = m.root;
-    // Cape.
-    const cape = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.95, 0.06), new THREE.MeshLambertMaterial({ color: 0x3f6b3a, flatShading: true }));
-    cape.position.set(0, 0.95, -0.24);
-    cape.castShadow = true;
-    this.root.add(cape);
-    this.cape = cape;
-    // A satchel on the hip.
-    const bag = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.26, 0.3), MAT.plank);
-    bag.position.set(-0.4, 0.78, 0.05);
-    this.root.add(bag);
-
+    // `root` stays put while the body inside it can be swapped for a new look.
+    this.root = new THREE.Group();
     this.tools = makeTools();
     this.tools.root.position.set(0, -0.6, 0.05);
     this.tools.root.rotation.x = -Math.PI / 2;
-    m.arms[1].add(this.tools.root);
-    this.showTool(null);
+    this.setLook(DEFAULT_LOOK);
 
     // Lantern light at night so you can see where you are going.
     this.lantern = new THREE.PointLight(0xffc27a, 0, 11, 1.8);
@@ -55,6 +43,28 @@ export class Player {
 
     scene.add(this.root);
     this._bindInput();
+  }
+
+  /** Rebuild your body from the character creator's choices. */
+  setLook(look){
+    if (this.body) this.root.remove(this.body);
+    const m = makePerson(personOptions(look));
+    this.parts = m;
+    this.body = m.root;
+    // Cape, unless you chose to go without.
+    const capeCol = CLOTH[look.cape];
+    this.cape = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.95, 0.06), new THREE.MeshLambertMaterial({ color: capeCol ?? 0x3f6b3a, flatShading: true }));
+    this.cape.position.set(0, 0.95, -0.24);
+    this.cape.castShadow = true;
+    this.cape.visible = capeCol !== undefined;
+    this.body.add(this.cape);
+    // A satchel on the hip.
+    const bag = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.26, 0.3), MAT.plank);
+    bag.position.set(-0.4, 0.78, 0.05);
+    this.body.add(bag);
+    m.arms[1].add(this.tools.root);
+    this.root.add(this.body);
+    this.showTool(this.tool ?? null);
   }
 
   showTool(name){

@@ -1,5 +1,6 @@
 // ---------- The whole save: one plain object ----------
 import { START, RES_KEYS } from './econ.js';
+import { DEFAULT_LOOK } from './looks.js';
 
 const KEY = 'middle-island-v1';
 
@@ -22,6 +23,7 @@ export class GameState {
     this.started = false;
     this.settlerT = 0;
     this.lastMealDay = 1;
+    this.look = { ...DEFAULT_LOOK };
   }
 
   has(cost){ return Object.entries(cost).every(([k, v]) => (this.res[k] ?? 0) >= v); }
@@ -33,7 +35,7 @@ export class GameState {
       v: 1,
       res: this.res, health: this.health, hunger: this.hunger, warmth: this.warmth,
       day: this.day, t: this.t, quest: this.quest, upgrades: this.upgrades, gathered: this.gathered,
-      won: this.won, started: this.started, settlerT: this.settlerT, lastMealDay: this.lastMealDay,
+      won: this.won, started: this.started, settlerT: this.settlerT, lastMealDay: this.lastMealDay, look: this.look,
       player: { x: player.position.x, z: player.position.z, facing: player.facing },
       world: world.serialize(),
     };
@@ -49,6 +51,7 @@ export class GameState {
       day: data.day, t: data.t, quest: data.quest, upgrades: data.upgrades ?? {},
       gathered: { ...this.gathered, ...data.gathered }, won: !!data.won, started: !!data.started,
       settlerT: data.settlerT ?? 0, lastMealDay: data.lastMealDay ?? data.day,
+      look: { ...DEFAULT_LOOK, ...data.look },
       player: data.player, world: data.world,
     });
     return true;
