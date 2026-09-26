@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Pup Runway</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--pink:#ff5fa2;--pink2:#ffd1e6;--purple:#7b3fe4;--ink:#2b1640;--card:#fff;--gold:#ffc83d;--bg1:#ffe3f1;--bg2:#e7dcff}
+html,body{height:100%}
+body{font-family:-apple-system,'Segoe UI',Roboto,sans-serif;color:var(--ink);
+  background:linear-gradient(160deg,var(--bg1),var(--bg2));background-attachment:fixed;
+  -webkit-user-select:none;user-select:none;overscroll-behavior:none}
+button{font:inherit;color:inherit;border:0;cursor:pointer;background:none}
+#app{max-width:560px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;
+  padding:calc(env(safe-area-inset-top) + 8px) 14px calc(env(safe-area-inset-bottom) + 84px)}
+
+/* header */
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.logo{font-weight:900;font-size:1.45rem;letter-spacing:.5px;
+  background:linear-gradient(90deg,var(--pink),var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent}
+.chips{display:flex;gap:6px;align-items:center}
+.chip{background:#fff;border-radius:99px;padding:6px 12px;font-weight:800;box-shadow:0 2px 0 #0001;white-space:nowrap}
+.chip.money{color:#118a3e}
+.iconbtn{background:#fff;border-radius:99px;width:36px;height:36px;box-shadow:0 2px 0 #0001;font-size:1.1rem}
+
+/* nav */
+nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;box-shadow:0 -4px 20px #7b3fe422;
+  padding:6px 6px calc(env(safe-area-inset-bottom) + 6px)}
+nav .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr)}
+nav button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;border-radius:12px;font-size:.68rem;font-weight:700;color:#8a7a99}
+nav button span{font-size:1.35rem;line-height:1}
+nav button.on{color:var(--pink);background:#fff0f7}
+
+/* cards & buttons */
+.card{background:var(--card);border-radius:20px;padding:14px;box-shadow:0 4px 0 #7b3fe41a,0 8px 24px #7b3fe414;margin-bottom:12px}
+h2{font-size:1.3rem;margin-bottom:6px}
+h3{font-size:1.05rem;margin-bottom:6px}
+.muted{color:#8a7a99;font-size:.9rem}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 18px;border-radius:16px;font-weight:800;font-size:1rem;
+  background:linear-gradient(180deg,#ff7ab6,var(--pink));color:#fff;box-shadow:0 4px 0 #c93a7c;transition:transform .08s}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #c93a7c}
+.btn.purple{background:linear-gradient(180deg,#9a6bff,var(--purple));box-shadow:0 4px 0 #5324a8}
+.btn.gold{background:linear-gradient(180deg,#ffe07a,var(--gold));color:#5a3a00;box-shadow:0 4px 0 #c99416}
+.btn.ghost{background:#f3ecff;color:var(--purple);box-shadow:0 4px 0 #d9c9ff}
+.btn.big{width:100%;padding:16px;font-size:1.15rem}
+.btn[disabled]{filter:grayscale(1);opacity:.55;pointer-events:none}
+.row{display:flex;gap:10px;align-items:center}
+.row.wrap{flex-wrap:wrap}
+.grow{flex:1}
+.center{text-align:center}
+.stack>*+*{margin-top:10px}
+
+/* dog */
+svg.dog{display:block;width:100%;height:auto;overflow:visible}
+.dogstage{position:relative;border-radius:18px;background:radial-gradient(circle at 50% 80%,#fff 0,#fff0 60%),linear-gradient(180deg,#ffd9ec,#efe4ff);padding:10px 30px 0}
+.dogstage .floor{position:absolute;left:10%;right:10%;bottom:8px;height:16px;border-radius:50%;background:#7b3fe422}
+.dogstage svg{position:relative;max-width:260px;margin:0 auto}
+.bounce{animation:bounce 1.6s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+.xpbar{height:14px;background:#f1e8ff;border-radius:99px;overflow:hidden}
+.xpbar i{display:block;height:100%;background:linear-gradient(90deg,var(--pink),var(--purple));border-radius:99px;transition:width .5s}
+.lvl{display:inline-block;background:var(--purple);color:#fff;border-radius:99px;padding:2px 10px;font-weight:800;font-size:.85rem}
+.tag{display:inline-block;background:#f3ecff;color:var(--purple);border-radius:99px;padding:2px 8px;font-size:.72rem;font-weight:700;margin:2px 2px 0 0}
+
+/* grids */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.tile{position:relative;background:#fff;border-radius:16px;padding:8px 6px 6px;text-align:center;border:3px solid #eee;box-shadow:0 3px 0 #0000000d;font-size:.75rem;font-weight:700}
+.tile svg{width:100%;height:64px;display:block}
+.tile.on{outline:3px solid var(--pink);outline-offset:2px}
+.tile .nm{display:block;line-height:1.15;min-height:2.3em}
+.tile .badge{position:absolute;top:4px;right:4px;font-size:.9rem}
+.r-common{border-color:#d9d3e0}.r-rare{border-color:#4ea8ff}.r-epic{border-color:#b15cff}.r-legendary{border-color:#ffb800;background:linear-gradient(180deg,#fffbe6,#fff)}
+.rt{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
+.rt-common{color:#8d8597}.rt-rare{color:#2b8ae6}.rt-epic{color:#9b3fe8}.rt-legendary{color:#d99500}
+
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;scrollbar-width:none}
+.tabs button{flex:0 0 auto;padding:8px 12px;border-radius:99px;background:#fff;font-weight:800;font-size:.85rem;box-shadow:0 2px 0 #0001}
+.tabs button.on{background:var(--pink);color:#fff}
+
+/* challenges list */
+.chal{display:flex;gap:12px;align-items:center;cursor:pointer}
+.chal .ico{font-size:2.3rem;width:62px;height:62px;display:grid;place-items:center;border-radius:18px;background:#fff0f7;flex:0 0 auto}
+
+/* game area */
+.gamebar{display:flex;justify-content:space-between;align-items:center;font-weight:800;margin-bottom:8px;gap:8px}
+.gamebar .pill{background:#fff;border-radius:99px;padding:6px 12px;box-shadow:0 2px 0 #0001}
+canvas.game{display:block;width:100%;border-radius:18px;background:#bfe9ff;touch-action:none}
+.tapzone{position:relative;height:min(62vh,480px);border-radius:18px;overflow:hidden;background:linear-gradient(180deg,#b9f0c8,#7fd99a);touch-action:manipulation}
+.tapzone .ball{position:absolute;font-size:2.6rem;transform:translate(-50%,-50%) scale(0);animation:pop .18s forwards;cursor:pointer;line-height:1;padding:8px}
+@keyframes pop{to{transform:translate(-50%,-50%) scale(1)}}
+.tapzone .ball.gone{animation:gone .2s forwards}
+@keyframes gone{to{transform:translate(-50%,-50%) scale(0);opacity:0}}
+.tricks{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.tricks button{background:#fff;border-radius:18px;padding:14px 6px;font-weight:800;font-size:1rem;box-shadow:0 4px 0 #0000001a;border:3px solid transparent}
+.tricks button span{display:block;font-size:2rem}
+.tricks button.lit{border-color:var(--pink);background:#fff0f7;transform:scale(1.05)}
+.tricks button:disabled{opacity:.6}
+.trick-sit{animation:tsit .6s}
+@keyframes tsit{50%{transform:scaleY(.8) translateY(10%)}}
+.trick-spin{animation:tspin .6s}
+@keyframes tspin{to{transform:rotate(360deg)}}
+.trick-paw{animation:tpaw .6s}
+@keyframes tpaw{25%{transform:rotate(-12deg)}75%{transform:rotate(12deg)}}
+.trick-roll{animation:troll .6s}
+@keyframes troll{50%{transform:scaleX(-1) translateY(-8%)}}
+
+/* modal */
+#modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:#2b164088;padding:18px}
+#modal.show{display:flex}
+#modal .box{background:#fff;border-radius:24px;padding:20px;max-width:400px;width:100%;text-align:center;animation:modalin .25s;max-height:90vh;overflow:auto}
+@keyframes modalin{from{transform:scale(.8);opacity:0}}
+.gift{font-size:5rem;display:inline-block;animation:shake .5s infinite}
+@keyframes shake{25%{transform:rotate(-10deg)}75%{transform:rotate(10deg)}}
+.reveal{animation:revealin .4s}
+@keyframes revealin{from{transform:scale(.3) rotate(-20deg);opacity:0}}
+
+/* show */
+.stage{position:relative;border-radius:22px;overflow:hidden;background:linear-gradient(180deg,#2a0f46,#51207a 60%,#1b0930);height:360px;color:#fff}
+.stage .spot{position:absolute;top:-40px;width:180px;height:420px;background:linear-gradient(180deg,#fff6,#fff0);filter:blur(6px);transform-origin:top center}
+.stage .spot.l{left:10%;animation:sway 3s ease-in-out infinite}
+.stage .spot.r{right:10%;animation:sway 3s ease-in-out infinite reverse}
+@keyframes sway{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(14deg)}}
+.stage .runway{position:absolute;left:0;right:0;bottom:0;height:90px;background:linear-gradient(180deg,#ff5fa2,#b8307a);clip-path:polygon(18% 0,82% 0,100% 100%,0 100%)}
+.stage .crowd{position:absolute;left:0;right:0;bottom:0;font-size:1.6rem;letter-spacing:-2px;text-align:center;opacity:.9;white-space:nowrap;overflow:hidden}
+.stage .walker{position:absolute;bottom:40px;left:50%;width:170px;margin-left:-85px;transform:translateX(-160%);transition:transform 1.3s cubic-bezier(.3,.8,.4,1)}
+.stage .walker.in{transform:translateX(0)}
+.stage .walker.out{transform:translateX(170%)}
+.stage .walker svg{animation:strut .45s ease-in-out infinite alternate}
+@keyframes strut{from{transform:rotate(-3deg) translateY(0)}to{transform:rotate(3deg) translateY(-5px)}}
+.stage .cap{position:absolute;top:12px;left:0;right:0;text-align:center;font-weight:900;font-size:1.1rem;text-shadow:0 2px 6px #000;padding:0 10px}
+.stage .sub{position:absolute;top:40px;left:0;right:0;text-align:center;font-size:.9rem;opacity:.85}
+.stage .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+.stage .flash.go{animation:flash .3s}
+@keyframes flash{30%{opacity:.7}}
+.stage .popup{position:absolute;top:80px;left:0;right:0;text-align:center;font-size:1.8rem;font-weight:900;color:var(--gold);text-shadow:0 3px 8px #000;animation:popup .9s forwards}
+@keyframes popup{from{transform:scale(.4);opacity:0}30%{transform:scale(1.15);opacity:1}to{transform:translateY(-30px);opacity:0}}
+.posebar{position:relative;height:30px;border-radius:99px;background:#efe6ff;overflow:hidden;margin:10px 0}
+.posebar .zone{position:absolute;top:0;bottom:0;background:#ffe07a}
+.posebar .zone.p{background:#ffb800}
+.posebar .mk{position:absolute;top:-2px;bottom:-2px;width:6px;margin-left:-3px;background:var(--purple);border-radius:3px}
+
+.result{display:flex;align-items:center;gap:10px;padding:8px;border-radius:14px;background:#faf6ff;margin-bottom:8px;animation:revealin .35s}
+.result.me{background:#fff0f7;outline:2px solid var(--pink)}
+.result .pl{font-size:1.6rem;width:36px;text-align:center}
+.result .mini{width:56px;flex:0 0 auto}
+.result .sc{font-weight:900;font-size:1.3rem;color:var(--purple)}
+.breakdown{width:100%;border-collapse:collapse;font-size:.9rem}
+.breakdown td{padding:4px 2px;border-bottom:1px dashed #eee}
+.breakdown td:last-child{text-align:right;font-weight:800}
+
+.confetti{position:fixed;top:-20px;width:10px;height:14px;z-index:60;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+
+input.name{font:inherit;font-weight:800;font-size:1.1rem;padding:10px 14px;border-radius:14px;border:3px solid #eadcff;width:100%;text-align:center;color:var(--ink)}
+.starter{cursor:pointer;border:3px solid transparent}
+.starter.on{border-color:var(--pink)}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo">🐾 Pup Runway</div>
+    <div class="chips">
+      <div class="chip money" id="money">$0</div>
+      <button class="iconbtn" id="mute" title="Sound">🔊</button>
+    </div>
+  </header>
+  <main id="screen"></main>
+</div>
+<nav><div class="in">
+  <button data-nav="home"><span>🏠</span>Home</button>
+  <button data-nav="challenges"><span>🏆</span>Challenges</button>
+  <button data-nav="wardrobe"><span>👗</span>Dress Up</button>
+  <button data-nav="show"><span>✨</span>Show</button>
+  <button data-nav="dogs"><span>🐶</span>Dogs</button>
+  <button data-nav="shop"><span>🛍️</span>Shop</button>
+</div></nav>
+<div id="modal"><div class="box" id="modalbox"></div></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   DATA
+   ===================================================================== */
+const RARITY = {
+  common:    { name:'Common',    pts:5,  price:250,  w:55 },
+  rare:      { name:'Rare',      pts:10, price:700,  w:30 },
+  epic:      { name:'Epic',      pts:18, price:1800, w:12 },
+  legendary: { name:'Legendary', pts:30, price:4500, w:3  },
+};
+const RORDER = ['common','rare','epic','legendary'];
+
+// ears: floppy | pointy | round | fluffy     pattern: none | spots | patch | stars | sparkle
+const BREEDS = {
+  golden:   { name:'Golden Retriever', fur:'#e8b04b', fur2:'#f8dca0', dark:'#c98a2b', snout:'#f8dca0', ears:'floppy', pattern:'none',  eye:'#3b2414', rarity:'common', charm:5 },
+  pug:      { name:'Pug',              fur:'#dcbd90', fur2:'#f1e0c2', dark:'#3b2f2f', snout:'#4a3a36', ears:'round',  pattern:'none',  eye:'#1d1210', rarity:'common', charm:5 },
+  corgi:    { name:'Corgi',            fur:'#e58a3c', fur2:'#fff4e6', dark:'#c56a1f', snout:'#fff4e6', ears:'pointy', pattern:'none',  eye:'#2b170a', rarity:'common', charm:5 },
+  lab:      { name:'Black Lab',        fur:'#3d3432', fur2:'#5e504b', dark:'#231c1a', snout:'#5e504b', ears:'floppy', pattern:'none',  eye:'#a36a2c', rarity:'common', charm:6 },
+  chihuahua:{ name:'Chihuahua',        fur:'#ecd3a8', fur2:'#fbeedb', dark:'#d0ab74', snout:'#fbeedb', ears:'pointy', pattern:'none',  eye:'#1d1210', rarity:'common', charm:6 },
+  dalmatian:{ name:'Dalmatian',        fur:'#fbfbfb', fur2:'#ffffff', dark:'#222222', snout:'#ffffff', ears:'floppy', pattern:'spots', eye:'#2b170a', rarity:'rare',   charm:10 },
+  husky:    { name:'Husky',            fur:'#8792a3', fur2:'#f6f6f6', dark:'#525c6b', snout:'#f6f6f6', ears:'pointy', pattern:'none',  eye:'#39a0ff', rarity:'rare',   charm:10 },
+  shiba:    { name:'Shiba Inu',        fur:'#dc8a48', fur2:'#fcebd9', dark:'#b8692c', snout:'#fcebd9', ears:'pointy', pattern:'none',  eye:'#2b170a', rarity:'rare',   charm:10 },
+  bernese:  { name:'Bernese',          fur:'#2c2523', fur2:'#ffffff', dark:'#c4702e', snout:'#ffffff', ears:'floppy', pattern:'patch', eye:'#3b2414', rarity:'rare',   charm:11 },
+  poodle:   { name:'Pink Poodle',      fur:'#f7b8d2', fur2:'#fde2ee', dark:'#ec8cb8', snout:'#fde2ee', ears:'fluffy', pattern:'none',  eye:'#3b1430', rarity:'epic',   charm:15 },
+  frenchie: { name:'Lilac Frenchie',   fur:'#b7a6cf', fur2:'#e6dcf3', dark:'#8c79a8', snout:'#e6dcf3', ears:'bat',    pattern:'none',  eye:'#2a1a3a', rarity:'epic',   charm:15 },
+  galaxy:   { name:'Galaxy Pup',       fur:'#4b3a8f', fur2:'#7d6bd1', dark:'#2a1f5c', snout:'#7d6bd1', ears:'pointy', pattern:'stars', eye:'#9ff3ff', rarity:'legendary', charm:22 },
+  unicorn:  { name:'Unicorn Pup',      fur:'#ffffff', fur2:'#fff2fb', dark:'#ffb3dc', snout:'#fff2fb', ears:'floppy', pattern:'horn',  eye:'#7b3fe4', rarity:'legendary', charm:22 },
+  gold:     { name:'Golden Gem Pup',   fur:'#ffd24a', fur2:'#fff0a8', dark:'#e0a800', snout:'#fff0a8', ears:'fluffy', pattern:'sparkle',eye:'#6b3a00', rarity:'legendary', charm:24 },
+};
+const STARTERS = ['golden','pug','corgi'];
+
+const SLOTS = ['hat','glasses','neck','top','shoes','back'];
+const SLOTNAME = { hat:'Hats', glasses:'Glasses', neck:'Necklaces', top:'Outfits', shoes:'Shoes', back:'Capes & Wings' };
+const SLOTONE = { hat:'Hat', glasses:'Glasses', neck:'Necklace', top:'Outfit', shoes:'Shoes', back:'Back piece' };
+const SLOTICON = { hat:'🎩', glasses:'🕶️', neck:'📿', top:'👗', shoes:'👟', back:'🦋' };
+
+const THEMES = [
+  { id:'sparkle', name:'Sparkle Night', icon:'✨' },
+  { id:'beach',   name:'Beach Party',   icon:'🏖️' },
+  { id:'royal',   name:'Royal Ball',    icon:'👑' },
+  { id:'winter',  name:'Winter Wonderland', icon:'❄️' },
+  { id:'rock',    name:'Rock Star Stage', icon:'🎸' },
+  { id:'garden',  name:'Garden Party',  icon:'🌸' },
+  { id:'hero',    name:'Superhero Saturday', icon:'🦸' },
+  { id:'spooky',  name:'Spooky Soirée', icon:'🎃' },
+];
+const THEME = Object.fromEntries(THEMES.map(t => [t.id, t]));
+
+// [id, name, slot, shape, color, accent, rarity, tags, sparkle?]
+const ITEM_ROWS = [
+  ['h_party','Party Hat','hat','party','#ff6fb5','#ffe14d','common',['sparkle']],
+  ['h_beanie','Cozy Beanie','hat','beanie','#5aa9ff','#ffffff','common',['winter']],
+  ['h_sunhat','Sun Hat','hat','sunhat','#ffe08a','#ff7aa8','common',['beach','garden']],
+  ['h_bow','Big Pink Bow','hat','bow','#ff5fa2','#ffd1e6','common',['sparkle','garden']],
+  ['h_cowboy','Cowgirl Hat','hat','cowboy','#b5733c','#ff5fa2','common',['rock']],
+  ['h_flower','Flower Crown','hat','flower','#ff8fc7','#ffe14d','rare',['garden','beach']],
+  ['h_tophat','Top Hat','hat','tophat','#262033','#e84a5f','rare',['royal','spooky']],
+  ['h_headphones','Rock Headphones','hat','headphones','#262033','#ff3b3b','rare',['rock']],
+  ['h_witch','Witch Hat','hat','wizard','#2d2d3a','#9b5de5','rare',['spooky']],
+  ['h_crown','Royal Crown','hat','crown','#ffd23f','#e23d6e','epic',['royal','sparkle']],
+  ['h_wizard','Starry Wizard Hat','hat','wizard','#5b3fd1','#ffe14d','epic',['spooky','sparkle','hero']],
+  ['h_tiara','Diamond Tiara','hat','tiara','#dff1ff','#7fd3ff','legendary',['royal','sparkle'],1],
+
+  ['g_round','Nerdy Specs','glasses','round','#333333','#ffffff','common',['hero']],
+  ['g_shades','Cool Shades','glasses','shades','#ff5fa2','#111111','common',['beach','rock']],
+  ['g_heart','Heart Glasses','glasses','heart','#ff3b7f','#ff9cc4','rare',['sparkle','garden']],
+  ['g_mask','Hero Mask','glasses','mask','#e63946','#e63946','rare',['hero','spooky']],
+  ['g_snow','Snow Goggles','glasses','shades','#7fd3ff','#bfe9ff','rare',['winter']],
+  ['g_star','Rockstar Specs','glasses','star','#ffd23f','#fff3a8','epic',['rock','sparkle']],
+  ['g_diamond','Diamond Shades','glasses','shades','#b9f2ff','#5ec8f0','legendary',['sparkle','royal','rock'],1],
+
+  ['n_collar','Red Collar','neck','collar','#e63946','#ffd23f','common',[]],
+  ['n_bowtie_p','Pink Bowtie','neck','bowtie','#ff5fa2','#ffd1e6','common',['sparkle','garden']],
+  ['n_scarf','Winter Scarf','neck','scarf','#e63946','#ffffff','common',['winter']],
+  ['n_bandana','Bandana','neck','bandana','#3a86ff','#ffffff','common',['beach','rock']],
+  ['n_bowtie','Fancy Bowtie','neck','bowtie','#262033','#262033','rare',['royal','spooky']],
+  ['n_lei','Flower Lei','neck','lei','#ff7ab6','#ffe14d','rare',['beach','garden']],
+  ['n_spikes','Spiky Collar','neck','spikes','#262033','#cfd4dc','rare',['rock','spooky']],
+  ['n_pearls','Pearl Necklace','neck','pearls','#fff7ee','#e8dccd','epic',['royal','sparkle']],
+  ['n_chain','Gold Chain','neck','chain','#ffd23f','#e0a800','epic',['rock','hero']],
+
+  ['t_tee','Pawprint Tee','top','tshirt','#7ed957','#ffffff','common',['garden']],
+  ['t_dress','Pink Party Dress','top','dress','#ff7ab6','#ffffff','common',['sparkle']],
+  ['t_hoodie','Comfy Hoodie','top','hoodie','#9b5de5','#ffffff','common',['winter']],
+  ['t_tutu','Ballet Tutu','top','tutu','#ffc2e2','#ff8fc7','rare',['sparkle','garden']],
+  ['t_tux','Tiny Tuxedo','top','tux','#262033','#ffffff','rare',['royal','spooky']],
+  ['t_hero','Super Suit','top','hero','#1d4ed8','#ffd23f','rare',['hero']],
+  ['t_hawaii','Hawaiian Shirt','top','hawaii','#ff9f1c','#ff4f8b','rare',['beach']],
+  ['t_leather','Leather Jacket','top','jacket','#2b2b33','#ff3b3b','rare',['rock']],
+  ['t_bones','Skeleton Suit','top','bones','#1e1b24','#ffffff','rare',['spooky']],
+  ['t_gown','Royal Ball Gown','top','dress','#6a3de8','#ffd23f','epic',['royal']],
+  ['t_parka','Puffy Parka','top','hoodie','#ff5d8f','#ffffff','epic',['winter']],
+  ['t_glitter','Glitter Gown','top','dress','#ffd6f6','#ffb800','legendary',['sparkle','royal'],1],
+
+  ['s_sneak','Sneakers','shoes','sneakers','#ffffff','#3a86ff','common',['hero']],
+  ['s_rain','Rain Boots','shoes','boots','#ffd23f','#ffe98f','common',['garden']],
+  ['s_flip','Flip Flops','shoes','flip','#33c3f0','#ff5fa2','common',['beach']],
+  ['s_snow','Snow Boots','shoes','boots','#ffffff','#7fd3ff','rare',['winter']],
+  ['s_rock','Rock Boots','shoes','boots','#262033','#ff3b3b','rare',['rock','spooky']],
+  ['s_hero','Hero Boots','shoes','boots','#e63946','#ffd23f','rare',['hero']],
+  ['s_sparkle','Sparkle Shoes','shoes','sneakers','#ff7ab6','#ffffff','epic',['sparkle','garden'],1],
+  ['s_gold','Golden Slippers','shoes','sneakers','#ffd23f','#fff3a8','legendary',['royal','sparkle'],1],
+
+  ['b_cape','Hero Cape','back','cape','#e63946','#ffd23f','rare',['hero']],
+  ['b_fairy','Fairy Wings','back','fairy','#b5f0ff','#ff9cd6','rare',['garden','sparkle']],
+  ['b_bat','Bat Wings','back','bat','#3a2d4a','#6b5582','rare',['spooky']],
+  ['b_surf','Surfboard','back','surf','#33c3f0','#ffe14d','rare',['beach']],
+  ['b_royal','Velvet Cape','back','cape','#6a3de8','#ffffff','epic',['royal']],
+  ['b_snow','Snowflake Cape','back','cape','#bde0fe','#ffffff','epic',['winter','sparkle']],
+  ['b_angel','Angel Wings','back','wings','#ffffff','#e8e2f0','epic',['sparkle','royal']],
+  ['b_guitar','Electric Guitar','back','guitar','#e63946','#ffffff','epic',['rock']],
+  ['b_rainbow','Rainbow Wings','back','rainbow','#ff5fa2','#7b3fe4','legendary',['sparkle','garden','hero'],1],
+];
+const ITEMS = {};
+for (const [id,name,slot,shape,c,a,rarity,tags,sp] of ITEM_ROWS) ITEMS[id] = { id,name,slot,shape,c,a,rarity,tags,sparkle:!!sp };
+const STARTER_ITEMS = ['t_tee','n_collar'];
+
+const RIVAL_NAMES = ['Fifi','Duke','Princess','Biscuit','Rocco','Luna','Coco','Waffles','Zeus','Pepper','Mochi','Bella','Noodle','Sir Fluff','Tinkerbell','Bruno','Pixie','Nugget'];
+const JUDGES = ['Madame Fluffington','Sir Barksalot','DJ Woofers'];
+
+/* =====================================================================
+   SAVE / STATE
+   ===================================================================== */
+const SAVE_KEY = 'pupRunway.v1';
+let state = null;
+function load(){ try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s && s.v === 1) return s; } catch(e){} return null; }
+function save(){ try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch(e){} }
+function newState(breed, name){
+  const dog = makeDog(breed, name, 1);
+  dog.outfit.top = 't_tee'; dog.outfit.neck = 'n_collar';
+  return { v:1, money:0, dogs:[dog], active:0, items:[...STARTER_ITEMS], round:1,
+    shop:[], shopRound:0, stats:{ wins:0, shows:0, earned:0, played:0 }, muted:false };
+}
+function makeDog(breed, name, level){
+  const o = {}; SLOTS.forEach(s => o[s] = null);
+  return { breed, name, level, xp:0, outfit:o };
+}
+const activeDog = () => state.dogs[state.active];
+const xpNeed = lvl => 80 + (lvl-1)*30;
+const reqLevel = round => round + 1;
+const prizeFor = round => round * 1000;
+const themeFor = round => THEMES[(round-1) % THEMES.length];
+const fmt$ = n => '$' + n.toLocaleString('en-US');
+
+/* =====================================================================
+   HELPERS
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const rnd = (a,b) => a + Math.random()*(b-a);
+const ri = (a,b) => Math.floor(rnd(a,b+1));
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function weighted(list, wfn){ const tot = list.reduce((s,x)=>s+wfn(x),0); let r = Math.random()*tot; for (const x of list){ r -= wfn(x); if (r<=0) return x; } return list[list.length-1]; }
+
+let actx = null;
+function beep(freq=660, dur=0.08, type='sine', vol=0.08){
+  if (state && state.muted) return;
+  try {
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.value = freq; g.gain.value = vol;
+    o.connect(g); g.connect(actx.destination);
+    g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
+    o.start(); o.stop(actx.currentTime + dur);
+  } catch(e){}
+}
+const tune = (notes, gap=90) => notes.forEach((f,i) => setTimeout(() => beep(f, .12, 'triangle'), i*gap));
+
+function confetti(n=90){
+  const cols = ['#ff5fa2','#7b3fe4','#ffc83d','#39c0ff','#7ed957','#fff'];
+  for (let i=0;i<n;i++){
+    const d = document.createElement('div'); d.className = 'confetti';
+    d.style.left = Math.random()*100 + 'vw'; d.style.background = pick(cols);
+    d.style.animationDuration = rnd(1.8,3.5)+'s'; d.style.animationDelay = rnd(0,.6)+'s';
+    d.style.borderRadius = Math.random()<.5 ? '50%' : '2px';
+    document.body.appendChild(d); setTimeout(() => d.remove(), 4500);
+  }
+}
+
+/* =====================================================================
+   DRAWING — dogs and clothes are plain SVG so they scale and layer
+   ===================================================================== */
+function star(cx, cy, r, fill, stroke){
+  let p = '';
+  for (let i=0;i<10;i++){ const a = -Math.PI/2 + i*Math.PI/5, rr = i%2 ? r*.45 : r; p += (cx+Math.cos(a)*rr).toFixed(1)+','+(cy+Math.sin(a)*rr).toFixed(1)+' '; }
+  return `<polygon points="${p}" fill="${fill}"${stroke?` stroke="${stroke}" stroke-width="2"`:''}/>`;
+}
+function heart(cx, cy, s, fill, extra=''){
+  return `<path d="M${cx} ${cy+s*.9} C${cx-s*1.6} ${cy-s*.2} ${cx-s*.6} ${cy-s*1.3} ${cx} ${cy-s*.35} C${cx+s*.6} ${cy-s*1.3} ${cx+s*1.6} ${cy-s*.2} ${cx} ${cy+s*.9}Z" fill="${fill}" ${extra}/>`;
+}
+function flower(cx, cy, r, c, a){
+  let s = '';
+  for (let i=0;i<5;i++){ const t = i*Math.PI*2/5; s += `<circle cx="${(cx+Math.cos(t)*r).toFixed(1)}" cy="${(cy+Math.sin(t)*r).toFixed(1)}" r="${r*.8}" fill="${c}"/>`; }
+  return s + `<circle cx="${cx}" cy="${cy}" r="${r*.7}" fill="${a}"/>`;
+}
+function sparkles(pts){ return pts.map(([x,y,r]) => star(x,y,r||5,'#fff','#ffe14d')).join(''); }
+
+function drawHat(it){
+  const {c,a} = it;
+  switch (it.shape){
+    case 'tophat': return `<ellipse cx="100" cy="41" rx="44" ry="8" fill="${c}"/><rect x="72" y="0" width="56" height="40" rx="4" fill="${c}"/><rect x="72" y="26" width="56" height="8" fill="${a}"/>`;
+    case 'crown': return `<path d="M68 46 L65 12 L84 30 L100 4 L116 30 L135 12 L132 46 Z" fill="${c}" stroke="#c99a00" stroke-width="2" stroke-linejoin="round"/><circle cx="100" cy="32" r="5.5" fill="${a}"/><circle cx="81" cy="38" r="3.5" fill="#4cc9f0"/><circle cx="119" cy="38" r="3.5" fill="#4cc9f0"/>`;
+    case 'beanie': return `<path d="M62 50 Q62 6 100 6 Q138 6 138 50 Z" fill="${c}"/><path d="M78 14 L78 44 M92 8 L92 44 M108 8 L108 44 M122 14 L122 44" stroke="#0002" stroke-width="3"/><rect x="59" y="40" width="82" height="14" rx="7" fill="${a}"/><circle cx="100" cy="4" r="10" fill="${a}"/>`;
+    case 'sunhat': return `<ellipse cx="100" cy="43" rx="64" ry="12" fill="${c}" stroke="#0001" stroke-width="2"/><path d="M72 43 Q72 8 100 8 Q128 8 128 43 Z" fill="${c}"/><rect x="72" y="31" width="56" height="8" fill="${a}"/>${flower(126,34,5,'#fff',a)}`;
+    case 'cowboy': return `<path d="M36 34 Q58 52 100 48 Q142 52 164 34 Q152 54 100 58 Q48 54 36 34 Z" fill="${c}"/><path d="M74 48 Q68 10 88 12 Q100 22 112 12 Q132 10 126 48 Z" fill="${c}"/><rect x="74" y="36" width="52" height="7" fill="${a}"/>`;
+    case 'party': return `<path d="M80 46 L100 -6 L120 46 Z" fill="${c}"/><path d="M88 26 L112 26 M84 36 L116 36 M92 16 L108 16" stroke="${a}" stroke-width="4"/><circle cx="100" cy="-6" r="7" fill="${a}"/>`;
+    case 'wizard': return `<path d="M62 48 Q88 30 114 -12 Q116 22 138 48 Z" fill="${c}"/><ellipse cx="100" cy="46" rx="46" ry="8" fill="${c}"/><rect x="68" y="36" width="64" height="7" fill="${a}" opacity=".9"/>${star(96,18,6,a)}${star(114,4,4,a)}`;
+    case 'flower': { let s = `<path d="M62 52 Q100 22 138 52" stroke="#5cb85c" stroke-width="4" fill="none"/>`;
+      [[64,50],[80,40],[100,35],[120,40],[136,50]].forEach(([x,y],i) => s += flower(x,y,6, i%2?a:c, i%2?'#fff':'#ffe14d')); return s; }
+    case 'bow': return `<path d="M118 38 L94 24 Q88 38 94 54 Z M118 38 L142 24 Q148 38 142 54 Z" fill="${c}" stroke="#0002" stroke-width="2"/><circle cx="118" cy="38" r="7" fill="${a}" stroke="${c}" stroke-width="2"/>`;
+    case 'headphones': return `<path d="M60 78 Q60 24 100 24 Q140 24 140 78" stroke="${c}" stroke-width="9" fill="none"/><rect x="48" y="62" width="20" height="30" rx="9" fill="${c}"/><rect x="132" y="62" width="20" height="30" rx="9" fill="${c}"/><circle cx="58" cy="77" r="5" fill="${a}"/><circle cx="142" cy="77" r="5" fill="${a}"/>`;
+    case 'tiara': return `<path d="M72 46 L76 28 L88 36 L100 14 L112 36 L124 28 L128 46 Z" fill="${c}" stroke="#8fb8d8" stroke-width="2" stroke-linejoin="round"/><circle cx="100" cy="30" r="5" fill="${a}"/><circle cx="84" cy="40" r="3" fill="#ff9cd6"/><circle cx="116" cy="40" r="3" fill="#ff9cd6"/>`;
+  }
+  return '';
+}
+function drawGlasses(it){
+  const {c,a} = it;
+  switch (it.shape){
+    case 'round': return `<circle cx="85" cy="70" r="11" fill="#ffffff44" stroke="${c}" stroke-width="3"/><circle cx="115" cy="70" r="11" fill="#ffffff44" stroke="${c}" stroke-width="3"/><path d="M96 70 L104 70 M74 68 L63 64 M126 68 L137 64" stroke="${c}" stroke-width="3"/>`;
+    case 'shades': return `<rect x="70" y="62" width="28" height="17" rx="7" fill="${a}" stroke="${c}" stroke-width="3"/><rect x="102" y="62" width="28" height="17" rx="7" fill="${a}" stroke="${c}" stroke-width="3"/><path d="M98 68 L102 68 M70 66 L62 63 M130 66 L138 63" stroke="${c}" stroke-width="3"/><path d="M75 66 L82 66" stroke="#fff8" stroke-width="3" stroke-linecap="round"/><path d="M107 66 L114 66" stroke="#fff8" stroke-width="3" stroke-linecap="round"/>`;
+    case 'heart': return heart(85,70,10,a+'cc',`stroke="${c}" stroke-width="3"`) + heart(115,70,10,a+'cc',`stroke="${c}" stroke-width="3"`) + `<path d="M95 67 L105 67" stroke="${c}" stroke-width="3"/>`;
+    case 'star': return star(85,70,14,a+'cc',c) + star(115,70,14,a+'cc',c) + `<path d="M96 70 L104 70" stroke="${c}" stroke-width="3"/>`;
+    case 'mask': return `<path d="M60 64 Q100 52 140 64 L138 80 Q100 72 62 80 Z" fill="${c}"/><path d="M60 66 L50 60 M60 70 L48 72" stroke="${c}" stroke-width="4" stroke-linecap="round"/>`;
+  }
+  return '';
+}
+function drawNeck(it){
+  const {c,a} = it; let s = '';
+  const arc = (n, fn) => { for (let i=0;i<n;i++){ const x = 71 + i*(58/(n-1)); const y = 117 - ((x-100)**2)/95; s += fn(x,y,i); } };
+  switch (it.shape){
+    case 'collar': return `<rect x="68" y="104" width="64" height="11" rx="5.5" fill="${c}"/><circle cx="100" cy="121" r="6.5" fill="${a}" stroke="#c99a00" stroke-width="1.5"/>`;
+    case 'spikes': for (let x=74;x<=126;x+=10) s += `<path d="M${x-4} 105 L${x} 96 L${x+4} 105 Z" fill="${a}"/>`; return s + `<rect x="68" y="104" width="64" height="11" rx="5.5" fill="${c}"/>`;
+    case 'bowtie': return `<path d="M100 111 L78 99 Q74 111 78 123 Z M100 111 L122 99 Q126 111 122 123 Z" fill="${c}"/><rect x="94" y="105" width="12" height="12" rx="3" fill="${a===c?'#000':a}" opacity="${a===c?.25:1}"/>`;
+    case 'pearls': arc(9, (x,y) => `<circle cx="${x}" cy="${y}" r="4.5" fill="${c}" stroke="${a}" stroke-width="1.2"/><circle cx="${x-1.3}" cy="${y-1.3}" r="1.3" fill="#fff"/>`); return s;
+    case 'lei': arc(8, (x,y,i) => flower(x,y,3.4,[c,a,'#ffffff','#7ed957'][i%4],'#ffe14d')); return s;
+    case 'chain': arc(11, (x,y) => `<circle cx="${x}" cy="${y}" r="3" fill="none" stroke="${c}" stroke-width="2.5"/>`); return s + `<circle cx="100" cy="126" r="9" fill="${c}" stroke="${a}" stroke-width="2"/>${star(100,126,5,a)}`;
+    case 'scarf': return `<rect x="64" y="101" width="72" height="15" rx="7" fill="${c}"/><rect x="112" y="106" width="15" height="36" rx="5" fill="${c}"/><path d="M76 101 L76 116 M90 101 L90 116 M104 101 L104 116 M112 124 L127 124 M112 134 L127 134" stroke="${a}" stroke-width="4"/>`;
+    case 'bandana': return `<path d="M66 103 L134 103 L100 138 Z" fill="${c}"/><circle cx="90" cy="112" r="2.5" fill="${a}"/><circle cx="110" cy="112" r="2.5" fill="${a}"/><circle cx="100" cy="124" r="2.5" fill="${a}"/><circle cx="100" cy="108" r="2" fill="${a}"/>`;
+  }
+  return '';
+}
+function drawTop(it){
+  const {c,a} = it;
+  const tee = `<path d="M64 110 Q100 100 136 110 L148 128 L138 136 L138 164 Q100 174 62 164 L62 136 L52 128 Z" fill="${c}"/>`;
+  let s = '';
+  switch (it.shape){
+    case 'tshirt': s = tee + `<ellipse cx="100" cy="142" rx="6" ry="5" fill="${a}"/><circle cx="92" cy="133" r="2.8" fill="${a}"/><circle cx="100" cy="130" r="2.8" fill="${a}"/><circle cx="108" cy="133" r="2.8" fill="${a}"/>`; break;
+    case 'hawaii': s = tee + flower(84,128,4,a,'#fff') + flower(116,146,4,'#fff',a) + flower(94,156,3.5,'#ffe14d',a) + flower(122,124,3.5,'#7ed957','#fff') + `<path d="M100 106 L100 168" stroke="#0002" stroke-width="2"/>`; break;
+    case 'hero': s = tee + `<circle cx="100" cy="138" r="14" fill="${a}"/><path d="M103 126 L92 140 L100 140 L96 151 L108 135 L100 135 Z" fill="${c}"/>`; break;
+    case 'bones': s = tee + `<path d="M100 112 L100 160 M86 124 Q100 118 114 124 M84 134 Q100 128 116 134 M86 144 Q100 138 114 144" stroke="${a}" stroke-width="4" fill="none" stroke-linecap="round"/>`; break;
+    case 'hoodie': s = `<path d="M62 110 Q100 100 138 110 L150 132 L140 138 L140 172 Q100 182 60 172 L60 138 L50 132 Z" fill="${c}"/><rect x="80" y="148" width="40" height="18" rx="6" fill="#0002"/><path d="M92 108 L90 128 M108 108 L110 128" stroke="${a}" stroke-width="3" stroke-linecap="round"/>`; break;
+    case 'dress': s = `<path d="M70 108 Q100 100 130 108 L134 130 L154 186 Q100 198 46 186 L66 130 Z" fill="${c}"/><path d="M66 130 Q100 138 134 130" stroke="${a}" stroke-width="5" fill="none"/><path d="M48 182 Q100 194 152 182" stroke="${a}" stroke-width="6" fill="none"/>`; break;
+    case 'tutu': s = `<path d="M70 108 Q100 100 130 108 L133 148 Q100 154 67 148 Z" fill="${c}"/>`;
+      for (let x=48;x<=152;x+=13) s += `<ellipse cx="${x}" cy="156" rx="12" ry="10" fill="${a}" opacity=".9"/>`;
+      for (let x=55;x<=145;x+=13) s += `<ellipse cx="${x}" cy="162" rx="12" ry="9" fill="${c}" opacity=".95"/>`; break;
+    case 'tux': s = `<path d="M62 110 Q100 100 138 110 L142 174 Q100 182 58 174 Z" fill="${c}"/><path d="M86 106 L100 152 L114 106 Z" fill="${a}"/><path d="M100 111 L90 105 L90 117 Z M100 111 L110 105 L110 117 Z" fill="#e63946"/><circle cx="100" cy="130" r="2" fill="#222"/><circle cx="100" cy="140" r="2" fill="#222"/>`; break;
+    case 'jacket': s = `<path d="M62 110 Q100 100 138 110 L142 170 Q100 178 58 170 Z" fill="${c}"/><path d="M88 106 L100 170 L112 106 Z" fill="${a}"/><path d="M88 106 L80 132 L96 140 Z M112 106 L120 132 L104 140 Z" fill="#fff2"/><circle cx="78" cy="152" r="2.5" fill="#cfd4dc"/><circle cx="122" cy="152" r="2.5" fill="#cfd4dc"/>`; break;
+  }
+  if (it.sparkle) s += sparkles([[76,150,5],[122,138,4],[100,176,5],[132,172,4],[68,176,4]]);
+  return s;
+}
+function drawShoes(it){
+  const {c,a} = it; let s = '';
+  for (const x of [85,115]){
+    switch (it.shape){
+      case 'sneakers': s += `<rect x="${x-14}" y="179" width="28" height="15" rx="7.5" fill="${c}" stroke="#0002" stroke-width="1.5"/><rect x="${x-14}" y="189" width="28" height="5" rx="2.5" fill="${a}"/><path d="M${x-6} 183 L${x+4} 183" stroke="${a}" stroke-width="2"/>`; break;
+      case 'boots': s += `<rect x="${x-12}" y="164" width="24" height="30" rx="7" fill="${c}" stroke="#0002" stroke-width="1.5"/><rect x="${x-13}" y="163" width="26" height="7" rx="3.5" fill="${a}"/>`; break;
+      case 'flip': s += `<ellipse cx="${x}" cy="193" rx="15" ry="4.5" fill="${c}"/><path d="M${x-8} 190 L${x} 183 L${x+8} 190" stroke="${a}" stroke-width="3" fill="none"/>`; break;
+    }
+  }
+  if (it.sparkle) s += sparkles([[74,180,4],[126,182,4]]);
+  return s;
+}
+function drawBack(it){
+  const {c,a} = it;
+  switch (it.shape){
+    case 'cape': return `<path d="M68 106 L132 106 L168 198 Q100 208 32 198 Z" fill="${c}"/><path d="M34 196 Q100 206 166 196" stroke="${a}" stroke-width="5" fill="none"/>`;
+    case 'wings': return `<path d="M72 124 Q22 70 10 116 Q22 146 72 142 Z" fill="${c}" stroke="${a}" stroke-width="2"/><path d="M128 124 Q178 70 190 116 Q178 146 128 142 Z" fill="${c}" stroke="${a}" stroke-width="2"/><path d="M20 112 Q44 118 66 128 M26 128 Q46 132 66 136 M180 112 Q156 118 134 128 M174 128 Q154 132 134 136" stroke="${a}" stroke-width="2" fill="none"/>`;
+    case 'fairy': return `<ellipse cx="46" cy="104" rx="34" ry="22" transform="rotate(-30 46 104)" fill="${c}" opacity=".8" stroke="${a}" stroke-width="2"/><ellipse cx="154" cy="104" rx="34" ry="22" transform="rotate(30 154 104)" fill="${c}" opacity=".8" stroke="${a}" stroke-width="2"/><ellipse cx="52" cy="146" rx="24" ry="14" transform="rotate(20 52 146)" fill="${a}" opacity=".7"/><ellipse cx="148" cy="146" rx="24" ry="14" transform="rotate(-20 148 146)" fill="${a}" opacity=".7"/>`;
+    case 'rainbow': { let s=''; const cols=['#ff5f5f','#ffb03b','#ffe14d','#6fdc6f','#4ea8ff','#9b6bff'];
+      cols.forEach((col,i) => { const k = 1 - i*.13;
+        s += `<path d="M74 126 Q${74-50*k} ${126-58*k} ${74-62*k} ${126-10*k} Q${74-50*k} ${126+22*k} 74 ${126+16*k} Z" fill="${col}"/>`;
+        s += `<path d="M126 126 Q${126+50*k} ${126-58*k} ${126+62*k} ${126-10*k} Q${126+50*k} ${126+22*k} 126 ${126+16*k} Z" fill="${col}"/>`; });
+      return s + sparkles([[18,100,5],[182,100,5],[30,150,4],[170,150,4]]); }
+    case 'bat': return `<path d="M74 118 L20 86 L28 108 L10 112 L26 128 L14 140 L40 138 L50 150 L74 138 Z" fill="${c}" stroke="${a}" stroke-width="2"/><path d="M126 118 L180 86 L172 108 L190 112 L174 128 L186 140 L160 138 L150 150 L126 138 Z" fill="${c}" stroke="${a}" stroke-width="2"/>`;
+    case 'surf': return `<g transform="rotate(24 100 118)"><ellipse cx="100" cy="112" rx="22" ry="88" fill="${c}"/><rect x="95" y="26" width="10" height="172" fill="${a}"/></g>`;
+    case 'guitar': return `<g transform="rotate(-35 150 140)"><rect x="146" y="46" width="9" height="80" fill="#8b5a2b"/><rect x="143" y="40" width="15" height="12" rx="3" fill="#222"/><path d="M150 118 Q126 120 130 142 Q126 168 150 170 Q174 168 170 142 Q174 120 150 118 Z" fill="${c}"/><circle cx="150" cy="146" r="6" fill="#222"/><rect x="140" y="156" width="20" height="4" fill="${a}"/></g>`;
+  }
+  return '';
+}
+const DRAW = { hat:drawHat, glasses:drawGlasses, neck:drawNeck, top:drawTop, shoes:drawShoes, back:drawBack };
+const ICON_VB = { hat:'38 -14 124 76', glasses:'46 46 108 44', neck:'56 92 88 48', top:'40 96 120 104', shoes:'62 158 76 40', back:'0 30 200 180' };
+function itemIcon(id){
+  const it = ITEMS[id];
+  return `<svg viewBox="${ICON_VB[it.slot]}" xmlns="http://www.w3.org/2000/svg">${DRAW[it.slot](it)}</svg>`;
+}
+
+// face: 'happy' | 'wow' | 'sad'
+function dogSVG(dog, outfit, opts = {}){
+  const b = BREEDS[dog.breed], {fur, fur2, dark, snout} = b;
+  const eq = s => outfit && outfit[s] ? ITEMS[outfit[s]] : null;
+  const face = opts.face || 'happy';
+  let s = `<svg viewBox="0 -14 200 224" class="dog ${opts.cls||''}" xmlns="http://www.w3.org/2000/svg">`;
+  if (eq('back')) s += drawBack(eq('back'));
+  // tail
+  s += `<path d="M136 160 Q176 154 170 112" stroke="${b.ears==='fluffy'?fur:dark}" stroke-width="12" fill="none" stroke-linecap="round"/>`;
+  if (b.ears === 'fluffy') s += `<circle cx="170" cy="108" r="12" fill="${fur}"/>`;
+  // body + belly + legs
+  s += `<ellipse cx="100" cy="146" rx="44" ry="46" fill="${fur}"/><ellipse cx="100" cy="156" rx="25" ry="32" fill="${fur2}"/>`;
+  if (b.pattern === 'spots') s += `<circle cx="72" cy="130" r="7" fill="${dark}"/><circle cx="128" cy="150" r="6" fill="${dark}"/><circle cx="78" cy="168" r="5" fill="${dark}"/><circle cx="122" cy="124" r="4" fill="${dark}"/>`;
+  if (b.pattern === 'stars') s += star(72,132,5,'#fff') + star(128,152,4,'#fff') + star(118,122,3,'#ffe14d');
+  s += `<rect x="75" y="148" width="20" height="42" rx="10" fill="${fur}"/><rect x="105" y="148" width="20" height="42" rx="10" fill="${fur}"/>`;
+  s += `<ellipse cx="85" cy="188" rx="13" ry="7" fill="${b.ears==='fluffy'?fur2:fur}"/><ellipse cx="115" cy="188" rx="13" ry="7" fill="${b.ears==='fluffy'?fur2:fur}"/>`;
+  s += `<path d="M81 186 L81 191 M89 186 L89 191 M111 186 L111 191 M119 186 L119 191" stroke="#0002" stroke-width="1.5"/>`;
+  if (eq('top')) s += drawTop(eq('top'));
+  if (eq('shoes')) s += drawShoes(eq('shoes'));
+  if (eq('neck')) s += drawNeck(eq('neck'));
+  // ears behind head
+  if (b.ears === 'pointy') s += `<path d="M66 62 L68 16 L98 44 Z" fill="${fur}"/><path d="M134 62 L132 16 L102 44 Z" fill="${fur}"/><path d="M72 52 L73 28 L88 42 Z" fill="#ffb6c9"/><path d="M128 52 L127 28 L112 42 Z" fill="#ffb6c9"/>`;
+  if (b.ears === 'bat') s += `<ellipse cx="72" cy="36" rx="14" ry="24" transform="rotate(-20 72 36)" fill="${fur}"/><ellipse cx="128" cy="36" rx="14" ry="24" transform="rotate(20 128 36)" fill="${fur}"/><ellipse cx="73" cy="38" rx="7" ry="15" transform="rotate(-20 73 38)" fill="#ffc2d6"/><ellipse cx="127" cy="38" rx="7" ry="15" transform="rotate(20 127 38)" fill="#ffc2d6"/>`;
+  if (b.ears === 'round') s += `<circle cx="70" cy="46" r="13" fill="${dark}"/><circle cx="130" cy="46" r="13" fill="${dark}"/>`;
+  if (b.ears === 'fluffy') s += `<circle cx="100" cy="38" r="22" fill="${fur}"/><circle cx="84" cy="42" r="14" fill="${fur}"/><circle cx="116" cy="42" r="14" fill="${fur}"/>`;
+  // head
+  s += `<circle cx="100" cy="74" r="38" fill="${fur}"/>`;
+  if (b.pattern === 'patch') s += `<path d="M100 36 Q86 60 90 80 L110 80 Q114 60 100 36 Z" fill="#fff"/><circle cx="84" cy="62" r="4" fill="${dark}"/><circle cx="116" cy="62" r="4" fill="${dark}"/>`;
+  if (b.pattern === 'spots') s += `<circle cx="120" cy="56" r="8" fill="${dark}"/><circle cx="76" cy="84" r="4" fill="${dark}"/>`;
+  if (b.pattern === 'stars') s += star(80,52,4,'#fff') + star(124,86,3,'#fff');
+  if (dog.breed === 'husky') s += `<path d="M100 44 Q80 58 82 84 L118 84 Q120 58 100 44 Z" fill="${fur2}"/>`;
+  s += `<ellipse cx="100" cy="93" rx="21" ry="15" fill="${snout}"/>`;
+  if (eq('glasses') && eq('glasses').shape === 'mask') s += drawGlasses(eq('glasses'));
+  // eyes
+  if (face === 'sad') s += `<path d="M78 72 Q85 66 92 72 M108 72 Q115 66 122 72" stroke="#1d1210" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;
+  else {
+    const r = face === 'wow' ? 7 : 6;
+    s += `<circle cx="85" cy="70" r="${r}" fill="${b.eye}"/><circle cx="115" cy="70" r="${r}" fill="${b.eye}"/><circle cx="85" cy="70" r="${r*.5}" fill="#111"/><circle cx="115" cy="70" r="${r*.5}" fill="#111"/><circle cx="87" cy="67.5" r="2.2" fill="#fff"/><circle cx="117" cy="67.5" r="2.2" fill="#fff"/>`;
+  }
+  s += `<ellipse cx="72" cy="86" rx="6" ry="3.5" fill="#ff8fb4" opacity=".5"/><ellipse cx="128" cy="86" rx="6" ry="3.5" fill="#ff8fb4" opacity=".5"/>`;
+  // nose + mouth
+  s += `<ellipse cx="100" cy="86" rx="7.5" ry="5.5" fill="#241a1a"/><ellipse cx="98" cy="84.5" rx="2.5" ry="1.4" fill="#fff8"/>`;
+  if (face === 'sad') s += `<path d="M92 101 Q100 95 108 101" stroke="#241a1a" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+  else if (face === 'wow') s += `<path d="M100 91 L100 95" stroke="#241a1a" stroke-width="2.5"/><ellipse cx="100" cy="101" rx="6" ry="6" fill="#6b2230"/><ellipse cx="100" cy="104" rx="4" ry="2.5" fill="#ff7a9a"/>`;
+  else s += `<path d="M100 91 L100 95 M100 95 Q100 101 92 100 M100 95 Q100 101 108 100" stroke="#241a1a" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M96 100 Q100 110 104 100 Z" fill="#ff7a9a"/>`;
+  // ears in front of head
+  if (b.ears === 'floppy') s += `<ellipse cx="63" cy="80" rx="13" ry="28" transform="rotate(18 63 80)" fill="${dark}"/><ellipse cx="137" cy="80" rx="13" ry="28" transform="rotate(-18 137 80)" fill="${dark}"/>`;
+  if (b.ears === 'fluffy') s += `<circle cx="62" cy="84" r="15" fill="${fur}"/><circle cx="64" cy="100" r="12" fill="${fur}"/><circle cx="138" cy="84" r="15" fill="${fur}"/><circle cx="136" cy="100" r="12" fill="${fur}"/>`;
+  if (b.pattern === 'horn') s += `<path d="M92 42 L100 2 L108 42 Z" fill="#ffd23f" stroke="#e0a800" stroke-width="1.5"/><path d="M94 32 L106 28 M96 20 L104 17" stroke="#e0a800" stroke-width="2"/><path d="M110 40 Q126 30 124 50 Q134 44 132 62" stroke="#ff8fd0" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M116 40 Q136 38 136 58" stroke="#8fd3ff" stroke-width="6" fill="none" stroke-linecap="round"/>`;
+  if (eq('glasses') && eq('glasses').shape !== 'mask') s += drawGlasses(eq('glasses'));
+  if (eq('hat')) s += drawHat(eq('hat'));
+  if (b.pattern === 'sparkle') s += sparkles([[46,50,6],[156,40,5],[160,130,5],[40,150,4]]);
+  return s + '</svg>';
+}
+function dogImage(dog){ const img = new Image(); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(dogSVG(dog, dog.outfit)); return img; }
+
+/* =====================================================================
+   STYLE SCORE
+   ===================================================================== */
+function styleScore(dog, outfit, themeId){
+  const items = SLOTS.map(s => outfit[s]).filter(Boolean).map(id => ITEMS[id]);
+  const itemPts = items.reduce((t,it) => t + RARITY[it.rarity].pts, 0);
+  const themed = items.filter(it => it.tags.includes(themeId));
+  const themePts = themed.reduce((t,it) => t + RARITY[it.rarity].pts, 0);
+  const full = items.length === SLOTS.length ? 10 : 0;
+  const charm = BREEDS[dog.breed].charm + dog.level*4;
+  return { itemPts, themePts, themedCount:themed.length, full, charm, total:itemPts + themePts + full + charm };
+}
+
+/* =====================================================================
+   PROGRESSION
+   ===================================================================== */
+const pendingModals = [];
+function giveXP(dog, amount){
+  dog.xp += amount;
+  while (dog.xp >= xpNeed(dog.level)){
+    dog.xp -= xpNeed(dog.level); dog.level++;
+    pendingModals.push(() => levelUpModal(dog));
+  }
+}
+function levelUpModal(dog){
+  tune([523,659,784,1047]); confetti(50);
+  const unlock = state.dogs.indexOf(dog) === state.active && dog.level === reqLevel(state.round);
+  return modal(`<div class="reveal" style="max-width:200px;margin:0 auto">${dogSVG(dog, dog.outfit, {face:'wow'})}</div>
+    <h2>🎉 Level ${dog.level}!</h2><p>${esc(dog.name)} is getting fabulous. Style charm +4.</p>
+    ${unlock ? `<p style="margin-top:8px"><b>✨ Fashion Show Round ${state.round} is unlocked!</b></p>` : ''}
+    <div style="margin-top:14px"><button class="btn big" data-close>Yay!</button></div>`);
+}
+function modal(html){
+  return new Promise(res => {
+    $('#modalbox').innerHTML = html; $('#modal').classList.add('show');
+    $('#modalbox').onclick = e => {
+      const b = e.target.closest('[data-close]'); if (!b) return;
+      $('#modal').classList.remove('show'); res(b.dataset.close);
+    };
+  });
+}
+async function flushModals(){ while (pendingModals.length) await pendingModals.shift()(); }
+
+function rollPrize(level){
+  // 1 in 5 wins are a whole new dog, while there are dogs left to find
+  const ownedBreeds = new Set(state.dogs.map(d => d.breed));
+  const freeBreeds = Object.keys(BREEDS).filter(b => !ownedBreeds.has(b));
+  const rw = r => RARITY[r].w * (r==='common' ? 1 : 1 + level*(r==='legendary' ? .35 : r==='epic' ? .15 : .05));
+  if (freeBreeds.length && Math.random() < .2){
+    return { kind:'dog', breed: weighted(freeBreeds, b => rw(BREEDS[b].rarity)) };
+  }
+  const free = Object.keys(ITEMS).filter(id => !state.items.includes(id));
+  if (!free.length) return { kind:'cash', amount: 500 };
+  return { kind:'item', id: weighted(free, id => rw(ITEMS[id].rarity)) };
+}
+async function prizeModal(prize){
+  await modal(`<div class="gift">🎁</div><h2>You won a prize!</h2><div style="margin-top:14px"><button class="btn big gold" data-close>Open it!</button></div>`);
+  tune([660,880,1320], 110);
+  const dog = activeDog();
+  if (prize.kind === 'item'){
+    const it = ITEMS[prize.id]; state.items.push(it.id); save();
+    const tryOn = { ...dog.outfit, [it.slot]: it.id };
+    if (it.rarity !== 'common') confetti(it.rarity === 'legendary' ? 140 : 60);
+    const r = await modal(`<div class="reveal" style="max-width:210px;margin:0 auto">${dogSVG(dog, tryOn, {face:'wow'})}</div>
+      <div class="rt rt-${it.rarity}">${RARITY[it.rarity].name} ${SLOTONE[it.slot]}</div>
+      <h2>${esc(it.name)}</h2><div>${it.tags.map(t => `<span class="tag">${THEME[t].icon} ${THEME[t].name}</span>`).join('')}</div>
+      <div class="row" style="margin-top:14px"><button class="btn ghost grow" data-close="keep">Keep</button><button class="btn grow" data-close="wear">Wear it!</button></div>`);
+    if (r === 'wear'){ dog.outfit[it.slot] = it.id; save(); }
+  } else if (prize.kind === 'dog'){
+    const b = BREEDS[prize.breed];
+    const nd = makeDog(prize.breed, pick(RIVAL_NAMES), Math.max(1, Math.floor(dog.level/2)));
+    state.dogs.push(nd); save(); confetti(120);
+    const r = await modal(`<div class="reveal" style="max-width:210px;margin:0 auto">${dogSVG(nd, nd.outfit, {face:'wow'})}</div>
+      <div class="rt rt-${b.rarity}">${RARITY[b.rarity].name} dog</div>
+      <h2>A new pup: ${esc(b.name)}!</h2><p class="muted">Charm ${b.charm} · starts at level ${nd.level}</p>
+      <input class="name" id="newname" value="${esc(nd.name)}" maxlength="14" style="margin-top:10px">
+      <div class="row" style="margin-top:14px"><button class="btn ghost grow" data-close="keep">To the kennel</button><button class="btn grow" data-close="use">Play as this dog</button></div>`);
+    const nm = ($('#newname') || {}).value; if (nm && nm.trim()) nd.name = nm.trim().slice(0,14);
+    if (r === 'use') state.active = state.dogs.length - 1;
+    save();
+  } else {
+    state.money += prize.amount; save();
+    await modal(`<div style="font-size:4rem">💰</div><h2>${fmt$(prize.amount)}!</h2><p>You already own every piece of clothing, so here's cash.</p><div style="margin-top:14px"><button class="btn big" data-close>Nice</button></div>`);
+  }
+}
+
+/* =====================================================================
+   ROUTER
+   ===================================================================== */
+let current = 'home', game = null;
+function stopGame(){ if (game){ game.stop(); game = null; } }
+function go(name, ...args){
+  stopGame(); current = name;
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.nav === name));
+  $('#money').textContent = fmt$(state.money);
+  $('#mute').textContent = state.muted ? '🔇' : '🔊';
+  window.scrollTo(0,0);
+  SCREENS[name](...args);
+}
+document.querySelector('nav').addEventListener('click', e => { const b = e.target.closest('[data-nav]'); if (b && state) { beep(520,.05); go(b.dataset.nav); } });
+$('#mute').onclick = () => { state.muted = !state.muted; save(); $('#mute').textContent = state.muted ? '🔇' : '🔊'; };
+const screen = () => $('#screen');
+
+/* =====================================================================
+   SCREENS
+   ===================================================================== */
+const SCREENS = {};
+
+SCREENS.start = () => {
+  let chosen = 'golden';
+  document.querySelector('nav').style.display = 'none';
+  const render = () => {
+    screen().innerHTML = `<div class="card center stack">
+      <h2>Welcome to Pup Runway! 🐾</h2>
+      <p class="muted">Pick your first puppy. Beat challenges to level up and win clothes and new dogs, then strut the runway for big cash prizes!</p>
+      <div class="grid" style="grid-template-columns:repeat(3,1fr)">
+        ${STARTERS.map(b => `<div class="tile starter ${b===chosen?'on':''}" data-b="${b}">${dogSVG({breed:b}, {top:'t_tee', neck:'n_collar'})}<span class="nm">${BREEDS[b].name}</span></div>`).join('')}
+      </div>
+      <input class="name" id="dogname" placeholder="Name your pup" maxlength="14" value="${esc({golden:'Buddy',pug:'Peanut',corgi:'Biscuit'}[chosen])}">
+      <button class="btn big" id="begin">Let's go! 🐶</button>
+    </div>`;
+    screen().querySelectorAll('.starter').forEach(t => t.onclick = () => { chosen = t.dataset.b; beep(700,.06); render(); });
+    $('#begin').onclick = () => {
+      const name = ($('#dogname').value.trim() || 'Buddy').slice(0,14);
+      state = newState(chosen, name); save(); tune([523,659,784]);
+      document.querySelector('nav').style.display = '';
+      go('home');
+    };
+  };
+  render();
+};
+
+SCREENS.home = () => {
+  const d = activeDog(), r = state.round, req = reqLevel(r), th = themeFor(r);
+  const ready = d.level >= req;
+  screen().innerHTML = `
+    <div class="card">
+      <div class="dogstage"><div class="floor"></div><div class="bounce">${dogSVG(d, d.outfit)}</div></div>
+      <div class="row" style="margin-top:10px"><h2 class="grow" style="margin:0">${esc(d.name)}</h2><span class="lvl">Lv ${d.level}</span></div>
+      <div class="muted" style="margin-bottom:6px">${BREEDS[d.breed].name} · Charm ${BREEDS[d.breed].charm + d.level*4}</div>
+      <div class="xpbar"><i style="width:${Math.min(100, d.xp/xpNeed(d.level)*100)}%"></i></div>
+      <div class="muted" style="font-size:.78rem;margin-top:3px">${d.xp} / ${xpNeed(d.level)} XP to level ${d.level+1}</div>
+    </div>
+    <div class="card stack">
+      <h3>✨ Next: Fashion Show Round ${r}</h3>
+      <div class="row"><div class="grow"><b>${th.icon} ${th.name}</b><div class="muted">Winner takes <b style="color:#118a3e">${fmt$(prizeFor(r))}</b></div></div></div>
+      ${ready ? `<button class="btn big gold" data-go="show">Enter the show! 👠</button>`
+              : `<div class="muted">🔒 ${esc(d.name)} needs to reach <b>level ${req}</b> first.</div><button class="btn big" data-go="challenges">Do a challenge 🏆</button>`}
+    </div>
+    <div class="card">
+      <div class="row wrap" style="justify-content:space-around;text-align:center">
+        <div><b>${state.stats.wins}</b><div class="muted">shows won</div></div>
+        <div><b>${fmt$(state.stats.earned)}</b><div class="muted">prize money</div></div>
+        <div><b>${state.items.length}/${Object.keys(ITEMS).length}</b><div class="muted">clothes</div></div>
+        <div><b>${state.dogs.length}/${Object.keys(BREEDS).length}</b><div class="muted">dogs</div></div>
+      </div>
+    </div>`;
+  screen().querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
+};
+
+/* ---------- challenges ---------- */
+const CHALLENGES = [
+  { id:'catch',  name:'Treat Catch',  icon:'🦴', desc:'Slide left and right to catch falling treats. Dodge the bees!' },
+  { id:'hurdle', name:'Hurdle Hop',   icon:'🏃', desc:'Tap to jump over hurdles on the agility course.' },
+  { id:'tricks', name:'Trick Time',   icon:'🌀', desc:'Watch the tricks, then repeat them in the same order.' },
+  { id:'fetch',  name:'Ball Blast',   icon:'🎾', desc:'Tap the tennis balls before they vanish. Don\'t tap the cats!' },
+];
+SCREENS.challenges = () => {
+  const d = activeDog();
+  screen().innerHTML = `
+    <div class="card"><h2>🏆 Challenges</h2><p class="muted">Playing as <b>${esc(d.name)}</b> (Lv ${d.level}). Win to earn XP, cash and a surprise prize — clothes or even a new dog! Challenges get harder as your dog levels up.</p></div>
+    ${CHALLENGES.map(c => `<div class="card chal" data-c="${c.id}"><div class="ico">${c.icon}</div><div class="grow"><h3 style="margin:0">${c.name}</h3><div class="muted">${c.desc}</div></div><div style="font-size:1.5rem">▶</div></div>`).join('')}`;
+  screen().querySelectorAll('[data-c]').forEach(el => el.onclick = () => { beep(600,.06); go('play', el.dataset.c); });
+};
+
+SCREENS.play = id => {
+  const c = CHALLENGES.find(x => x.id === id), d = activeDog();
+  screen().innerHTML = `<div class="card">
+    <div class="gamebar"><button class="pill" id="quit">✕</button><span>${c.icon} ${c.name}</span><span class="pill" id="timer">⏱ --</span></div>
+    <div class="gamebar"><span class="pill" id="goal"></span><span class="pill" id="score"></span></div>
+    <div id="gamearea"></div>
+    <p class="muted center" id="hint" style="margin-top:8px"></p></div>`;
+  $('#quit').onclick = () => go('challenges');
+  const done = (won, detail) => { stopGame(); finishChallenge(id, won, detail); };
+  game = GAMES[id](d, $('#gamearea'), done);
+};
+
+async function finishChallenge(id, won, detail){
+  const d = activeDog(), L = d.level;
+  state.stats.played++;
+  const xp = won ? 50 + L*8 : 15, cash = won ? 100 + L*10 : 0;
+  state.money += cash; giveXP(d, xp); save();
+  won ? tune([523,659,784,1047]) : tune([392,330,262], 160);
+  await modal(`<div style="max-width:170px;margin:0 auto">${dogSVG(d, d.outfit, {face: won?'wow':'sad'})}</div>
+    <h2>${won ? 'Challenge complete! 🎉' : 'So close!'}</h2><p class="muted">${detail}</p>
+    <p style="margin-top:8px"><b>+${xp} XP</b>${cash?` · <b style="color:#118a3e">+${fmt$(cash)}</b>`:''}</p>
+    <div style="margin-top:14px"><button class="btn big" data-close>${won ? 'Get my prize!' : 'OK'}</button></div>`);
+  if (won) await prizeModal(rollPrize(L));
+  await flushModals();
+  go(current === 'play' ? 'challenges' : current);
+}
+
+/* ---------- mini games ---------- */
+const GAMES = {};
+function hud(timeLeft, goal, score){
+  if (timeLeft != null) $('#timer').textContent = '⏱ ' + Math.ceil(timeLeft);
+  if (goal != null) $('#goal').textContent = goal;
+  if (score != null) $('#score').textContent = score;
+}
+function loop(fn){
+  let raf, last = performance.now(), alive = true;
+  const step = t => { if (!alive) return; const dt = Math.min(.05, (t-last)/1000); last = t; fn(dt); raf = requestAnimationFrame(step); };
+  raf = requestAnimationFrame(step);
+  return () => { alive = false; cancelAnimationFrame(raf); };
+}
+
+GAMES.catch = (dog, area, done) => {
+  const L = dog.level, W = 360, H = 480;
+  const goal = Math.min(40, 12 + L*2), dur = 30;
+  area.innerHTML = `<canvas class="game" width="${W}" height="${H}"></canvas>`;
+  $('#hint').textContent = 'Drag, move your finger, or use ← → keys';
+  const cv = area.querySelector('canvas'), ctx = cv.getContext('2d'), img = dogImage(dog);
+  let x = W/2, target = W/2, t = dur, score = 0, spawn = 0, hurt = 0, keys = {}, drops = [], over = false;
+  const toX = e => { const r = cv.getBoundingClientRect(); return (e.clientX - r.left) / r.width * W; };
+  cv.onpointerdown = cv.onpointermove = e => { target = toX(e); };
+  const kd = e => { keys[e.key] = true; }, ku = e => { keys[e.key] = false; };
+  addEventListener('keydown', kd); addEventListener('keyup', ku);
+  const stop = loop(dt => {
+    if (over) return;
+    t -= dt;
+    if (keys.ArrowLeft) target = x - 400*dt; if (keys.ArrowRight) target = x + 400*dt;
+    target = Math.max(30, Math.min(W-30, target)); x += (target - x) * Math.min(1, dt*14);
+    spawn -= dt;
+    if (spawn <= 0){
+      spawn = Math.max(.32, .75 - L*.025);
+      const r = Math.random();
+      drops.push({ x: rnd(20, W-20), y: -20, v: 150 + L*9 + rnd(0,60), k: r < .18 + Math.min(.12, L*.01) ? 'bee' : r < .3 ? 'meat' : 'bone' });
+    }
+    for (const d of drops){
+      d.y += d.v*dt;
+      if (d.y > H-95 && d.y < H-40 && Math.abs(d.x - x) < 42){
+        d.dead = true;
+        if (d.k === 'bee'){ score = Math.max(0, score-2); hurt = .4; beep(180,.15,'sawtooth'); }
+        else { score += d.k === 'meat' ? 2 : 1; beep(d.k==='meat'?990:780,.06); }
+      }
+      if (d.y > H+20) d.dead = true;
+    }
+    drops = drops.filter(d => !d.dead); hurt -= dt;
+    // draw
+    const g = ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#bfe9ff'); g.addColorStop(1,'#e8f8ff');
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = '#8fdc8f'; ctx.fillRect(0,H-30,W,30);
+    ctx.font = '30px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (const d of drops) ctx.fillText(d.k==='bee'?'🐝':d.k==='meat'?'🍖':'🦴', d.x, d.y);
+    ctx.globalAlpha = hurt > 0 && Math.floor(hurt*20)%2 ? .4 : 1;
+    if (img.complete) ctx.drawImage(img, x-45, H-130, 90, 101);
+    ctx.globalAlpha = 1;
+    hud(t, `🎯 ${goal}`, `🦴 ${score}`);
+    if (score >= goal){ over = true; done(true, `${dog.name} caught ${score} treats!`); }
+    else if (t <= 0){ over = true; done(false, `Caught ${score} of ${goal} treats. Try again!`); }
+  });
+  return { stop(){ stop(); removeEventListener('keydown', kd); removeEventListener('keyup', ku); } };
+};
+
+GAMES.hurdle = (dog, area, done) => {
+  const L = dog.level, W = 480, H = 270, GROUND = 225;
+  const goal = 8 + L, speed = 230 + L*14;
+  area.innerHTML = `<canvas class="game" width="${W}" height="${H}"></canvas>`;
+  $('#hint').textContent = 'Tap the course or press Space to jump';
+  const cv = area.querySelector('canvas'), ctx = cv.getContext('2d'), img = dogImage(dog);
+  let y = 0, vy = 0, lives = 3, cleared = 0, hurdles = [], next = 1.2, hurt = 0, over = false, dist = 0, clouds = [[60,40],[260,70],[420,30]];
+  const jump = () => { if (y === 0){ vy = 620; beep(620,.08,'square',.05); } };
+  cv.onpointerdown = e => { e.preventDefault(); jump(); };
+  const kd = e => { if (e.code === 'Space' || e.key === 'ArrowUp'){ e.preventDefault(); jump(); } };
+  addEventListener('keydown', kd);
+  const stop = loop(dt => {
+    if (over) return;
+    dist += speed*dt;
+    vy -= 1700*dt; y = Math.max(0, y + vy*dt); if (y === 0) vy = Math.max(0, vy);
+    next -= dt;
+    if (next <= 0){ hurdles.push({ x: W+20, h: ri(34, 46 + Math.min(20, L*2)), passed:false }); next = rnd(.85, 1.6) * Math.max(.6, 1 - L*.02); }
+    const dx = 70, dy = GROUND - y;
+    for (const h of hurdles){
+      h.x -= speed*dt;
+      if (!h.hit && h.x < dx+26 && h.x+14 > dx-26 && dy > GROUND - h.h + 4){
+        h.hit = true; lives--; hurt = 1; beep(160,.2,'sawtooth');
+      }
+      if (!h.passed && h.x + 14 < dx - 26){ h.passed = true; if (!h.hit){ cleared++; beep(880,.05); } }
+    }
+    hurdles = hurdles.filter(h => h.x > -30); hurt -= dt;
+    ctx.fillStyle = '#bfe9ff'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = '#fff';
+    for (const c of clouds){ const cx = ((c[0] - dist*.15) % (W+100) + W+100) % (W+100) - 50; ctx.beginPath(); ctx.arc(cx,c[1],18,0,7); ctx.arc(cx+20,c[1]-8,22,0,7); ctx.arc(cx+42,c[1],16,0,7); ctx.fill(); }
+    ctx.fillStyle = '#7fd67f'; ctx.fillRect(0,GROUND,W,H-GROUND);
+    ctx.fillStyle = '#6cc46c'; for (let i=0;i<14;i++){ const gx = ((i*40 - dist) % W + W) % W; ctx.fillRect(gx, GROUND+14, 18, 4); }
+    for (const h of hurdles){
+      ctx.fillStyle = '#fff'; ctx.fillRect(h.x, GROUND-h.h, 4, h.h); ctx.fillRect(h.x+10, GROUND-h.h, 4, h.h);
+      for (let i=0;i<3;i++){ ctx.fillStyle = i%2 ? '#fff' : '#ff4f6d'; ctx.fillRect(h.x-6 + i*9, GROUND-h.h, 9, 9); }
+    }
+    ctx.globalAlpha = hurt > 0 && Math.floor(hurt*16)%2 ? .35 : 1;
+    const bob = y === 0 ? Math.abs(Math.sin(dist/30))*4 : 0;
+    if (img.complete) ctx.drawImage(img, dx-34, dy-78-bob, 68, 76);
+    ctx.globalAlpha = 1;
+    hud(null, `❤️ ${'♥'.repeat(lives)}${'·'.repeat(Math.max(0,3-lives))}`, `🏁 ${cleared} / ${goal}`);
+    $('#timer').textContent = '🐾 go!';
+    if (cleared >= goal){ over = true; done(true, `Cleared all ${goal} hurdles!`); }
+    else if (lives <= 0){ over = true; done(false, `Cleared ${cleared} of ${goal} hurdles before running out of hearts.`); }
+  });
+  return { stop(){ stop(); removeEventListener('keydown', kd); } };
+};
+
+GAMES.tricks = (dog, area, done) => {
+  const L = dog.level, goal = Math.min(10, 3 + Math.floor(L/2)), speed = Math.max(380, 700 - L*25);
+  const TR = [['sit','🪑','Sit'],['spin','🌀','Spin'],['paw','🐾','Paw'],['roll','🙃','Roll Over']];
+  const TONES = { sit:392, spin:494, paw:587, roll:698 };
+  area.innerHTML = `<div class="dogstage" style="padding-top:14px"><div class="floor"></div><div id="tdog" style="max-width:190px;margin:0 auto">${dogSVG(dog, dog.outfit)}</div></div>
+    <div class="tricks">${TR.map(([k,e,n]) => `<button data-t="${k}" disabled><span>${e}</span>${n}</button>`).join('')}</div>`;
+  const seq = []; let pos = 0, alive = true, listening = false;
+  const btns = [...area.querySelectorAll('[data-t]')];
+  const perform = async k => {
+    const dEl = $('#tdog'), b = area.querySelector(`[data-t="${k}"]`);
+    if (!dEl) return;
+    dEl.className = ''; void dEl.offsetWidth; dEl.className = 'trick-' + k;
+    b.classList.add('lit'); beep(TONES[k], .18, 'triangle');
+    await sleep(speed*.75); b.classList.remove('lit'); await sleep(speed*.25);
+  };
+  const round = async () => {
+    listening = false; btns.forEach(b => b.disabled = true);
+    seq.push(pick(TR)[0]); pos = 0;
+    hud(null, `🎯 ${goal} tricks`, `⭐ ${seq.length-1}`);
+    $('#hint').textContent = 'Watch closely…'; $('#timer').textContent = '👀';
+    await sleep(600);
+    for (const k of seq){ if (!alive) return; await perform(k); }
+    if (!alive) return;
+    $('#hint').textContent = 'Your turn! Repeat the tricks.'; $('#timer').textContent = '👉';
+    listening = true; btns.forEach(b => b.disabled = false);
+  };
+  area.querySelector('.tricks').onclick = async e => {
+    const b = e.target.closest('[data-t]'); if (!b || !listening) return;
+    const k = b.dataset.t;
+    if (k !== seq[pos]){ listening = false; beep(150,.3,'sawtooth'); done(false, `Oops! That was ${TR.find(t=>t[0]===seq[pos])[2]}. You remembered ${seq.length-1} of ${goal}.`); return; }
+    pos++; perform(k);
+    if (pos === seq.length){
+      listening = false; hud(null, null, `⭐ ${seq.length}`);
+      if (seq.length >= goal){ await sleep(500); if (alive) done(true, `${dog.name} nailed a ${goal}-trick routine!`); }
+      else { await sleep(700); if (alive) round(); }
+    }
+  };
+  round();
+  return { stop(){ alive = false; } };
+};
+
+GAMES.fetch = (dog, area, done) => {
+  const L = dog.level, goal = Math.round(12 + L*1.5), dur = 25, life = Math.max(.55, 1.4 - L*.05);
+  area.innerHTML = `<div class="tapzone"></div>`;
+  $('#hint').textContent = 'Tap 🎾 fast — tapping a 🐱 costs 3 balls!';
+  const z = area.querySelector('.tapzone');
+  let t = dur, score = 0, spawn = .3, over = false;
+  const stop = loop(dt => {
+    if (over) return;
+    t -= dt; spawn -= dt;
+    if (spawn <= 0){
+      spawn = Math.max(.28, .7 - L*.02);
+      const cat = Math.random() < .2, el = document.createElement('div');
+      el.className = 'ball'; el.textContent = cat ? '🐱' : '🎾';
+      el.style.left = rnd(12, 88) + '%'; el.style.top = rnd(12, 88) + '%';
+      el.onpointerdown = e => {
+        e.preventDefault(); if (el.classList.contains('gone') || over) return;
+        el.classList.add('gone');
+        if (cat){ score = Math.max(0, score-3); beep(200,.2,'sawtooth'); } else { score++; beep(700 + score*10,.05); }
+      };
+      z.appendChild(el);
+      setTimeout(() => { el.classList.add('gone'); setTimeout(() => el.remove(), 250); }, life*1000);
+    }
+    hud(t, `🎯 ${goal}`, `🎾 ${score}`);
+    if (score >= goal){ over = true; done(true, `Fetched ${score} balls!`); }
+    else if (t <= 0){ over = true; done(false, `Fetched ${score} of ${goal} balls.`); }
+  });
+  return { stop(){ over = true; stop(); } };
+};
+
+/* ---------- wardrobe ---------- */
+let wardSlot = 'hat';
+SCREENS.wardrobe = () => {
+  const d = activeDog(), th = themeFor(state.round), sc = styleScore(d, d.outfit, th.id);
+  const owned = state.items.filter(id => ITEMS[id].slot === wardSlot)
+    .sort((a,b) => RORDER.indexOf(ITEMS[b].rarity) - RORDER.indexOf(ITEMS[a].rarity));
+  screen().innerHTML = `
+    <div class="card">
+      <div class="dogstage"><div class="floor"></div>${dogSVG(d, d.outfit)}</div>
+      <div class="row" style="margin-top:8px"><b class="grow">${esc(d.name)}'s look</b><span class="lvl" style="background:var(--pink)">✨ ${sc.total} style</span></div>
+      <div class="muted" style="font-size:.85rem">Next show theme: <b>${th.icon} ${th.name}</b> — clothes tagged with it score double! ${sc.themedCount ? `(${sc.themedCount} on theme)` : ''}</div>
+    </div>
+    <div class="tabs">${SLOTS.map(s => `<button data-s="${s}" class="${s===wardSlot?'on':''}">${SLOTICON[s]} ${SLOTNAME[s]}</button>`).join('')}</div>
+    <div class="grid">
+      <div class="tile ${d.outfit[wardSlot] ? '' : 'on'}" data-i=""><div style="height:64px;display:grid;place-items:center;font-size:2rem">🚫</div><span class="nm">Nothing</span></div>
+      ${owned.map(id => { const it = ITEMS[id], on = d.outfit[wardSlot] === id, th1 = it.tags.includes(th.id);
+        return `<div class="tile r-${it.rarity} ${on?'on':''}" data-i="${id}">${th1?`<span class="badge">${th.icon}</span>`:''}${itemIcon(id)}<span class="nm">${esc(it.name)}</span><span class="rt rt-${it.rarity}">${RARITY[it.rarity].name} +${RARITY[it.rarity].pts}</span></div>`; }).join('')}
+    </div>
+    ${owned.length ? '' : `<p class="muted center" style="margin-top:12px">No ${SLOTNAME[wardSlot].toLowerCase()} yet — win challenges or visit the shop!</p>`}`;
+  screen().querySelectorAll('[data-s]').forEach(b => b.onclick = () => { wardSlot = b.dataset.s; SCREENS.wardrobe(); });
+  screen().querySelectorAll('[data-i]').forEach(t => t.onclick = () => {
+    d.outfit[wardSlot] = t.dataset.i || null; save(); beep(t.dataset.i ? 820 : 400, .06); SCREENS.wardrobe();
+  });
+};
+
+/* ---------- dogs ---------- */
+SCREENS.dogs = () => {
+  const all = Object.keys(BREEDS), owned = new Set(state.dogs.map(d => d.breed));
+  screen().innerHTML = `
+    <div class="card"><h2>🐶 Your Kennel</h2><p class="muted">Tap a dog to play as them. Each dog levels up on their own, and higher-rarity dogs have more charm on the runway.</p></div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
+      ${state.dogs.map((d,i) => `<div class="tile r-${BREEDS[d.breed].rarity} ${i===state.active?'on':''}" data-d="${i}" style="padding:10px">
+        ${dogSVG(d, d.outfit).replace('class="dog ','style="height:130px" class="dog ')}
+        <b style="font-size:.95rem">${esc(d.name)}</b><div class="muted" style="font-size:.75rem">${BREEDS[d.breed].name}</div>
+        <div style="margin:4px 0"><span class="lvl">Lv ${d.level}</span></div>
+        <div class="xpbar" style="height:8px"><i style="width:${d.xp/xpNeed(d.level)*100}%"></i></div>
+        ${i===state.active ? '<div style="margin-top:6px;color:var(--pink)">★ Playing</div>' : ''}
+      </div>`).join('')}
+    </div>
+    <div class="card" style="margin-top:12px"><h3>Still to find (${all.length - owned.size})</h3>
+      <div class="row wrap">${all.filter(b => !owned.has(b)).map(b => `<span class="tag" style="font-size:.8rem">❓ <span class="rt rt-${BREEDS[b].rarity}">${RARITY[BREEDS[b].rarity].name}</span></span>`).join('') || 'You found every dog! 🏅'}</div>
+      <div style="margin-top:10px"><button class="btn ghost" id="rename">✏️ Rename ${esc(activeDog().name)}</button></div>
+    </div>`;
+  screen().querySelectorAll('[data-d]').forEach(t => t.onclick = () => { state.active = +t.dataset.d; save(); beep(760,.06); SCREENS.dogs(); });
+  $('#rename').onclick = async () => {
+    const d = activeDog();
+    const r = await modal(`<h2>Rename your pup</h2><input class="name" id="rn" value="${esc(d.name)}" maxlength="14" style="margin:12px 0"><div class="row"><button class="btn ghost grow" data-close="no">Cancel</button><button class="btn grow" data-close="ok">Save</button></div>`);
+    const v = ($('#rn')||{}).value;
+    if (r === 'ok' && v && v.trim()){ d.name = v.trim().slice(0,14); save(); }
+    SCREENS.dogs();
+  };
+};
+
+/* ---------- shop ---------- */
+function restockShop(){
+  const free = Object.keys(ITEMS).filter(id => !state.items.includes(id));
+  const stock = [];
+  while (stock.length < 6 && free.length){
+    const id = weighted(free, id => RARITY[ITEMS[id].rarity].w + (ITEMS[id].rarity !== 'common' ? state.round*2 : 0));
+    stock.push(id); free.splice(free.indexOf(id), 1);
+  }
+  state.shop = stock; state.shopRound = state.round;
+}
+SCREENS.shop = () => {
+  if (state.shopRound !== state.round || !state.shop.length) { restockShop(); save(); }
+  const th = themeFor(state.round);
+  const stock = state.shop;
+  screen().innerHTML = `
+    <div class="card"><h2>🛍️ Boutique</h2><p class="muted">Spend your prize money on the latest looks. New stock arrives after every fashion show you win.</p></div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
+      ${stock.map(id => { const it = ITEMS[id], p = RARITY[it.rarity].price, have = state.items.includes(id);
+        return `<div class="tile r-${it.rarity}">${it.tags.includes(th.id)?`<span class="badge">${th.icon}</span>`:''}${itemIcon(id)}
+          <span class="nm">${esc(it.name)}</span><div class="rt rt-${it.rarity}">${RARITY[it.rarity].name} ${SLOTONE[it.slot]}</div>
+          <div style="margin:4px 0">${it.tags.map(t => THEME[t].icon).join(' ')}</div>
+          <button class="btn ${have?'ghost':'gold'}" style="width:100%;padding:8px" data-buy="${id}" ${have || state.money < p ? 'disabled' : ''}>${have ? 'Owned ✓' : fmt$(p)}</button></div>`; }).join('')}
+    </div>
+    ${stock.length ? '' : '<p class="card center">You own everything in the boutique! 👑</p>'}`;
+  screen().querySelectorAll('[data-buy]').forEach(b => b.onclick = async () => {
+    const it = ITEMS[b.dataset.buy], p = RARITY[it.rarity].price;
+    if (state.money < p || state.items.includes(it.id)) return;
+    state.money -= p; state.items.push(it.id); save(); tune([784,988,1175]);
+    const d = activeDog();
+    const r = await modal(`<div class="reveal" style="max-width:200px;margin:0 auto">${dogSVG(d, {...d.outfit, [it.slot]:it.id}, {face:'wow'})}</div><h2>${esc(it.name)}</h2><p class="muted">It's yours!</p>
+      <div class="row" style="margin-top:14px"><button class="btn ghost grow" data-close="keep">Keep shopping</button><button class="btn grow" data-close="wear">Wear it!</button></div>`);
+    if (r === 'wear'){ d.outfit[it.slot] = it.id; save(); }
+    go('shop');
+  });
+};
+
+/* ---------- fashion show ---------- */
+SCREENS.show = () => {
+  const d = activeDog(), r = state.round, th = themeFor(r), req = reqLevel(r);
+  const sc = styleScore(d, d.outfit, th.id), ready = d.level >= req;
+  screen().innerHTML = `
+    <div class="card center stack">
+      <div style="font-size:3rem">${th.icon}</div>
+      <h2>Fashion Show · Round ${r}</h2>
+      <div><b>Theme: ${th.name}</b></div>
+      <div style="font-size:1.6rem;font-weight:900;color:#118a3e">🏆 ${fmt$(prizeFor(r))} prize</div>
+      <p class="muted">Four dogs strut the runway. The judges score outfit, theme and charm — and you'll strike poses for bonus points. The best-dressed dog wins it all!</p>
+    </div>
+    <div class="card">
+      <div class="row"><div style="width:110px">${dogSVG(d, d.outfit)}</div>
+      <div class="grow"><b>${esc(d.name)}</b> <span class="lvl">Lv ${d.level}</span>
+        <table class="breakdown" style="margin-top:6px">
+          <tr><td>👗 Outfit</td><td>${sc.itemPts}</td></tr>
+          <tr><td>${th.icon} On theme (${sc.themedCount})</td><td>+${sc.themePts}</td></tr>
+          <tr><td>🧩 Full outfit</td><td>+${sc.full}</td></tr>
+          <tr><td>💖 Charm</td><td>+${sc.charm}</td></tr>
+          <tr><td>📸 Poses</td><td>up to +30</td></tr>
+        </table></div></div>
+    </div>
+    ${ready ? `<button class="btn big gold" id="enter">Walk the runway! 👠</button>`
+            : `<div class="card center">🔒 Round ${r} needs a <b>level ${req}</b> dog. ${esc(d.name)} is level ${d.level}.</div><button class="btn big" id="tochal">Do challenges 🏆</button>`}
+    <div style="margin-top:10px"><button class="btn big ghost" id="dress">Dress up first 👗</button></div>`;
+  if ($('#enter')) $('#enter').onclick = () => runShow();
+  if ($('#tochal')) $('#tochal').onclick = () => go('challenges');
+  $('#dress').onclick = () => go('wardrobe');
+};
+
+function makeRivals(round, th){
+  const target = 25 + 22*(round-1);
+  const mult = [.8, .9, 1.02].sort(() => Math.random() - .5);
+  const used = new Set([activeDog().name]);
+  return mult.map(m => {
+    let name; do { name = pick(RIVAL_NAMES); } while (used.has(name)); used.add(name);
+    const breed = pick(Object.keys(BREEDS)), outfit = {};
+    for (const s of SLOTS){
+      if (Math.random() < Math.min(.95, .4 + round*.1)){
+        const opts = Object.values(ITEMS).filter(it => it.slot === s);
+        const themed = opts.filter(it => it.tags.includes(th.id));
+        outfit[s] = (themed.length && Math.random() < .6 ? pick(themed) : pick(opts)).id;
+      } else outfit[s] = null;
+    }
+    return { name, dog:{ breed, level:round }, outfit, score: Math.round(target * m * rnd(.95, 1.05)), me:false };
+  });
+}
+
+async function runShow(){
+  const d = activeDog(), r = state.round, th = themeFor(r);
+  const rivals = makeRivals(r, th);
+  let alive = true; game = { stop(){ alive = false; } };
+  screen().innerHTML = `
+    <div class="stage" id="stage"><div class="spot l"></div><div class="spot r"></div><div class="runway"></div>
+      <div class="walker" id="walker"></div>
+      <div class="crowd">👏😍📸🙌🤩👏📸😍🙌🤩👏📸😍🙌</div>
+      <div class="cap" id="cap"></div><div class="sub" id="sub"></div><div class="flash" id="flash"></div></div>
+    <div class="card" id="posebox" style="margin-top:12px;display:none"></div>`;
+  const cap = t => $('#cap').textContent = t, sub = t => $('#sub').textContent = t;
+  const flash = () => { const f = $('#flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); beep(1400,.03,'square',.03); };
+  const walk = async (html, stay) => {
+    const w = $('#walker'); w.className = 'walker'; w.innerHTML = html; void w.offsetWidth;
+    w.classList.add('in'); await sleep(1300); if (!alive) return;
+    for (let i=0;i<3;i++){ flash(); await sleep(260); }
+    if (stay) return;
+    await sleep(500); w.classList.add('out'); await sleep(900);
+  };
+  cap(`Round ${r}: ${th.name} ${th.icon}`); sub('The show is about to begin…'); tune([392,523,659,784],140);
+  await sleep(1800); if (!alive) return;
+  for (const rv of rivals){
+    cap(`Now on the runway: ${rv.name}!`); sub(`${BREEDS[rv.dog.breed].name} · ${SLOTS.filter(s=>rv.outfit[s]).map(s=>ITEMS[rv.outfit[s]].name).slice(0,2).join(' & ') || 'au naturel'}`);
+    await walk(dogSVG(rv.dog, rv.outfit)); if (!alive) return;
+  }
+  cap(`And now… ${d.name}!`); sub('Hit POSE when the marker is in the gold!');
+  await walk(dogSVG(d, d.outfit), true); if (!alive) return;
+  const pose = await poseGame(r, () => alive, flash);
+  if (!alive) return;
+  $('#walker').classList.add('out'); cap('The judges are deciding…'); sub(''); $('#posebox').style.display = 'none';
+  await sleep(1500); if (!alive) return;
+  const sc = styleScore(d, d.outfit, th.id);
+  const me = { name:d.name, dog:d, outfit:{...d.outfit}, score: sc.total + pose, me:true };
+  showResults([...rivals, me].sort((a,b) => b.score - a.score), me, sc, pose, th);
+}
+
+function poseGame(round, isAlive, flash){
+  return new Promise(res => {
+    const box = $('#posebox'); box.style.display = '';
+    const zoneW = Math.max(.12, .26 - round*.012), perfW = zoneW*.3, speed = .8 + Math.min(1.2, round*.12);
+    let total = 0, n = 0, p = 0, dir = 1, locked = false;
+    box.innerHTML = `<div class="row"><b class="grow">📸 Strike a pose! (${3} tries)</b><span class="pill" id="pscore" style="font-weight:800">+0</span></div>
+      <div class="posebar"><div class="zone" style="left:${(.5-zoneW/2)*100}%;width:${zoneW*100}%"></div><div class="zone p" style="left:${(.5-perfW/2)*100}%;width:${perfW*100}%"></div><div class="mk" id="mk"></div></div>
+      <button class="btn big purple" id="posebtn">POSE! 💃</button>`;
+    const stop = loop(dt => { if (!isAlive()) { stop(); return; } if (locked) return;
+      p += dir*speed*dt; if (p > 1){ p = 1; dir = -1; } if (p < 0){ p = 0; dir = 1; }
+      const mk = $('#mk'); if (mk) mk.style.left = (p*100) + '%'; });
+    const press = async () => {
+      if (locked || !isAlive()) return; locked = true;
+      const dist = Math.abs(p - .5);
+      const [pts, word] = dist < perfW/2 ? [10,'PERFECT!'] : dist < zoneW/2 ? [7,'Fabulous!'] : dist < zoneW ? [4,'Nice!'] : [1,'Oops!'];
+      total += pts; n++; $('#pscore').textContent = '+' + total;
+      const pop = document.createElement('div'); pop.className = 'popup'; pop.textContent = `${word} +${pts}`;
+      $('#stage').appendChild(pop); setTimeout(() => pop.remove(), 900);
+      flash(); beep(pts >= 7 ? 1047 : 523, .12, 'triangle');
+      await sleep(900);
+      if (n >= 3){ stop(); removeEventListener('keydown', kd); res(total); return; }
+      p = Math.random() < .5 ? 0 : 1; dir = p ? -1 : 1; locked = false;
+    };
+    const kd = e => { if (e.code === 'Space'){ e.preventDefault(); press(); } };
+    addEventListener('keydown', kd);
+    $('#posebtn').onclick = press;
+  });
+}
+
+async function showResults(ranked, me, sc, pose, th){
+  const r = state.round, place = ranked.indexOf(me), won = place === 0, prize = prizeFor(r);
+  const medals = ['🥇','🥈','🥉','4️⃣'];
+  const comment = e => {
+    const themed = SLOTS.filter(s => e.outfit[s] && ITEMS[e.outfit[s]].tags.includes(th.id)).length;
+    const j = pick(JUDGES);
+    if (themed >= 3) return `${j}: “So ${th.name.toLowerCase()}! I'm obsessed.”`;
+    if (themed >= 1) return `${j}: “Love the ${th.icon} touch.”`;
+    const n = SLOTS.filter(s => e.outfit[s]).length;
+    return n >= 4 ? `${j}: “Stylish, but where's the theme?”` : `${j}: “A bit plain, darling.”`;
+  };
+  screen().innerHTML = `<div class="card"><h2 class="center">🏆 Results · ${th.icon} ${th.name}</h2><div id="res" style="margin-top:10px"></div><div id="after"></div></div>`;
+  const res = $('#res');
+  for (let i = ranked.length-1; i >= 0; i--){
+    if (current !== 'show') return;
+    const e = ranked[i];
+    const el = document.createElement('div'); el.className = 'result' + (e.me ? ' me' : '');
+    el.innerHTML = `<div class="pl">${medals[i]}</div><div class="mini">${dogSVG(e.dog, e.outfit, {face: i===0?'wow':'happy'})}</div>
+      <div class="grow"><b>${esc(e.name)}${e.me?' (you!)':''}</b><div class="muted" style="font-size:.8rem">${comment(e)}</div></div><div class="sc">${e.score}</div>`;
+    res.insertBefore(el, res.firstChild); beep(400 + (3-i)*150, .1, 'triangle');
+    await sleep(i === 1 ? 1200 : 800);
+  }
+  state.stats.shows++;
+  if (won){
+    state.money += prize; state.stats.wins++; state.stats.earned += prize; state.round++; restockShop();
+    giveXP(me.dog, 60 + r*10);
+    tune([523,659,784,1047,1319],120); confetti(160);
+  } else giveXP(me.dog, 25);
+  save(); $('#money').textContent = fmt$(state.money);
+  $('#after').innerHTML = `
+    <div class="center" style="margin:12px 0">
+      ${won ? `<div style="font-size:1.5rem;font-weight:900">${esc(me.name)} WINS! 🎉</div><div style="font-size:2rem;font-weight:900;color:#118a3e">+${fmt$(prize)}</div><p class="muted">Round ${r+1} is next — the prize goes up to ${fmt$(prizeFor(r+1))}!</p>`
+            : `<div style="font-size:1.3rem;font-weight:900">${medals[place]} ${['','2nd','3rd','4th'][place]} place</div><p class="muted">The winner scored ${ranked[0].score}. Level up, collect cooler clothes (especially ${th.icon} ${th.name} ones!) and try again.</p>`}
+    </div>
+    <table class="breakdown"><tr><td>👗 Outfit</td><td>${sc.itemPts}</td></tr><tr><td>${th.icon} On theme</td><td>+${sc.themePts}</td></tr><tr><td>🧩 Full outfit</td><td>+${sc.full}</td></tr><tr><td>💖 Charm</td><td>+${sc.charm}</td></tr><tr><td>📸 Poses</td><td>+${pose}</td></tr><tr><td><b>Total</b></td><td>${me.score}</td></tr></table>
+    <div class="row" style="margin-top:14px"><button class="btn ghost grow" data-go="home">Home</button><button class="btn grow" data-go="${won ? 'shop' : 'challenges'}">${won ? 'Go shopping 🛍️' : 'Train more 🏆'}</button></div>`;
+  $('#after').querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
+  await flushModals();
+}
+
+/* =====================================================================
+   BOOT
+   ===================================================================== */
+state = load();
+if (state) go('home'); else SCREENS.start();
+</script>
+</body>
+</html>
