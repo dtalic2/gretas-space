@@ -490,7 +490,7 @@ function attack(){
 function openHelp(){
   s.paused = true;
   ui.onPanelClose = () => { s.paused = false; };
-  ui.help({ restart: () => { if (confirm('Start a new island? This one will be lost.')){ state.wipe(); state.started = false; sessionStorage.setItem('mi-autostart', '1'); location.reload(); } } });
+  ui.help({ restart: () => { state.wipe(); state.started = false; sessionStorage.setItem('mi-autostart', '1'); location.reload(); } });
 }
 
 function toggleSound(){

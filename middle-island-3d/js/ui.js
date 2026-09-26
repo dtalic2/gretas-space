@@ -5,6 +5,18 @@ const $ = (id) => document.getElementById(id);
 const costHtml = (cost, have) => Object.entries(cost).map(([k, v]) =>
   `<span class="${(have[k] ?? 0) < v ? 'short' : ''}">${RES[k].icon} ${v}</span>`).join('');
 
+/** Run `fn` on the second tap; the first tap swaps in `warn` for a few seconds. */
+function twoTap(btn, warn, fn){
+  let armed = false, timer = 0;
+  const label = btn.innerHTML;
+  btn.onclick = () => {
+    if (!warn || armed){ clearTimeout(timer); fn(); return; }
+    armed = true;
+    btn.textContent = warn;
+    timer = setTimeout(() => { armed = false; btn.innerHTML = label; }, 3500);
+  };
+}
+
 export class UI {
   constructor(){
     this.touch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
@@ -31,10 +43,8 @@ export class UI {
     $('btnNew').textContent = hasSave ? 'New Game' : 'Start';
     $('btnNew').classList.toggle('alt', hasSave);
     $('btnContinue').onclick = () => { $('title').classList.add('hidden'); onContinue(); };
-    $('btnNew').onclick = () => {
-      if (hasSave && !confirm('Start again? Your island will be lost.')) return;
-      $('title').classList.add('hidden'); onNew();
-    };
+    // Tap twice to wipe a saved island. (No confirm(): embedded pages block it.)
+    twoTap($('btnNew'), hasSave ? 'Tap again to start over' : null, () => { $('title').classList.add('hidden'); onNew(); });
   }
 
   showHud(on){ $('hud').classList.toggle('hidden', !on); }
@@ -213,7 +223,7 @@ export class UI {
         <button id="hRestart" class="danger">↺ Start a new island</button>
       </div>
     </div>`);
-    $('hRestart').onclick = actions.restart;
+    twoTap($('hRestart'), 'Tap again — this island will be lost', actions.restart);
   }
 
   win(stats, onGo){
