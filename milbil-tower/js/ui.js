@@ -6,6 +6,8 @@
 
 import { UPGRADES, UP_GROUPS, nextCost, maxLevel, towerStats } from './upgrades.js';
 import { TYPES, ORDER } from './types.js';
+import * as sanctuary from './sanctuary.js';
+import { FRAMES } from './milbil-art.js';
 import { milbilStill } from './milbil-art.js';
 import { state, save } from './state.js';
 import { game, PHASE, remaining } from './game.js';
@@ -16,21 +18,33 @@ const $ = (id) => document.getElementById(id);
 const el = {};
 let onRetry = null;
 let lastCoins = -1;
+let sprites = null;          // handed in at boot, for the dancing pen portraits
+let penViews = [];           // one small canvas per pen, refreshed when the roster changes
+let toastT = 0;
 
 export function init(handlers) {
   for (const id of [
     'hud', 'coins', 'roundNo', 'leftNo', 'hint', 'bounceChip', 'bounceNo', 'btnShop', 'btnSound', 'btnHelp',
     'shop', 'shopCoins', 'shopList', 'shopClose',
     'help', 'helpClose', 'guide',
+    'sanct', 'sanctClose', 'sanctRate', 'sanctCount', 'sanctFoot', 'sanctTendAll',
+    'pens', 'btnSanct', 'sanctDot', 'toast',
     'over', 'overRound', 'overStats', 'overRetry', 'overShop',
     'pause', 'pauseResume',
   ]) el[id] = $(id);
 
   onRetry = handlers.retry;
+  sprites = handlers.sprites;
 
   el.btnShop.onclick = () => openShop();
   el.shopClose.onclick = () => closeAll();
   el.btnHelp.onclick = () => openHelp();
+  el.btnSanct.onclick = () => openSanctuary();
+  el.sanctClose.onclick = () => closeAll();
+  el.sanctTendAll.onclick = () => {
+    if (sanctuary.tendAll()) audio.chore();
+    refreshSanctuary();
+  };
   el.helpClose.onclick = () => closeAll();
   el.overRetry.onclick = () => { closeAll(); onRetry(); };
   el.overShop.onclick = () => openShop();
@@ -43,7 +57,7 @@ export function init(handlers) {
   };
 
   // Click the backdrop to dismiss, but never the panel itself.
-  for (const o of [el.shop, el.help]) {
+  for (const o of [el.shop, el.help, el.sanct]) {
     o.addEventListener('pointerdown', (e) => { if (e.target === o) closeAll(); });
   }
 
@@ -56,7 +70,8 @@ export function init(handlers) {
 export function sync() {
   if (state.coins !== lastCoins) {
     el.coins.textContent = state.coins.toLocaleString();
-    if (state.coins > lastCoins && lastCoins >= 0) {
+    // Only a real payout flashes the chip; the sanctuary's steady drip must not.
+    if (state.coins - lastCoins >= 10 && lastCoins >= 0) {
       el.coins.parentElement.classList.remove('flash');
       void el.coins.parentElement.offsetWidth;     // restart the animation
       el.coins.parentElement.classList.add('flash');
@@ -72,6 +87,12 @@ export function sync() {
   el.bounceChip.classList.toggle('hidden', !hasDeflect);
   if (hasDeflect) el.bounceChip.classList.toggle('spent', game.deflects === 0);
   el.bounceNo.textContent = game.deflects;
+
+  if (!sanctuaryOpen()) {
+    const needsHand = state.sanctuary.pens.some((p) => sanctuary.mood(p) < 0.55);
+    el.sanctDot.classList.toggle('hidden', !game.rescued && !needsHand);
+    el.sanctDot.classList.toggle('chore', !game.rescued && needsHand);
+  }
 
   if (game.phase === PHASE.OVER && el.over.classList.contains('hidden')) showOver();
 }
@@ -92,23 +113,25 @@ export { setPaused };
 
 export function togglePause() {
   if (game.phase === PHASE.OVER) return;
-  if (!el.shop.classList.contains('hidden') || !el.help.classList.contains('hidden')) return;
+  if (anyPanelOpen() && el.pause.classList.contains('hidden')) return;
   setPaused(!game.paused);
 }
 
 export function anyPanelOpen() {
-  return [el.shop, el.help, el.over, el.pause].some((o) => !o.classList.contains('hidden'));
+  return [el.shop, el.help, el.sanct, el.over, el.pause].some((o) => !o.classList.contains('hidden'));
 }
 
 export function closeAll() {
   el.shop.classList.add('hidden');
   el.help.classList.add('hidden');
+  el.sanct.classList.add('hidden');
   el.pause.classList.add('hidden');
   // The game-over panel is not dismissible — you have to choose to try again.
   if (game.phase !== PHASE.OVER) game.paused = false;
 }
 
 export function openShop() {
+  el.sanct.classList.add('hidden');
   el.over.classList.add('hidden');
   el.help.classList.add('hidden');
   el.pause.classList.add('hidden');
@@ -118,6 +141,7 @@ export function openShop() {
 }
 
 export function openHelp() {
+  el.sanct.classList.add('hidden');
   el.shop.classList.add('hidden');
   el.pause.classList.add('hidden');
   el.help.classList.remove('hidden');
@@ -227,4 +251,168 @@ function showOver() {
 
 export function hideOver() {
   el.over.classList.add('hidden');
+}
+
+// ---------- sanctuary ----------
+
+export function openSanctuary() {
+  el.shop.classList.add('hidden');
+  el.help.classList.add('hidden');
+  el.pause.classList.add('hidden');
+  el.over.classList.add('hidden');
+  el.sanct.classList.remove('hidden');
+  el.sanctDot.classList.add('hidden');
+  game.paused = true;
+  renderSanctuary();
+}
+
+export function sanctuaryOpen() {
+  return !el.sanct.classList.contains('hidden');
+}
+
+/** A short line at the bottom of the screen, for things that are news exactly once. */
+export function toast(text, seconds = 6) {
+  el.toast.textContent = text;
+  el.toast.classList.remove('hidden');
+  toastT = seconds;
+}
+
+function bar(cls, value) {
+  return `<i class="${cls}" style="width:${Math.round(Math.max(0, Math.min(1, value)) * 100)}%"></i>`;
+}
+
+/**
+ * Build the pen list.
+ *
+ * Only called when something structural changes — a rescue, a chore, a release.
+ * The live parts (drifting need bars, the dancing portraits) are updated in
+ * `tickSanctuary` without rebuilding any DOM.
+ */
+function renderSanctuary() {
+  const pens = state.sanctuary.pens;
+  const cap = sanctuary.capacity();
+
+  el.sanctCount.textContent = `${pens.length} of ${cap} pen${cap === 1 ? '' : 's'}`;
+  el.sanctTendAll.disabled = !pens.length;
+  el.pens.replaceChildren();
+  penViews = [];
+
+  if (!pens.length) {
+    const empty = document.createElement('p');
+    empty.className = 'pens-empty';
+    empty.innerHTML =
+      'Nobody home yet.<br><span>Zap a Milbil on the board and it wakes up here — dazed, but fine.</span>';
+    el.pens.appendChild(empty);
+  }
+
+  pens.forEach((pen, i) => {
+    const t = TYPES[pen.key];
+    const card = document.createElement('div');
+    card.className = 'pen';
+
+    const art = document.createElement('canvas');
+    art.className = 'pen-art';
+    art.width = art.height = 132;
+    card.appendChild(art);
+
+    const body = document.createElement('div');
+    body.className = 'pen-body';
+    body.innerHTML =
+      `<div class="pen-top">
+         <span class="pen-name">${pen.name}</span>
+         <span class="pen-mood"></span>
+       </div>
+       <div class="pen-kind">${t.name}</div>
+       <div class="pen-pay">🪙 <b></b> / min</div>
+       <div class="pen-need"><span>🍖</span><em class="track">${bar('food', pen.food)}</em></div>
+       <div class="pen-need"><span>💧</span><em class="track">${bar('water', pen.water)}</em></div>
+       <div class="pen-need poo"><span>💩</span><em class="poo-dots"></em></div>`;
+    card.appendChild(body);
+
+    const row = document.createElement('div');
+    row.className = 'pen-acts';
+    const act = (label, title, fn, test) => {
+      const b = document.createElement('button');
+      b.className = 'act';
+      b.innerHTML = label;
+      b.title = title;
+      b.onclick = () => { fn(i); audio.chore(); refreshSanctuary(); };
+      b.dataset.test = test;
+      row.appendChild(b);
+      return b;
+    };
+    act('🍖', `Feed ${pen.name}`, sanctuary.feed, 'food');
+    act('💧', `Water ${pen.name}`, sanctuary.water, 'water');
+    act('🧹', `Scoop up after ${pen.name}`, sanctuary.scoop, 'poo');
+
+    const free = document.createElement('button');
+    free.className = 'act free';
+    free.innerHTML = '↩';
+    free.title = `Let ${pen.name} go, to free the pen`;
+    free.onclick = () => {
+      if (free.classList.contains('confirm')) { sanctuary.release(i); renderSanctuary(); return; }
+      free.classList.add('confirm');
+      free.innerHTML = 'Sure?';
+      setTimeout(() => { free.classList.remove('confirm'); free.innerHTML = '↩'; }, 2600);
+    };
+    row.appendChild(free);
+    card.appendChild(row);
+
+    el.pens.appendChild(card);
+    penViews.push({ pen, art: art.getContext('2d'), body, row });
+  });
+
+  el.sanctFoot.textContent = pens.length >= cap
+    ? 'Every pen is full. Let one go, or buy another pen in the workshop.'
+    : 'Zap a Milbil and it arrives here. Looked-after Milbils pay rent every minute.';
+
+  refreshSanctuary();
+}
+
+/** The parts that move: mood, pay, bars, poo, and which chores are worth doing. */
+function refreshSanctuary() {
+  for (const v of penViews) {
+    const { pen, body, row } = v;
+    const m = sanctuary.mood(pen);
+    body.querySelector('.pen-mood').textContent = sanctuary.moodFace(m);
+    body.querySelector('.pen-pay b').textContent = Math.round(sanctuary.coinsPerMin(pen.key) * m);
+    body.querySelector('.food').style.width = `${Math.round(pen.food * 100)}%`;
+    body.querySelector('.water').style.width = `${Math.round(pen.water * 100)}%`;
+    body.querySelector('.poo-dots').textContent =
+      '●'.repeat(pen.poo) + '○'.repeat(sanctuary.POO_MAX - pen.poo);
+    body.querySelector('.pen-need.poo').classList.toggle('dirty', pen.poo > 0);
+
+    for (const b of row.querySelectorAll('.act[data-test]')) {
+      const need = b.dataset.test === 'poo' ? pen.poo > 0 : pen[b.dataset.test] < 0.999;
+      b.classList.toggle('wanted', need);
+      b.disabled = !need;
+    }
+  }
+  el.sanctRate.textContent = `🪙 ${Math.round(sanctuary.rate())} / min`;
+}
+
+/**
+ * Per-frame work while the panel is open: redraw the dancing portraits and let
+ * the numbers drift. Cheap — a handful of small blits and some text nodes.
+ */
+export function tickSanctuary(dt) {
+  if (toastT > 0) {
+    toastT -= dt;
+    if (toastT <= 0) el.toast.classList.add('hidden');
+  }
+  if (!sanctuaryOpen() || !sprites) return;
+
+  for (const v of penViews) {
+    const { pen, art } = v;
+    // A miserable Milbil dances slowly; a delighted one is all over the place.
+    const m = sanctuary.mood(pen);
+    pen.phase = (pen.phase + dt * (0.15 + m * 0.75)) % 1;
+    const frames = sprites[pen.key];
+    const f = frames[Math.floor(pen.phase * FRAMES) % FRAMES];
+    const c = art.canvas;
+    art.clearRect(0, 0, c.width, c.height);
+    art.globalAlpha = 0.45 + m * 0.55;
+    art.drawImage(f, 0, 0, c.width, c.height);
+  }
+  refreshSanctuary();
 }

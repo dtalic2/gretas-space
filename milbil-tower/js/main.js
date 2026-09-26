@@ -3,7 +3,8 @@
 import { layout } from './board.js';
 import { buildSprites, spritePx } from './milbil-art.js';
 import { game, PHASE, startRound, update, fire, beamDirs } from './game.js';
-import { state, load } from './state.js';
+import { state, load, save } from './state.js';
+import * as sanctuary from './sanctuary.js';
 import * as render from './render.js';
 import * as ui from './ui.js';
 import * as audio from './audio.js';
@@ -99,6 +100,7 @@ addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
   if (k === ' ' || k === 'enter') { e.preventDefault(); audio.unlock(); shoot(); }
   else if (k === 'b') { audio.unlock(); ui.anyPanelOpen() ? ui.closeAll() : ui.openShop(); }
+  else if (k === 's') { audio.unlock(); ui.anyPanelOpen() ? ui.closeAll() : ui.openSanctuary(); }
   else if (k === 'h') { ui.anyPanelOpen() ? ui.closeAll() : ui.openHelp(); }
   else if (k === 'p') ui.togglePause();
   else if (k === 'escape') ui.closeAll();
@@ -134,13 +136,22 @@ function hintText() {
 // ---------- loop ----------
 
 let last = 0;
+let sanctuarySave = 12;      // seconds between routine saves of sanctuary drift
 function frame(t) {
   const dt = Math.min(0.05, (t - last) / 1000 || 0);
   last = t;
 
   update(dt);
+
+  // The sanctuary runs on wall-clock time, so it ticks even while the game is
+  // paused behind a panel — that is the whole point of an idle pen.
+  sanctuary.tick();
+  sanctuarySave -= dt;
+  if (sanctuarySave <= 0) { save(); sanctuarySave = 12; }
+
   render.draw(ctx, L, sprites, dpr);
   ui.sync();
+  ui.tickSanctuary(dt);
   ui.hint(hintText());
 
   requestAnimationFrame(frame);
@@ -162,11 +173,22 @@ async function boot() {
   spriteCell = L.cell;
 
   ui.init({
+    sprites,
     retry: () => {
       ui.hideOver();
       startRound(game.round);
     },
   });
+
+  // Catch the sanctuary up on however long the tab was closed, and say what it
+  // earned — otherwise the coins appear from nowhere.
+  const away = sanctuary.awaySeconds();
+  const earned = sanctuary.tick();
+  if (earned > 0 && away > 120) {
+    const mins = Math.round(away / 60);
+    const when = mins >= 120 ? `${Math.round(mins / 60)} hours` : `${mins} minutes`;
+    ui.toast(`🏡 The sanctuary earned 🪙 ${earned.toLocaleString()} while you were away (${when}). Go and check on them.`);
+  }
 
   startRound(1);
 

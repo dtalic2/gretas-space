@@ -84,6 +84,8 @@ export const combo      = () => [0, 1, 2].forEach((i) => tone({ freq: 700 * Math
 export const zapped     = () => { noise({ dur: 0.32, vol: 0.5, freq: 380 }); tone({ freq: 220, to: 60, dur: 0.32, type: 'sawtooth', vol: 0.3 }); };
 export const chain      = () => { noise({ dur: 0.14, vol: 0.3, freq: 2600 }); tone({ freq: 1700, to: 900, dur: 0.12, type: 'square', vol: 0.18 }); };
 export const deflect    = () => [0, 1, 2].forEach((i) => tone({ freq: 300 * Math.pow(1.5, i), dur: 0.11, type: 'triangle', vol: 0.26, delay: i * 0.05 }));
+export const rescue     = () => [0, 1, 2].forEach((i) => tone({ freq: 520 * Math.pow(1.335, i), dur: 0.13, type: 'sine', vol: 0.20, delay: i * 0.055 }));
+export const chore      = () => tone({ freq: 640, to: 880, dur: 0.10, type: 'triangle', vol: 0.22 });
 export const buy        = () => [0, 1].forEach((i) => tone({ freq: 620 * Math.pow(1.5, i), dur: 0.12, type: 'triangle', vol: 0.26, delay: i * 0.07 }));
 export const gameOver   = () => [0, 1, 2, 3].forEach((i) => tone({ freq: 440 * Math.pow(0.79, i), dur: 0.30, type: 'sawtooth', vol: 0.24, delay: i * 0.13 }));
 export const roundClear = () => [0, 2, 4, 7].forEach((s, i) => tone({ freq: 523.25 * Math.pow(2, s / 12), dur: 0.22, type: 'triangle', vol: 0.24, delay: i * 0.09 }));

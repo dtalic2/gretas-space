@@ -13,6 +13,7 @@ import { towerStats, BEAM_SPREAD } from './upgrades.js';
 import { state, save } from './state.js';
 import * as fx from './fx.js';
 import * as audio from './audio.js';
+import { admit } from './sanctuary.js';
 
 export const PHASE = { INTRO: 'intro', PLAY: 'play', CLEAR: 'clear', OVER: 'over' };
 
@@ -34,6 +35,7 @@ export const game = {
   bannerT: 0,
   banner: null,
   roundCoins: 0,
+  rescued: 0,           // Milbils sent to the sanctuary this round
   perfect: true,
   time: 0,
   paused: false,
@@ -108,6 +110,7 @@ export function startRound(n) {
   game.deflects = S.deflects;
   game.charge = 1;
   game.roundCoins = 0;
+  game.rescued = 0;
   game.perfect = true;
   game.phase = PHASE.INTRO;
   game.bannerT = 0;
@@ -266,6 +269,16 @@ function pop(m, opts = {}) {
   floatAt(p.x, p.y - game.L.cell * 0.25, `+${m.t.coins}`, '#ffd75e', { size: m.t.boss ? 34 : 24 });
   fx.shake(m.t.boss ? 16 : 5);
   audio.pop(m.t.boss);
+
+  // A zapped Milbil is dazed, not destroyed: if a pen is free it gets beamed
+  // back to the sanctuary. When there is no room it simply stays popped.
+  const pen = admit(m.key);
+  if (pen) {
+    floatAt(p.x, p.y + game.L.cell * 0.30, `${pen.name} rescued`, '#5fffa8', { size: 17, life: 1.5, vy: -30 });
+    game.rescued++;
+    audio.rescue();
+  }
+
   save();
   if (!opts.noChain) chainFrom(p);
 }

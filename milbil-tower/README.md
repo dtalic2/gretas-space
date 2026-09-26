@@ -46,6 +46,7 @@ fetched on demand by `npx`, so there is nothing to install and no `package.json`
 | Aim | move the mouse | hold and drag |
 | Fire | click, or **Space** | lift your finger |
 | Workshop | **B** or 🛠️ | 🛠️ |
+| Sanctuary | **S** or 🏡 | 🏡 |
 | How to play | **H** or ? | ? |
 | Pause | **P** | — |
 
@@ -64,6 +65,34 @@ you restart that same round.
 
 Line two Milbils up in a single beam for a bonus. With the Piercer fitted, the
 beam carries on through them.
+
+---
+
+## The sanctuary
+
+A zapped Milbil is not destroyed, it is dazed — and if a pen is free it wakes up
+in the sanctuary behind the tower with a name of its own. Feed it, water it,
+scoop up after it, and it pays rent every minute.
+
+Needs drain on wall-clock time, not frames: food empties in 25 minutes, water in
+18, and a fresh mess appears every 6. Rent is paid at whatever mood a Milbil is
+in, so a neglected pen quietly stops paying.
+
+| Kept happy | Rent per hour, untended |
+| --- | --- |
+| 3 plain pens (the free ones) | ~135 |
+| 5 mixed pens | ~670 |
+| 8 pens with two MEGAs | ~2,600 |
+
+For scale, one round pays about 230 at round 3 and 3,200 at round 20 — so the
+sanctuary is a supplement, never a substitute for shooting. It is also not an
+overnight money printer: leaving it for twelve hours pays exactly what leaving it
+for one does, because after about half an hour everybody is miserable and
+downs tools.
+
+The same code handles a live tick and catching up on a closed tab — `tick()` asks
+how long it has really been and walks that forward in 30-second steps, capped at
+eight hours, so needs decay and earnings interact the same either way.
 
 ---
 

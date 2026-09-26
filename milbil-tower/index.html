@@ -36,11 +36,13 @@
       <div class="chip bounce hidden" id="bounceChip" title="Deflector bounces left this round"><span class="ico">🧲</span><b id="bounceNo">0</b></div>
     </div>
     <div class="hud-group right">
+      <button class="chip btn" id="btnSanct" title="Sanctuary (S)">🏡<i class="dot hidden" id="sanctDot"></i></button>
       <button class="chip btn" id="btnShop" title="Tower workshop (B)">🛠️</button>
       <button class="chip btn" id="btnSound" title="Sound">🔊</button>
       <button class="chip btn" id="btnHelp" title="How to play (H)">?</button>
     </div>
   </div>
+  <div class="hud-toast hidden" id="toast"></div>
   <div class="hud-hint" id="hint"></div>
 </div>
 
@@ -57,6 +59,23 @@
   </div>
 </div>
 
+<!-- ============ SANCTUARY ============ -->
+<div id="sanct" class="overlay hidden">
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Sanctuary</h2>
+      <div class="panel-coins" id="sanctRate">🪙 0 / min</div>
+      <button class="x" id="sanctClose">✕</button>
+    </div>
+    <div class="sanct-bar">
+      <span id="sanctCount">0 of 3 pens</span>
+      <button class="tend-all" id="sanctTendAll">✨ Tend everyone</button>
+    </div>
+    <div class="pens" id="pens"></div>
+    <div class="panel-foot" id="sanctFoot"></div>
+  </div>
+</div>
+
 <!-- ============ HOW TO PLAY + FIELD GUIDE ============ -->
 <div id="help" class="overlay hidden">
   <div class="panel">
@@ -70,6 +89,7 @@
         <tr><td>Aim</td><td>move the mouse</td><td>hold and drag</td></tr>
         <tr><td>Fire</td><td>click or <b>Space</b></td><td>lift your finger</td></tr>
         <tr><td>Workshop</td><td><b>B</b></td><td>🛠️</td></tr>
+        <tr><td>Sanctuary</td><td><b>S</b></td><td>🏡</td></tr>
         <tr><td>Pause</td><td><b>P</b></td><td>—</td></tr>
       </table>
       <p>Milbils walk on at the <b>far row</b> and hop toward you. One that hops
@@ -77,6 +97,14 @@
          Lose every shield and the Milbils have the tower.</p>
       <p><b>Round 1 has one Milbil, round 2 has two</b>, and so on. Clear them all
          to move on. Line two up in a single beam for a bonus.</p>
+      <h3>The sanctuary</h3>
+      <p>A zapped Milbil is only <b>dazed</b>. If a pen is free it wakes up in the
+         sanctuary behind the tower, with a name of its own.</p>
+      <p>Feed it, water it and scoop up after it, and it pays rent <b>every minute</b>
+         — even while you are off shooting, and while the game is closed. A Milbil
+         that is hungry, thirsty or standing in a mess pays almost nothing, so look
+         in every so often. Harder Milbils pay more rent, same as they do on the board.</p>
+
       <h3>Field guide</h3>
       <div class="guide" id="guide"></div>
     </div>

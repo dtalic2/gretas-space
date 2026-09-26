@@ -219,3 +219,97 @@ b.danger{color:var(--danger)}
   .up-blurb{display:none}
   .up-ico{font-size:20px; width:26px}
 }
+
+/* ---------- SANCTUARY ---------- */
+.chip.btn{position:relative}
+.dot{
+  position:absolute; top:-3px; right:-3px;
+  width:10px; height:10px; border-radius:50%;
+  background:var(--lime); box-shadow:0 0 8px var(--lime);
+  border:1.5px solid #0b1420;
+}
+.dot.chore{background:var(--gold); box-shadow:0 0 8px var(--gold)}
+
+.hud-toast{
+  position:absolute; left:14px; right:14px;
+  bottom:calc(30px + env(safe-area-inset-bottom));
+  margin:0 auto; max-width:440px;
+  background:rgba(11,20,32,.94);
+  border:1.5px solid rgba(95,255,168,.5);
+  border-radius:12px; padding:10px 14px;
+  font-size:13px; font-weight:700; line-height:1.4; text-align:center;
+  color:var(--ink);
+  box-shadow:0 0 22px rgba(95,255,168,.2);
+}
+
+.sanct-bar{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:9px 16px; border-bottom:1px solid rgba(122,240,255,.14);
+  font-size:12.5px; letter-spacing:.7px; text-transform:uppercase;
+  color:rgba(223,244,255,.6);
+}
+.tend-all{
+  background:rgba(95,255,168,.1); border:1.5px solid rgba(95,255,168,.45);
+  color:var(--lime); font-family:inherit; font-weight:900; font-size:12.5px;
+  padding:7px 13px; border-radius:9px; cursor:pointer; white-space:nowrap;
+  letter-spacing:.3px; text-transform:none;
+}
+.tend-all:hover:not(:disabled){background:rgba(95,255,168,.2)}
+.tend-all:disabled{opacity:.3; cursor:not-allowed}
+
+.pens{padding:12px; overflow-y:auto; display:flex; flex-direction:column; gap:10px}
+.pens-empty{
+  text-align:center; padding:34px 18px; font-size:15px; font-weight:800;
+  color:rgba(223,244,255,.7); line-height:1.7;
+}
+.pens-empty span{font-size:13px; font-weight:600; color:rgba(223,244,255,.45)}
+
+.pen{
+  display:grid;
+  grid-template-columns:76px 1fr;
+  grid-template-areas:"art body" "acts acts";
+  gap:4px 10px;
+  padding:10px 12px; border-radius:14px;
+  background:rgba(95,255,168,.04);
+  border:1.5px solid rgba(95,255,168,.16);
+}
+.pen-art{grid-area:art; width:76px; height:76px; align-self:center}
+.pen-body{grid-area:body; min-width:0}
+.pen-top{display:flex; align-items:baseline; gap:7px}
+.pen-name{font-size:16px; font-weight:900; color:var(--ink)}
+.pen-mood{font-size:15px}
+.pen-kind{font-size:11.5px; font-weight:700; color:rgba(223,244,255,.45); letter-spacing:.4px}
+.pen-pay{font-size:12.5px; font-weight:800; color:var(--gold); margin:3px 0 5px}
+.pen-pay b{font-variant-numeric:tabular-nums}
+
+.pen-need{display:flex; align-items:center; gap:7px; margin-top:3px; font-size:12px}
+.pen-need .track{
+  flex:1; height:7px; border-radius:99px; overflow:hidden;
+  background:rgba(255,255,255,.1); display:block;
+}
+.pen-need i{display:block; height:100%; border-radius:99px; transition:width .3s linear}
+.pen-need i.food{background:#ffb347; box-shadow:0 0 7px rgba(255,179,71,.6)}
+.pen-need i.water{background:#4fc3ff; box-shadow:0 0 7px rgba(79,195,255,.6)}
+.pen-need.poo .poo-dots{
+  font-size:10px; letter-spacing:3px; color:rgba(255,255,255,.22); font-style:normal;
+}
+.pen-need.poo.dirty .poo-dots{color:#c98f52}
+
+.pen-acts{grid-area:acts; display:flex; gap:6px; margin-top:7px}
+.act{
+  flex:1; background:rgba(255,255,255,.04); border:1.5px solid rgba(255,255,255,.12);
+  color:var(--ink); font-family:inherit; font-size:16px; font-weight:800;
+  padding:8px 4px; border-radius:9px; cursor:pointer; transition:transform .08s, border-color .15s;
+}
+.act.wanted{border-color:rgba(95,255,168,.55); background:rgba(95,255,168,.12)}
+.act:hover:not(:disabled){transform:translateY(-1px)}
+.act:active:not(:disabled){transform:translateY(1px)}
+.act:disabled{opacity:.28; cursor:default}
+.act.free{flex:0 0 46px; font-size:14px; color:rgba(223,244,255,.6)}
+.act.free.confirm{flex:0 0 74px; font-size:12px; border-color:var(--danger); color:var(--danger)}
+
+@media (max-width:380px){
+  .pen{grid-template-columns:62px 1fr}
+  .pen-art{width:62px; height:62px}
+  .pen-name{font-size:15px}
+}

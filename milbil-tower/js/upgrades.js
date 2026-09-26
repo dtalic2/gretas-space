@@ -104,6 +104,22 @@ export const UPGRADES = {
     costs: [1650, 5700],
     detail: (l) => ['Blinkies vanish', 'Blinkies stay faint', 'Blinkies always show'][l],
   },
+
+  // ---------------- the sanctuary ----------------
+  pens: {
+    name: 'Sanctuary Pens',
+    icon: '🏡',
+    blurb: 'Room for more rescued Milbils behind the tower.',
+    costs: [700, 2400, 7000, 19000, 48000],
+    detail: (l) => `${3 + l} pens`,
+  },
+  bedding: {
+    name: 'Comfort Bedding',
+    icon: '🛏️',
+    blurb: 'Food, water and mess all go slower, so a sanctuary keeps longer between visits.',
+    costs: [1500, 5200, 16000],
+    detail: (l) => (l ? `needs drain ${[0, 20, 35, 50][l]}% slower` : 'no effect yet'),
+  },
 };
 
 /** Shop sections, in the order they are shown. */
@@ -111,6 +127,7 @@ export const UP_GROUPS = [
   { name: 'Laser', keys: ['charge', 'focus', 'power', 'pierce', 'split'] },
   { name: 'On impact', keys: ['chain', 'stun', 'combo'] },
   { name: 'Tower', keys: ['plating', 'deflect', 'damper', 'tracer'] },
+  { name: 'Sanctuary', keys: ['pens', 'bedding'] },
 ];
 
 export const UP_ORDER = UP_GROUPS.flatMap((g) => g.keys);
