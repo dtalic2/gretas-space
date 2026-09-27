@@ -134,12 +134,12 @@ const actions = {
 
   knock(k){
     const it = ITEMS[state.rooms[k].type];
-    if (!confirm(`Knock down this ${it.name}? You get half its price back.`)) return;
-    const r = E.demolish(state, k);
-    if (!r.ok){ UI.toast(r.why, 'bad'); return; }
-    UI.toast(`Knocked down — +🪙 ${r.back}`);
-    UI.closePanel(); panelKind = null;
-    changed();
+    ask(`Knock down the ${it.name}?`, 'You get half its price back, and the space is empty again.', 'Knock it down', () => {
+      const r = E.demolish(state, k);
+      if (!r.ok){ UI.toast(r.why, 'bad'); return; }
+      UI.toast(`Knocked down — +🪙 ${r.back}`);
+      changed();
+    });
   },
 
   pick(id, kind, key, refresh){
@@ -226,22 +226,34 @@ const actions = {
   },
   loadText(ta){ loadFrom(ta.value); },
   reset(){
-    if (!confirm('Start a brand new hotel? This one will be gone unless you saved it to a file.')) return;
-    resetting = true;
-    S.wipe();
-    location.reload();
+    ask('Start a new hotel?', 'This hotel will be gone for good unless you saved a copy first.', 'Start again', () => {
+      resetting = true;
+      S.wipe();
+      location.reload();
+    });
   },
 };
 
 function loadFrom(text){
-  if (!confirm('Load this save? It replaces the hotel you have now.')) return;
-  try {
-    S.importText(text);
-    resetting = true;
-    location.reload();
-  } catch (err){
-    UI.toast(err.message, 'bad');
-  }
+  ask('Load this save?', 'It replaces the hotel you have now.', 'Load it', () => {
+    try {
+      S.importText(text);
+      resetting = true;
+      location.reload();
+    } catch (err){
+      UI.toast(err.message, 'bad');
+    }
+  });
+}
+
+/** A yes-or-no card in the panel. Browser confirm() boxes are ugly on phones and blocked in some frames. */
+function ask(title, text, yes, onYes){
+  panel('ask', () => UI.openPanel(title, `<p class="sub">${text}</p>
+    <div class="actions"><button class="pill" id="askNo">Keep it</button><button class="pill warn" id="askYes">${yes}</button></div>`,
+    (root) => {
+      root.querySelector('#askNo').addEventListener('click', () => { UI.closePanel(); panelKind = null; });
+      root.querySelector('#askYes').addEventListener('click', () => { UI.closePanel(); panelKind = null; onYes(); });
+    }));
 }
 
 function place(id, key){
