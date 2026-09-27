@@ -52,7 +52,15 @@ function floatAt(v, text){
   if (p) UI.floater(p.x, p.y, text);
 }
 
-function persist(){ if (!resetting) S.save(state); }
+function persist(){ return !resetting && S.save(state); }
+
+/** The ✕ on a panel (or a tap outside it, or Esc): close it and save the hotel there and then. */
+function closeAndSave(){
+  UI.closePanel();
+  panelKind = null;
+  if (persist()) UI.toast('💾 Saved');
+  else if (!resetting) UI.toast('Could not save here — use ⚙️ → Copy it as text', 'bad');
+}
 
 function changed(){
   hotel.sync();
@@ -90,8 +98,8 @@ function panel(kind, fn){
   fn();
 }
 
-UI.$('panelClose').addEventListener('click', () => { UI.closePanel(); panelKind = null; });
-$('panel').addEventListener('click', (e) => { if (e.target.id === 'panel'){ UI.closePanel(); panelKind = null; } });
+UI.$('panelClose').addEventListener('click', closeAndSave);
+$('panel').addEventListener('click', (e) => { if (e.target.id === 'panel') closeAndSave(); });
 
 // ------------------------------------------------------------- actions ----
 
@@ -441,7 +449,7 @@ window.addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
   if (k === 'escape'){
     if (placing) cancelPlacing();
-    else if (UI.panelOpen()){ UI.closePanel(); panelKind = null; }
+    else if (UI.panelOpen()) closeAndSave();
     return;
   }
   if (k === 'b') openShop();
@@ -480,6 +488,7 @@ setInterval(() => onEvents(E.tick(state, Date.now())), 250);
 setInterval(persist, 5000);
 document.addEventListener('visibilitychange', () => { if (document.hidden) persist(); });
 window.addEventListener('pagehide', persist);
+window.addEventListener('beforeunload', persist);
 
 // ------------------------------------------------------------------ boot ----
 

@@ -67,8 +67,10 @@ export function save(state){
   try {
     state.lastSeen = Date.now();
     localStorage.setItem(KEY, JSON.stringify(state));
+    return true;
   } catch (err){
     console.warn('could not save', err);
+    return false;
   }
 }
 
