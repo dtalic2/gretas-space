@@ -6,7 +6,7 @@
 
 import {
   SLOTS, MAX_FLOORS, ITEMS, ROOMS, ROOM_ORDER, EXTRA, WISHES, CHARACTERS,
-  MILBIL_NAMES, MILBIL_COLORS, LOBBY_START, LOBBY_MAX, MAX_KEEPERS, KEEPER_COST, KEEPER_LEVEL,
+  LOBBY_START, LOBBY_MAX, MAX_KEEPERS, KEEPER_COST, KEEPER_LEVEL,
   PATIENCE, floorCost, roomCost, lobbyCost, keeperDelay, arrivalGap, levelForXp, xpForLevel,
 } from './data.js';
 
@@ -164,8 +164,7 @@ function wantable(state){
 }
 
 export function rollGuest(state, now = Date.now()){
-  const vipOdds = state.extras.helipad ? 0.45 : 0.25;
-  const vip = state.stats.checkins >= 2 && Math.random() < vipOdds;
+  const c = pick(CHARACTERS);
   const wishes = WISHES.filter(w => w.level <= state.level);
   const g = {
     uid: state.uid++,
@@ -174,20 +173,14 @@ export function rollGuest(state, now = Date.now()){
     arrived: now,
     patience: PATIENCE * (state.extras.garden ? 1.5 : 1),
     via: 'street',
+    who: c.id,
+    name: c.name,
   };
-  if (vip){
-    const c = pick(CHARACTERS);
-    g.who = c.id;
-    g.name = c.name;
-    // VIPs have favourites, and ask for them when they can.
-    if (WISHES.some(w => w.id === c.likes && w.level <= state.level) && Math.random() < 0.6) g.wish = c.likes;
-    if (ITEMS[c.likes]?.kind === 'room' && countOf(state, c.likes)) g.wants = c.likes;
-    g.via = state.extras.helipad ? 'heli' : state.extras.bus ? 'bus' : 'street';
-  } else {
-    g.name = pick(MILBIL_NAMES);
-    g.color = pick(MILBIL_COLORS);
-    g.via = state.extras.bus && Math.random() < 0.6 ? 'bus' : 'street';
-  }
+  // Everybody has a favourite, and asks for it now and then.
+  if (WISHES.some(w => w.id === c.likes && w.level <= state.level) && Math.random() < 0.4) g.wish = c.likes;
+  if (ITEMS[c.likes]?.kind === 'room' && countOf(state, c.likes) && Math.random() < 0.5) g.wants = c.likes;
+  if (state.extras.helipad && Math.random() < 0.4) g.via = 'heli';
+  else if (state.extras.bus && Math.random() < 0.6) g.via = 'bus';
   return g;
 }
 
@@ -213,7 +206,7 @@ export function quote(state, guest, roomType){
   const wished = !!(guest.wish && has(state, guest.wish));
   if (upgraded) pay *= 1.2;
   if (wished){ pay *= 1.5; xp *= 1.5; }
-  if (guest.who) pay *= state.extras.helipad ? 2 : 1.5;
+  if (guest.via === 'heli') pay *= 2;        // flown in from Milbil Town
   if (state.extras.sign) pay *= 1.1;
   return { pay: Math.round(pay), xp: Math.round(xp), upgraded, wished };
 }
@@ -235,7 +228,6 @@ export function checkIn(state, guestUid, now = Date.now(), k = null){
   Object.assign(r, { st:'busy', guest, endsAt: now + ITEMS[r.type].secs * 1000, pay:q.pay, xp:q.xp, happy:q.wished });
   state.stats.checkins++;
   if (guest.who) state.stats.vip[guest.who] = (state.stats.vip[guest.who] || 0) + 1;
-  else state.stats.milbils++;
   return { ok:true, key:k, guest, ...q };
 }
 

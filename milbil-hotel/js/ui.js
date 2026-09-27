@@ -16,23 +16,9 @@ export const $ = (id) => document.getElementById(id);
 
 const hex = (n) => '#' + (n >>> 0).toString(16).padStart(6, '0');
 
-/** A milbil, drawn flat — the same shape as the ones walking about. */
-export function milbilSvg(color = 0xffb3c7){
-  const c = hex(color);
-  return `<svg viewBox="-90 -110 180 190" aria-hidden="true">
-    <path d="M-52 -46 l-18 -56 l44 26 z" fill="${c}"/><path d="M52 -46 l18 -56 l-44 26 z" fill="${c}"/>
-    <ellipse cx="0" cy="0" rx="78" ry="72" fill="${c}"/><ellipse cx="0" cy="18" rx="46" ry="40" fill="#fff6ee"/>
-    <circle cx="-28" cy="-12" r="15" fill="#fff"/><circle cx="28" cy="-12" r="15" fill="#fff"/>
-    <circle cx="-26" cy="-10" r="8" fill="#3b2f2a"/><circle cx="30" cy="-10" r="8" fill="#3b2f2a"/>
-    <circle cx="2" cy="12" r="8" fill="#ff9d6b"/></svg>`;
-}
-
 export function face(guest, small = false){
-  if (guest.who){
-    const c = CHARACTER[guest.who];
-    return `<div class="face${small ? ' small' : ''}"><img src="${c.art}" alt="${c.name}"></div>`;
-  }
-  return `<div class="face milbil${small ? ' small' : ''}">${milbilSvg(guest.color)}</div>`;
+  const c = CHARACTER[guest.who];
+  return `<div class="face${small ? ' small' : ''}"><img src="${c.art}" alt="${c.name}"></div>`;
 }
 
 export function wantLine(guest){
@@ -129,7 +115,7 @@ function hotelCards(state){
   const locked = state.level < KEEPER_LEVEL;
   out.push(`<button class="card-item${locked ? ' locked' : ''}${k >= MAX_KEEPERS ? ' owned' : ''}" data-act="keeper">
     <div class="top"><span class="em">🧹</span><span class="nm">Housekeeper</span></div>
-    <div class="meta">${k ? `${k} on staff: rooms tidy themselves after ${keeperDelay(k)}s.` : 'A milbil with a mop. Rooms tidy themselves.'}</div>
+    <div class="meta">${k ? `${k} on staff: rooms tidy themselves after ${keeperDelay(k)}s.` : 'Somebody with a mop. Rooms tidy themselves.'}</div>
     ${k >= MAX_KEEPERS ? '<span class="tag-own">✓ Staff room full</span>'
       : locked ? `<span class="cost">🔒 Level ${KEEPER_LEVEL}</span>` : `<span class="cost">🪙 ${F.coins(KEEPER_COST[k])}</span>`}
   </button>`);
@@ -212,8 +198,8 @@ export function lobbyPanel(state, a){
     } else {
       line = `<div class="line bad">${E.countOf(state, g.wants) ? `No free ${ITEMS[g.wants].name} yet` : `You have no ${ITEMS[g.wants].name}`}</div>`;
     }
-    return `<div class="guest-card${g.who ? ' vip' : ''}">${face(g)}<div class="info">
-      <b>${g.name}</b>${g.who ? ' <span class="tag">VIP</span>' : ''}
+    return `<div class="guest-card${g.via === 'heli' ? ' vip' : ''}">${face(g)}<div class="info">
+      <b>${g.name}</b>${g.via === 'heli' ? ' <span class="tag">🚁 flew in</span>' : ''}
       <div class="line">${wantLine(g)}</div>${line}
       <div class="wait"><i style="width:${pct}%"></i></div></div>
       <button class="pill go" data-act="checkin" data-uid="${g.uid}"${room ? '' : ' disabled'}>Check in</button></div>`;
@@ -235,9 +221,9 @@ export function bookPanel(state){
       <b>${c.name}</b><span class="n">${n ? `stayed ${F.plural(n, 'time')}` : 'not yet'}</span><small>${c.line}</small></div>`;
   }).join('');
   openPanel('📖 Guest book', `<div class="totals">
-      <span>🛎️ ${s.checkins} checked in</span><span>🐾 ${s.milbils} milbils</span>
+      <span>🛎️ ${s.checkins} checked in</span>
       <span>🪙 ${F.coins(s.earned)} earned</span><span>😢 ${s.walked} gave up waiting</span></div>
-    <p class="sub">The VIPs come over from Milbil Town. They pay one and a half times as much — double if they can land on your helipad.</p>
+    <p class="sub">Everyone who stays comes over from Milbil Town. Guests who fly in to your helipad pay double.</p>
     <div class="book">${cards}</div>`);
 }
 

@@ -439,44 +439,6 @@ export function lobby(){
   for (const x of [-3.95, 3.95]) g.add(box(0.2, ROOM_H, 0.2, 0xfff3e0, x, 0, 2.3));
   g.add(box(2.6, 0.1, 0.7, 0xe2604f, 0, ROOM_H - 0.12, 2.75));
   g.add(box(2.6, 0.18, 0.06, 0xfff3e0, 0, ROOM_H - 0.2, 3.1));
-  // The receptionist.
-  const r = milbil(0xffd6a0);
-  r.position.set(-2.8, 0, -1.8);
-  r.scale.setScalar(1.25);
-  g.add(r);
-  g.userData.receptionist = r;
-  return g;
-}
-
-// ------------------------------------------------------------------ milbils --
-
-export function milbil(color = 0xffb3c7){
-  const g = new THREE.Group();
-  const body = ball(0.34, 1, color, 0, 0.36, 0);
-  body.scale.set(1, 0.95, 0.92);
-  g.add(body);
-  const belly = ball(0.24, 1, 0xfff6ee, 0, 0.3, 0.16);
-  belly.scale.set(1, 0.85, 0.7);
-  g.add(belly);
-  for (const s of [-1, 1]){
-    const ear = cone(0.12, 0.34, 6, color, s * 0.2, 0.52, -0.02);
-    ear.rotation.z = s * 0.45;
-    g.add(ear);
-  }
-  for (const s of [-1, 1]){
-    g.add(ball(0.085, 1, 0xffffff, s * 0.13, 0.44, 0.27));
-    g.add(ball(0.042, 0, 0x2f2a28, s * 0.14, 0.45, 0.33));
-  }
-  g.add(ball(0.05, 0, 0xff9d6b, 0, 0.36, 0.33));
-  const feet = [];
-  for (const s of [-1, 1]){
-    const f = ball(0.11, 0, 0xf5d0b8, s * 0.14, 0.09, 0.05);
-    f.scale.set(1, 0.7, 1.3);
-    g.add(f);
-    feet.push(f);
-  }
-  g.userData.feet = feet;
-  g.add(cone(0.07, 0.18, 5, color, 0, 0.66, 0));
   return g;
 }
 

@@ -1,15 +1,14 @@
 # 🏨 Milbil Hotel
 
-A hotel for the milbils, and for the visitors from Milbil Town.
+A hotel for the visitors from Milbil Town.
 
 Milbil Town is full of guests and none of them have anywhere to sleep. You have
 a lobby, two little rooms and a bell on the desk. Check them in, send them up
 in the lift, and they pay you when they leave. Spend it on more rooms, more
 floors, a café, a bubble spa and a pool on the roof.
 
-The guests are the same characters as the town: round milbils with suitcases,
-and Greta's five drawings — Petal, Chomp, Hattie, Sunny and Scoop — who come
-over from Milbil Town as VIPs.
+Every guest is one of Greta's five drawings — Petal, Chomp, Hattie, Sunny and
+Scoop — cut out of the page and walking about with a suitcase.
 
 **▶ Play it: https://dtalic2.github.io/gretas-space/milbil-hotel/**
 
@@ -31,7 +30,7 @@ over from Milbil Town as VIPs.
      breakfast, a bubble bath, a dance); grant it and they pay 50% more.
    - **Outside** — a garden (guests wait longer), a bus stop (guests come
      faster), a neon sign (+10% on every stay), the rooftop pool, and a helipad
-     where the Milbil Town helicopter lands with VIPs.
+     where the Milbil Town helicopter lands, and guests who fly in pay double.
    - **Hotel** — new floors (three more spaces each, up to 12 floors), a bigger
      lobby, and housekeepers.
 
@@ -50,11 +49,10 @@ of minutes and goes home. That is the only way to lose anything.
 | 8 | Ballroom 🪩 |
 | 10 | Cloud Penthouse ☁️ |
 
-## VIPs
+## The guests
 
-Petal, Chomp, Hattie, Sunny and Scoop pay one and a half times the usual rate,
-and double once they can fly in to your helipad. Each has a favourite and asks
-for it when they can. 📖 Guests keeps count of who has stayed.
+Petal, Chomp, Hattie, Sunny and Scoop each have a favourite room or wish, and
+ask for it now and then. 📖 Guests keeps count of who has stayed.
 
 ## Things worth knowing
 

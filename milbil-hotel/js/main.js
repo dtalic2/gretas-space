@@ -461,10 +461,7 @@ function onEvents(events, quiet = false){
       lobbyChanged = true;
       if (quiet) continue;
       audio.chime();
-      if (e.guest.who){
-        const how = e.guest.via === 'heli' ? 'flown in' : 'arrived';
-        UI.toast(`✨ ${CHARACTER[e.guest.who].name} has ${how} from Milbil Town!`, 'good');
-      }
+      if (e.guest.via === 'heli') UI.toast(`🚁 ${CHARACTER[e.guest.who].name} has flown in from Milbil Town!`, 'good');
     }
     if (e.type === 'leave'){
       lobbyChanged = true;

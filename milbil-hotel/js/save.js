@@ -1,5 +1,5 @@
 // ---------- Persistence, the starting hotel, and coming back later ----------
-import { START_COINS } from './data.js';
+import { START_COINS, CHARACTERS, CHARACTER } from './data.js';
 
 const KEY = 'milbilhotel.save.v1';
 
@@ -23,7 +23,7 @@ export function defaultState(){
     lobby: [],
     nextArrival: now + 2500,
     uid: 1,
-    stats: { checkins:0, collected:0, tidied:0, earned:0, walked:0, milbils:0, vip:{} },
+    stats: { checkins:0, collected:0, tidied:0, earned:0, walked:0, vip:{} },
     muted: false,
     introSeen: false,
   };
@@ -38,6 +38,13 @@ function migrate(s){
   out.rooms = (s.rooms && typeof s.rooms === 'object') ? s.rooms : base.rooms;
   out.extras = (s.extras && typeof s.extras === 'object') ? s.extras : {};
   out.lobby = Array.isArray(s.lobby) ? s.lobby.filter(g => g && g.uid) : [];
+  // Older hotels had round milbil guests. Every guest is a drawn character now.
+  for (const g of [...out.lobby, ...Object.values(out.rooms).map(r => r && r.guest).filter(Boolean)]){
+    if (!g.who || !CHARACTER[g.who]){
+      const c = CHARACTERS[g.uid % CHARACTERS.length];
+      g.who = c.id; g.name = c.name; delete g.color;
+    }
+  }
   out.coins = Math.max(0, Math.floor(out.coins) || 0);
   out.xp = Math.max(0, Math.floor(out.xp) || 0);
   out.floors = Math.max(2, Math.floor(out.floors) || 2);

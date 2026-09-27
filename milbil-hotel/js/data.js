@@ -22,7 +22,7 @@ export const slotX = (s) => -3 + s * SLOT_W;
 
 export const ROOMS = [
   { id:'cosy',  name:'Cosy Room',       emoji:'🛏️', secs:30,   pay:36,   xp:3,  level:1,  cost:40,
-    blurb:'A bed, a lamp and a window. Every milbil has to start somewhere.' },
+    blurb:'A bed, a lamp and a window. Every guest has to start somewhere.' },
   { id:'bunk',  name:'Bunk Room',       emoji:'🪜', secs:75,   pay:90,   xp:6,  level:2,  cost:130,
     blurb:'Bunk beds, so the whole family fits. Top bunk is always argued over.' },
   { id:'flower',name:'Flower Room',     emoji:'🌸', secs:150,  pay:190,  xp:11, level:3,  cost:325,
@@ -41,7 +41,7 @@ export const ROOMS = [
 
 export const AREAS = [
   { id:'cafe',     name:'Café',        emoji:'☕', level:2, cost:175,  wish:'a hot breakfast',
-    blurb:'Toast, cocoa and a very small milbil behind the counter.' },
+    blurb:'Toast, cocoa and a very small cook behind the counter.' },
   { id:'games',    name:'Games Room',  emoji:'🎲', level:3, cost:350,  wish:'a game of marbles',
     blurb:'Marbles, a wobbly table and a machine that goes ding.' },
   { id:'spa',      name:'Bubble Spa',  emoji:'🛁', level:4, cost:700, wish:'a bubble bath',
@@ -73,7 +73,7 @@ export const EXTRAS = [
   { id:'pool',    name:'Rooftop Pool', emoji:'🏊', level:5, cost:1100, wish:'a swim',
     blurb:'A pool on the roof. Guests who wish for a swim pay half again.' },
   { id:'helipad', name:'Helipad',      emoji:'🚁', level:6, cost:1600,
-    blurb:'The helicopter from Milbil Town lands here with VIPs, who pay double.' },
+    blurb:'The helicopter from Milbil Town lands here. Guests who fly in pay double.' },
 ];
 export const EXTRA = {};
 for (const e of EXTRAS) EXTRA[e.id] = e;
@@ -111,7 +111,7 @@ export function arrivalGap(level, bus){
   return Math.max(6, 18 - level * 0.9) * (bus ? 0.7 : 1);
 }
 
-// The drawn characters: VIPs who arrive from Milbil Town now and then.
+// The guests: Greta's drawn characters, over from Milbil Town.
 // Each one is Greta's drawing; `art` is the cut-out PNG in art/.
 export const CHARACTERS = [
   { id:'petal',  name:'Petal',  art:'art/petal.png',  tint:'#ff8fb1', likes:'flower',
@@ -127,17 +127,6 @@ export const CHARACTERS = [
 ];
 export const CHARACTER = {};
 for (const c of CHARACTERS) CHARACTER[c.id] = c;
-
-export const MILBIL_NAMES = [
-  'Pib', 'Nuzz', 'Moby', 'Tuffet', 'Plum', 'Bobbin', 'Wix', 'Doodle', 'Crumb',
-  'Pocket', 'Mo', 'Snug', 'Fen', 'Biscuit', 'Tam', 'Ollo', 'Peep', 'Rumble',
-  'Sprig', 'Noodle', 'Tumble', 'Winkle', 'Puddle', 'Gus', 'Bean', 'Marzi',
-  'Hopp', 'Nib', 'Squish', 'Lark', 'Mitt', 'Fig', 'Dolly', 'Pip', 'Cosy',
-];
-export const MILBIL_COLORS = [
-  0xffb3c7, 0x9fd8ff, 0xffe08a, 0xb6e8a8, 0xd7b5ff, 0xffc79c,
-  0x9fe8dd, 0xf7a8a8, 0xc9d8ff, 0xffd6f0,
-];
 
 // --------------------------------------------------------------- levels ----
 // Cumulative XP needed to reach each level. Past the table it keeps climbing.

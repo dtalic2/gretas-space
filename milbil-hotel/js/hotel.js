@@ -7,7 +7,7 @@
 import * as THREE from 'three';
 import { SLOTS, FLOOR_H, LIFT_X, CHARACTER, slotX } from './data.js';
 import {
-  box, cyl, cone, ball, mat, imat, textTexture, ROOM_MODELS, emptyRoom, lobby, milbil, suitcase,
+  box, cyl, cone, ball, mat, imat, textTexture, ROOM_MODELS, emptyRoom, lobby, suitcase,
   characterSprite, helicopter, bus, tree, flatten, disposeMerged, ROOM_H, BACK, FRONT, GLOW, NEON, WATER, GLASS, WINDOW,
 } from './models.js';
 import * as E from './econ.js';
@@ -41,7 +41,7 @@ export class Hotel {
     this.roofKey = '';
 
     this.lobby = lobby();
-    flatten(this.lobby, [this.lobby.userData.receptionist]);
+    flatten(this.lobby);
     this.lobby.position.set(-1, 0, 0);
     this.root.add(this.lobby);
     const lobbyHit = this._hitBox(8, -1, 0, { lobby:true });
@@ -340,18 +340,9 @@ export class Hotel {
   // ------------------------------------------------------------- guests ---
 
   _makeActor(guest){
-    let obj;
-    if (guest.who){
-      obj = characterSprite(this._texture(CHARACTER[guest.who]), 1.8);
-    } else {
-      obj = new THREE.Group();
-      const m = milbil(guest.color);
-      m.scale.setScalar(1.35);
-      obj.add(m);
-      obj.userData.body = m;
-    }
+    const obj = characterSprite(this._texture(CHARACTER[guest.who]), 1.8);
     const bag = suitcase([0xe2604f, 0x5cc8ef, 0x9b6ede, 0x63bb52][guest.uid % 4]);
-    bag.position.set(guest.who ? 0.55 : 0.5, 0.05, 0.15);
+    bag.position.set(0.55, 0.05, 0.15);
     obj.add(bag);
     obj.userData.bag = bag;
     obj.traverse(o => { o.userData.guest = guest.uid; });
@@ -463,7 +454,7 @@ export class Hotel {
     const a = this.actors.get(uid);
     if (!a || !a.obj.visible) return null;
     const p = a.obj.position.clone();
-    p.y += a.guest.who ? 2.0 : 1.2;
+    p.y += 2.0;
     return p;
   }
 
@@ -502,8 +493,6 @@ export class Hotel {
         n.position.y = 1.4 + ((t * 0.4 + i * 0.33) % 1) * 0.9;
       });
     }
-    const rec = this.lobby.userData.receptionist;
-    if (rec) rec.position.y = Math.abs(Math.sin(t * 2.2)) * 0.05;
     if (this.poolRing) this.poolRing.position.y = this.roofY() + 0.5 + Math.sin(t * 1.6) * 0.04;
 
     let liftTarget = null;
@@ -512,7 +501,8 @@ export class Hotel {
       if (a.path.length && a.path[0].lift) liftTarget = a.obj.position.y;
       if (a.gone){
         a.obj.parent && a.obj.parent.remove(a.obj);
-        if (a.guest.who){ a.obj.userData.sprite.material.dispose(); a.obj.userData.halo.material.dispose(); }
+        a.obj.userData.sprite.material.dispose();
+        a.obj.userData.halo.material.dispose();
         this.actors.delete(uid);
       }
     }
@@ -549,32 +539,22 @@ export class Hotel {
         const dir = target.clone().sub(o.position).normalize();
         o.position.addScaledVector(dir, step);
         budget = 0;
-        if (!target.lift && a.obj.userData.body) a.obj.userData.body.rotation.y = Math.atan2(dir.x, dir.z);
         moving = !target.lift;
       }
     }
 
-    const body = o.userData.body, sprite = o.userData.sprite;
+    const sprite = o.userData.sprite;
     const hop = moving ? Math.abs(Math.sin(t * 9 + a.phase)) * 0.12 : Math.sin(t * 1.6 + a.phase) * 0.03;
-    if (body){
-      body.position.y = hop;
-      if (!moving) body.rotation.y += (0 - body.rotation.y) * Math.min(1, dt * 4);
-      const feet = body.userData.feet;
-      if (feet) feet.forEach((f, i) => { f.position.z = 0.05 + (moving ? Math.sin(t * 12 + i * Math.PI) * 0.1 : 0); });
-    }
-    if (sprite){
-      const h = sprite.scale.y;
-      sprite.position.y = h / 2 + hop;
-      o.userData.halo.position.y = sprite.position.y;
-      sprite.material.rotation = moving ? Math.sin(t * 9 + a.phase) * 0.08 : Math.sin(t * 0.9 + a.phase) * 0.03;
-    }
+    sprite.position.y = sprite.scale.y / 2 + hop;
+    o.userData.halo.position.y = sprite.position.y;
+    sprite.material.rotation = moving ? Math.sin(t * 9 + a.phase) * 0.08 : Math.sin(t * 0.9 + a.phase) * 0.03;
     if (a.mode === 'room' && !a.path.length && o.userData.bag.visible) o.userData.bag.visible = false;
 
     if (a.mode === 'leaving' && !a.path.length) a.gone = true;
     if (a.mode === 'leaving' && o.position.x > 14){
       a.fade = Math.max(0, 1 - (o.position.x - 14) / 9);
-      if (sprite){ sprite.material.opacity = a.fade; o.userData.halo.material.opacity = 0.9 * a.fade; }
-      else o.scale.setScalar(Math.max(0.01, a.fade));
+      sprite.material.opacity = a.fade;
+      o.userData.halo.material.opacity = 0.9 * a.fade;
     }
   }
 

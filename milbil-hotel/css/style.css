@@ -345,17 +345,14 @@ kbd{
 .mk.guest.nope{ opacity:.78; }
 @keyframes mkShake{ 0%,100%{ margin-left:0 } 20%{ margin-left:-2px } 40%{ margin-left:2px } 60%{ margin-left:-1px } }
 
-/* portraits: a drawing on its dark card, or a milbil */
+/* portraits: a drawing on its dark card */
 .face{
   width:52px; height:64px; flex:none; border-radius:12px; display:grid; place-items:center;
   background:radial-gradient(circle at 50% 40%, #2b2440, #16121f); box-shadow:0 2px 6px rgba(58,40,24,.25);
   overflow:hidden;
 }
 .face img{ width:100%; height:100%; object-fit:contain; padding:3px; }
-.face.milbil{ background:radial-gradient(circle at 50% 40%, #fff, var(--cream-2)); }
-.face.milbil svg{ width:44px; height:44px; }
 .face.small{ width:34px; height:40px; border-radius:9px; }
-.face.small svg{ width:30px; height:30px; }
 
 .guest-card{ display:flex; gap:12px; align-items:center; padding:11px 12px; border-radius:16px; background:var(--cream-2); margin-bottom:9px; }
 .guest-card .info{ flex:1; min-width:0; }
