@@ -21,17 +21,17 @@ export const slotX = (s) => -3 + s * SLOT_W;
 // Somewhere to sleep. Guests ask for one kind and pay when they check out.
 
 export const ROOMS = [
-  { id:'cosy',  name:'Cosy Room',       emoji:'🛏️', secs:30,   pay:18,   xp:3,  level:1,  cost:80,
+  { id:'cosy',  name:'Cosy Room',       emoji:'🛏️', secs:30,   pay:36,   xp:3,  level:1,  cost:40,
     blurb:'A bed, a lamp and a window. Every milbil has to start somewhere.' },
-  { id:'bunk',  name:'Bunk Room',       emoji:'🪜', secs:75,   pay:45,   xp:6,  level:2,  cost:260,
+  { id:'bunk',  name:'Bunk Room',       emoji:'🪜', secs:75,   pay:90,   xp:6,  level:2,  cost:130,
     blurb:'Bunk beds, so the whole family fits. Top bunk is always argued over.' },
-  { id:'flower',name:'Flower Room',     emoji:'🌸', secs:150,  pay:95,   xp:11, level:3,  cost:650,
+  { id:'flower',name:'Flower Room',     emoji:'🌸', secs:150,  pay:190,  xp:11, level:3,  cost:325,
     blurb:'Pots on every shelf and petals on the pillow.' },
-  { id:'moon',  name:'Moon Suite',      emoji:'🌙', secs:300,  pay:210,  xp:20, level:5,  cost:1600,
+  { id:'moon',  name:'Moon Suite',      emoji:'🌙', secs:300,  pay:420,  xp:20, level:5,  cost:800,
     blurb:'Deep blue walls and a moon lamp that glows all night.' },
-  { id:'star',  name:'Star Suite',      emoji:'⭐', secs:600,  pay:460,  xp:36, level:7,  cost:3800,
+  { id:'star',  name:'Star Suite',      emoji:'⭐', secs:600,  pay:920,  xp:36, level:7,  cost:1900,
     blurb:'A bed shaped like a star. Guests leave extremely rested.' },
-  { id:'cloud', name:'Cloud Penthouse', emoji:'☁️', secs:1200, pay:1000, xp:70, level:10, cost:9000,
+  { id:'cloud', name:'Cloud Penthouse', emoji:'☁️', secs:1200, pay:2000, xp:70, level:10, cost:4500,
     blurb:'Gold taps, a bed like a cloud, and the best view in Milbil Town.' },
 ];
 
@@ -40,17 +40,17 @@ export const ROOMS = [
 // grant the wish and they pay half as much again. One of each.
 
 export const AREAS = [
-  { id:'cafe',     name:'Café',        emoji:'☕', level:2, cost:350,  wish:'a hot breakfast',
+  { id:'cafe',     name:'Café',        emoji:'☕', level:2, cost:175,  wish:'a hot breakfast',
     blurb:'Toast, cocoa and a very small milbil behind the counter.' },
-  { id:'games',    name:'Games Room',  emoji:'🎲', level:3, cost:700,  wish:'a game of marbles',
+  { id:'games',    name:'Games Room',  emoji:'🎲', level:3, cost:350,  wish:'a game of marbles',
     blurb:'Marbles, a wobbly table and a machine that goes ding.' },
-  { id:'spa',      name:'Bubble Spa',  emoji:'🛁', level:4, cost:1400, wish:'a bubble bath',
+  { id:'spa',      name:'Bubble Spa',  emoji:'🛁', level:4, cost:700, wish:'a bubble bath',
     blurb:'The bubbles go up to the ceiling. That is the whole idea.' },
-  { id:'library',  name:'Library',     emoji:'📚', level:5, cost:2000, wish:'a good book',
+  { id:'library',  name:'Library',     emoji:'📚', level:5, cost:1000, wish:'a good book',
     blurb:'Shelves to the ceiling and one enormous armchair.' },
-  { id:'music',    name:'Music Room',  emoji:'🎹', level:6, cost:2800, wish:'a sing-song',
+  { id:'music',    name:'Music Room',  emoji:'🎹', level:6, cost:1400, wish:'a sing-song',
     blurb:'A piano with three working keys. Nobody minds.' },
-  { id:'ballroom', name:'Ballroom',    emoji:'🪩', level:8, cost:5200, wish:'a dance',
+  { id:'ballroom', name:'Ballroom',    emoji:'🪩', level:8, cost:2600, wish:'a dance',
     blurb:'A spinning glitter ball and a floor that lights up.' },
 ];
 
@@ -64,15 +64,15 @@ export const ROOM_ORDER = ROOMS.map(r => r.id);
 // Bought once. They live around the hotel rather than in it.
 
 export const EXTRAS = [
-  { id:'garden',  name:'Front Garden', emoji:'🌷', level:2, cost:250,
+  { id:'garden',  name:'Front Garden', emoji:'🌷', level:2, cost:125,
     blurb:'Flower beds and a bench. Guests happily wait half as long again.' },
-  { id:'bus',     name:'Bus Stop',     emoji:'🚌', level:3, cost:500,
+  { id:'bus',     name:'Bus Stop',     emoji:'🚌', level:3, cost:250,
     blurb:'The Milbil Town bus stops outside. Guests turn up faster.' },
-  { id:'sign',    name:'Neon Sign',    emoji:'✨', level:4, cost:900,
+  { id:'sign',    name:'Neon Sign',    emoji:'✨', level:4, cost:450,
     blurb:'The name in lights on the roof. Every stay pays 10% more.' },
-  { id:'pool',    name:'Rooftop Pool', emoji:'🏊', level:5, cost:2200, wish:'a swim',
+  { id:'pool',    name:'Rooftop Pool', emoji:'🏊', level:5, cost:1100, wish:'a swim',
     blurb:'A pool on the roof. Guests who wish for a swim pay half again.' },
-  { id:'helipad', name:'Helipad',      emoji:'🚁', level:6, cost:3200,
+  { id:'helipad', name:'Helipad',      emoji:'🚁', level:6, cost:1600,
     blurb:'The helicopter from Milbil Town lands here with VIPs, who pay double.' },
 ];
 export const EXTRA = {};
@@ -90,15 +90,15 @@ for (const w of WISHES) WISH[w.id] = w;
 
 /** What the next floor costs when the hotel is `floors` tall (ground included). */
 export function floorCost(floors){
-  return Math.round(220 * Math.pow(1.72, Math.max(0, floors - 2)) / 10) * 10;
+  return Math.round(110 * Math.pow(1.72, Math.max(0, floors - 2)) / 10) * 10;
 }
 /** Rooms of a kind get a little pricier the more of them you own. */
 export function roomCost(item, owned){
   if (item.kind === 'area') return item.cost;
   return Math.round(item.cost * (1 + 0.3 * owned) / 5) * 5;
 }
-export function lobbyCost(ups){ return 300 * Math.pow(2, ups); }
-export const KEEPER_COST = [400, 1500, 4000];
+export function lobbyCost(ups){ return 150 * Math.pow(2, ups); }
+export const KEEPER_COST = [200, 750, 2000];
 export const KEEPER_LEVEL = 3;
 /** Seconds a messy room waits before a housekeeper tidies it. */
 export const keeperDelay = (n) => [0, 12, 7, 4][n];
