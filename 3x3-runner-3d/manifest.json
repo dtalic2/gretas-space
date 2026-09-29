@@ -1,0 +1,15 @@
+{
+  "name": "3x3 Runner 3D",
+  "short_name": "3x3 Runner",
+  "description": "A 3D times-tables endless runner you play in the browser.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#3a8ee6",
+  "theme_color": "#3a8ee6",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5fb2ff"/><stop offset="1" stop-color="#2f6fd6"/></linearGradient></defs>
+  <rect width="512" height="512" rx="110" fill="url(#s)"/>
+  <path d="M176 512 L236 250 H276 L336 512 Z" fill="#4a4f57"/>
+  <path d="M252 290 h8 v40 h-8z M250 370 h12 v60 h-12z" fill="#fff"/>
+  <g font-family="Arial Rounded MT Bold, Arial, sans-serif" font-weight="900" text-anchor="middle" stroke="#1d2340" stroke-width="16" paint-order="stroke">
+    <text x="256" y="215" font-size="190" fill="#fff">3<tspan fill="#ffc933" font-size="140">×</tspan>3</text>
+  </g>
+  <circle cx="256" cy="400" r="46" fill="#c8843f" stroke="#1d2340" stroke-width="10"/>
+  <ellipse cx="214" cy="392" rx="16" ry="30" fill="#6b3d1d"/><ellipse cx="298" cy="392" rx="16" ry="30" fill="#6b3d1d"/>
+  <circle cx="240" cy="392" r="7" fill="#1d2340"/><circle cx="272" cy="392" r="7" fill="#1d2340"/>
+  <ellipse cx="256" cy="416" rx="12" ry="8" fill="#1d2340"/>
+</svg>

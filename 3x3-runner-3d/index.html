@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#3a8ee6">
+<title>3x3 Runner 3D</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+
+<!-- ============ LOADING ============ -->
+<div id="boot">
+  <div class="boot-inner">
+    <div class="logo"><span class="l3">3</span><span class="lx">×</span><span class="l3">3</span></div>
+    <div class="logo-sub">RUNNER</div>
+    <div class="boot-bar"><i></i></div>
+    <div class="boot-msg">Waking up Milo…</div>
+  </div>
+</div>
+
+<!-- ============ MAIN MENU ============ -->
+<div id="menu" class="screen hidden">
+  <div class="menu-top">
+    <div class="chip coins"><span class="ico">🪙</span><b data-bind="coins">0</b></div>
+    <div class="chip level">
+      <span class="lvl-badge" data-bind="level">1</span>
+      <div class="xpbar"><i data-bind="xpfill"></i></div>
+    </div>
+    <button class="chip icon" data-open="settings" aria-label="Settings">⚙️</button>
+  </div>
+
+  <div class="menu-title">
+    <div class="logo"><span class="l3">3</span><span class="lx">×</span><span class="l3">3</span></div>
+    <div class="logo-sub">RUNNER</div>
+    <div class="menu-best">Best <b data-bind="best">0</b></div>
+  </div>
+
+  <div class="menu-side left">
+    <button class="side-btn" data-open="dogs"><span>🐶</span>Dogs</button>
+    <button class="side-btn" data-open="wardrobe"><span>🎩</span>Outfits</button>
+    <button class="side-btn" data-open="upgrades"><span>⚡</span>Power-ups</button>
+  </div>
+  <div class="menu-side right">
+    <button class="side-btn" data-open="missions"><span>🎯</span>Missions<em class="badge hidden" data-bind="missionBadge">!</em></button>
+    <button class="side-btn" data-open="rivals"><span>🏆</span>Rivals</button>
+    <button class="side-btn" data-open="help"><span>❓</span>How to</button>
+  </div>
+
+  <div class="menu-bottom">
+    <button class="tables-btn" data-open="tables">
+      <small>Practising</small><b data-bind="tablesLabel">2, 3, 4, 5, 10</b><span>✏️</span>
+    </button>
+    <button id="btnPlay" class="play-btn">PLAY</button>
+    <div class="boost-row" id="boostRow"></div>
+  </div>
+</div>
+
+<!-- ============ HUD ============ -->
+<div id="hud" class="hidden">
+  <div class="hud-top">
+    <div class="hud-left">
+      <div class="score"><b id="hudScore">0</b></div>
+      <div class="dist"><span id="hudDist">0</span> m</div>
+    </div>
+    <div class="hud-center">
+      <div class="mult" id="hudMult">×1</div>
+      <div class="streak hidden" id="hudStreak">🔥 <b>0</b></div>
+    </div>
+    <div class="hud-right">
+      <div class="chip coins"><span class="ico">🪙</span><b id="hudCoins">0</b></div>
+      <button class="chip icon" id="btnPause" aria-label="Pause">⏸</button>
+    </div>
+  </div>
+
+  <div class="rival-bar hidden" id="rivalBar">
+    <span class="rv-name" id="rivalName">Bruno</span>
+    <div class="rv-track"><i id="rivalFill"></i></div>
+    <span class="rv-score" id="rivalScore">1500</span>
+  </div>
+
+  <div class="question hidden" id="question">
+    <div class="q-text" id="qText">7 × 8</div>
+    <div class="q-timer"><i id="qTimer"></i></div>
+    <div class="q-hint">Run through the right answer!</div>
+  </div>
+
+  <div class="powers" id="powers"></div>
+  <div class="popups" id="popups"></div>
+  <div class="touch-hint hidden" id="touchHint">Swipe ← → to change lane, ↑ to jump, ↓ to slide</div>
+</div>
+
+<!-- ============ PANELS (shop, missions, settings…) ============ -->
+<div id="panel" class="panel hidden">
+  <div class="panel-card">
+    <div class="panel-head">
+      <h2 id="panelTitle">Title</h2>
+      <div class="chip coins small"><span class="ico">🪙</span><b data-bind="coins">0</b></div>
+      <button class="close" id="panelClose" aria-label="Close">✕</button>
+    </div>
+    <div class="panel-body" id="panelBody"></div>
+  </div>
+</div>
+
+<!-- ============ COUNTDOWN ============ -->
+<div id="countdown" class="hidden"><span></span></div>
+
+<!-- ============ PAUSE ============ -->
+<div id="pause" class="modal hidden">
+  <div class="modal-card">
+    <h2>Paused</h2>
+    <div class="pause-missions" id="pauseMissions"></div>
+    <button class="big-btn green" id="btnResume">Resume</button>
+    <button class="big-btn" id="btnQuit">Quit run</button>
+  </div>
+</div>
+
+<!-- ============ REVIVE ============ -->
+<div id="revive" class="modal hidden">
+  <div class="modal-card">
+    <h2 id="reviveTitle">Ouch!</h2>
+    <div class="revive-answer" id="reviveAnswer"></div>
+    <div class="revive-quiz hidden" id="reviveQuiz">
+      <div class="rq-text" id="rqText">6 × 7</div>
+      <div class="rq-opts" id="rqOpts"></div>
+      <div class="q-timer"><i id="rqTimer"></i></div>
+    </div>
+    <div class="revive-btns" id="reviveBtns">
+      <button class="big-btn pink" id="btnReviveItem">💖 Second Chance <small id="reviveCount">×0</small></button>
+      <button class="big-btn blue" id="btnReviveQuiz">🧠 Answer to keep running</button>
+      <button class="big-btn" id="btnGiveUp">No thanks</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ GAME OVER ============ -->
+<div id="gameover" class="screen hidden">
+  <div class="go-card">
+    <div class="go-banner" id="goBanner">Great run!</div>
+    <div class="go-score"><small>Score</small><b id="goScore">0</b><em id="goBest" class="hidden">NEW BEST!</em></div>
+    <div class="go-grid">
+      <div><small>Distance</small><b id="goDist">0 m</b></div>
+      <div><small>Coins</small><b id="goCoins">0</b></div>
+      <div><small>Answers</small><b id="goAnswers">0/0</b></div>
+      <div><small>Best streak</small><b id="goStreak">0</b></div>
+    </div>
+    <div class="go-xp">
+      <span class="lvl-badge" id="goLevel">1</span>
+      <div class="xpbar big"><i id="goXp"></i></div>
+      <span class="xp-gain" id="goXpGain">+0 XP</span>
+    </div>
+    <div class="go-tip" id="goTip"></div>
+    <div class="go-rewards" id="goRewards"></div>
+    <div class="go-btns">
+      <button class="big-btn" id="btnHome">🏠 Home</button>
+      <button class="big-btn green" id="btnAgain">▶ Run again</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ LEVEL UP / DAILY ============ -->
+<div id="celebrate" class="modal hidden">
+  <div class="modal-card celebrate-card">
+    <div class="cel-rays"></div>
+    <h2 id="celTitle">Level up!</h2>
+    <div id="celBody"></div>
+    <button class="big-btn green" id="celOk">Woof!</button>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
