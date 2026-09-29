@@ -1,6 +1,7 @@
 // ---------- DOM: HUD bits, toasts, and the menu panels ----------
 
-import { DOGS, OUTFITS, POWERUPS, UPGRADE_COST, BOOSTS, RIVALS, TABLE_CHOICES, xpForLevel } from './data.js';
+import { DOGS, OUTFITS, POWERUPS, UPGRADE_COST, BOOSTS, RIVALS, TABLE_CHOICES, CHALLENGE, xpForLevel } from './data.js';
+import { dogName, mastered } from './save.js';
 import { missionView, dailyView, loginReward } from './progress.js';
 
 export const $ = sel => document.querySelector(sel);
@@ -34,6 +35,7 @@ export function bindSave(save){
   set('best', fmt(save.best));
   $$('[data-bind="xpfill"]').forEach(e => { e.style.width = `${Math.min(100, 100 * save.xp / xpForLevel(save.level))}%`; });
   set('tablesLabel', tablesLabel(save.tables));
+  set('dogName', dogName(save, save.dog));
   const claimable = missionView(save).some(m => m.done) || dailyView(save).some(q => q.done && !q.claimed) || !!loginReward(save);
   $$('[data-bind="missionBadge"]').forEach(e => e.classList.toggle('hidden', !claimable));
 }
@@ -74,21 +76,26 @@ function el(html){
 const DOG_EMOJI = { milo:'🐶', pug:'🐶', corgi:'🦊', dalmatian:'🐕', shiba:'🐕', malamute:'🐺', golden:'🦮' };
 export function renderDogs(app){
   return (body, redraw) => {
-    body.appendChild(el(`<p>Level up to unlock new dogs. Pick your runner!</p>`));
+    body.appendChild(el(`<p>Level up — or master tables in the 🏅 Challenge — to unlock new dogs. Tap your dog again to rename it.</p>`));
     const grid = el(`<div class="grid"></div>`);
+    const won = mastered(app.save);
     for (const d of DOGS){
-      const locked = app.save.level < d.unlock;
+      const locked = d.challenge ? won < d.challenge : app.save.level < d.unlock;
+      const how = d.challenge ? `Master ${d.challenge} table${d.challenge > 1 ? 's' : ''} in Challenge (${won}/${d.challenge})` : `Unlocks at level ${d.unlock}`;
       const sel = app.save.dog === d.id;
+      const name = esc(dogName(app.save, d.id));
       const c = el(`<div class="card ${sel ? 'sel' : ''} ${locked ? 'locked' : ''}">
         <div class="swatch" style="background:${hex(d.body)}"></div>
-        <div class="name">${locked ? '🔒 ' : ''}${d.name}</div>
+        <div class="name ${name !== d.name ? 'dogname' : ''}">${locked ? '🔒 ' : d.challenge ? '🏅 ' : ''}${name}</div>
         <div class="sub">${d.breed}</div>
-        <div class="sub">${locked ? `Unlocks at level ${d.unlock}` : d.blurb}</div>
+        <div class="sub">${locked ? how : d.blurb}</div>
+        ${sel ? '<button class="rename">✏️ Rename</button>' : ''}
       </div>`);
       c.onmouseenter = () => app.previewDog(d.id);
       c.onclick = () => {
         app.previewDog(d.id);
-        if (locked){ app.sfx('bark'); toast(`${d.name} unlocks at level ${d.unlock}`, 'Keep running to earn XP!'); return; }
+        if (locked){ app.sfx('bark'); toast(`${d.name} the ${d.breed} is locked`, how); return; }
+        if (sel){ app.renameDog(d.id, redraw); return; }
         app.save.dog = d.id; app.commit(); app.sfx('bark'); redraw();
       };
       grid.appendChild(c);
@@ -252,11 +259,37 @@ export function renderTables(app){
   };
 }
 
+// ---------- Multiplication Challenge ----------
+export function renderChallenge(app){
+  return body => {
+    body.appendChild(el(`<p>Pick one table. You'll get all ${CHALLENGE.questions} of its facts, rapid-fire, as the road speeds up. Three hearts: a wrong gate or a crash costs one.
+      ⭐ ${CHALLENGE.stars[0]}+ right · ⭐⭐ ${CHALLENGE.stars[1]}+ · ⭐⭐⭐ all ${CHALLENGE.stars[2]}.</p>`));
+    const grid = el(`<div class="ch-grid"></div>`);
+    for (const t of TABLE_CHOICES){
+      const st = app.save.challenge[t] || 0;
+      const b = el(`<button class="ch-tbl ${st >= 3 ? 'gold' : ''}"><b>×${t}</b>
+        <span class="st">${[0, 1, 2].map(i => i < st ? '<i>★</i>' : '★').join('')}</span></button>`);
+      b.onclick = () => app.startChallenge(t);
+      grid.appendChild(b);
+    }
+    body.appendChild(grid);
+    const won = mastered(app.save);
+    body.appendChild(el(`<h3>🏅 Challenge dogs <small style="font-weight:600;opacity:.6">(${won} table${won === 1 ? '' : 's'} mastered)</small></h3>`));
+    const list = el(`<div class="ch-dogs"></div>`);
+    for (const d of DOGS.filter(d => d.challenge)){
+      const got = won >= d.challenge;
+      list.appendChild(el(`<div class="ch-dog ${got ? 'won' : ''}"><div class="sw" style="background:${hex(d.body)}"></div>
+        <div class="t">${d.name} the ${d.breed}</div><div>${got ? '✅ Won!' : `${Math.min(won, d.challenge)}/${d.challenge}`}</div></div>`));
+    }
+    body.appendChild(list);
+  };
+}
+
 // ---------- Rivals ----------
 export function renderRivals(app){
   return body => {
     body.appendChild(el(`<p>Beat their scores in a run — they'll show up running beside you as you catch them!</p>`));
-    const rows = RIVALS.map(r => ({ ...r, you:false })).concat([{ name:`You (${DOGS.find(d => d.id === app.save.dog).name})`, score:app.save.best, you:true }])
+    const rows = RIVALS.map(r => ({ ...r, you:false })).concat([{ name:`You & ${esc(dogName(app.save, app.save.dog))}`, score:app.save.best, you:true }])
       .sort((a, b) => b.score - a.score);
     rows.forEach((r, i) => {
       const beaten = !r.you && app.save.rivalsBeaten.includes(r.name);
@@ -273,7 +306,8 @@ export function renderRivals(app){
 export function renderSettings(app){
   return (body, redraw) => {
     const s = app.save.settings;
-    const rows = [['sound', '🔊 Sound effects'], ['music', '🎵 Music'], ['voice', '🗣️ Read questions aloud'], ['shake', '📳 Screen shake']];
+    const rows = [['sound', '🔊 Sound effects'], ['music', '🎵 Music'], ['voice', '🗣️ Read questions aloud'], ['shake', '📳 Screen shake'],
+      ['touchButtons', '👆 On-screen buttons']];
     for (const [k, label] of rows){
       const r = el(`<div class="setting"><span>${label}</span><button class="toggle ${s[k] ? 'on' : ''}"></button></div>`);
       r.querySelector('button').onclick = () => { s[k] = !s[k]; app.applySettings(); app.commit(); redraw(); };
@@ -305,6 +339,9 @@ export function renderHelp(){
       <div class="help-row"><div class="hk">⬆️</div><div><kbd>↑</kbd> <kbd>W</kbd> <kbd>Space</kbd> · swipe up — jump barriers, cones and even cars</div></div>
       <div class="help-row"><div class="hk">⬇️</div><div><kbd>↓</kbd> <kbd>S</kbd> · swipe down — slide under the high bars</div></div>
       <div class="help-row"><div class="hk">⏸</div><div><kbd>P</kbd> / <kbd>Esc</kbd> — pause</div></div>
+      <div class="help-row"><div class="hk">👆</div><div>On a touch screen, swipe anywhere, or use the ◀ ▶ ▲ ▼ buttons (switch them off in Settings)</div></div>
+      <h3>🏅 Multiplication Challenge</h3>
+      <p>Pick one table and run through all twelve of its facts, rapid-fire, as the game speeds up. You have three hearts — a wrong gate or a crash costs one. Earn up to 3 stars per table for bonus coins; master tables (3 stars) to win special dogs.</p>
       <h3>Power-ups</h3>
       ${Object.values(POWERUPS).map(p => `<div class="help-row"><div class="hk">${p.icon}</div><div><b>${p.name}</b> — ${p.desc}</div></div>`).join('')}
       <h3>Scoring</h3>
@@ -326,6 +363,10 @@ export function renderBoostRow(app, chosen){
     };
     row.appendChild(btn);
   }
+}
+
+export function esc(s){
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 }
 
 function hex(n){ return '#' + n.toString(16).padStart(6, '0'); }

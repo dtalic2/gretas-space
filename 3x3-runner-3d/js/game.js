@@ -1,10 +1,11 @@
 // ---------- A single run: the dog, physics, collisions, questions, power-ups, rivals ----------
 
 import * as THREE from 'three';
-import { LANE_X, RUN, POWERUPS, RIVALS, DOGS } from './data.js';
-import { buildDog, animateDog } from './dog.js';
+import { LANE_X, RUN, POWERUPS, RIVALS, DOGS, CHALLENGE } from './data.js';
+import { buildDog, animateDog, nameTag } from './dog.js';
 import { Spawner, revealGate, markGate } from './entities.js';
 import { newRunStats } from './progress.js';
+import { shuffle } from './mathq.js';
 
 const HALF_W = 0.42, HALF_D = 0.45, STAND_H = 1.25, SLIDE_H = 0.55;
 const ROCKET_Y = 7;
@@ -31,7 +32,7 @@ export class Run {
     this.scene.add(this.magnetRing);
   }
 
-  start({ startShield = false } = {}){
+  start({ startShield = false, challenge = null } = {}){
     const s = this.save;
     this.z = 0; this.prevZ = 0;
     this.lane = 1; this.x = LANE_X[1]; this.laneFrom = 1; this.laneT = 1;
@@ -56,21 +57,37 @@ export class Run {
     this.shake = 0;
     this.happyT = 0;
 
+    // Multiplication Challenge: every fact of one table once, in random order, three hearts
+    this.challenge = challenge ? {
+      table: challenge, queue: shuffle([1,2,3,4,5,6,7,8,9,10,11,12]).slice(0, CHALLENGE.questions),
+      spawned: 0, answered: 0, hearts: CHALLENGE.hearts, done: false,
+    } : null;
+    this.accel = challenge ? CHALLENGE.accel : RUN.accel;
+
+    const C = this.challenge;
     this.spawner.reset(0, {
-      leadTime: speed => Math.max(3.4, 6.2 - (speed - RUN.startSpeed) * 0.13),
+      leadTime: C ? speed => Math.max(2.8, 4.8 - (speed - RUN.startSpeed) * 0.1)
+                  : speed => Math.max(3.4, 6.2 - (speed - RUN.startSpeed) * 0.13),
       gateEvery: dist => {
-        const [a, b] = dist > 2500 ? RUN.questionEveryLate : RUN.questionEvery;
+        const [a, b] = C ? CHALLENGE.gateEvery : dist > 2500 ? RUN.questionEveryLate : RUN.questionEvery;
         return a + Math.random() * (b - a);
       },
-      makeQuestion: () => this.engine.next(this.tables(), Math.min(1, this.stats.distance / 3000)),
+      makeQuestion: C ? () => this.engine.make(C.table, C.queue[C.spawned++])
+                      : () => this.engine.next(this.tables(), Math.min(1, this.stats.distance / 3000)),
+      moreGates: C ? () => C.spawned < C.queue.length : null,
+      noRocket: !!C,
     });
+    if (C) this.spawner.nextGateZ = -130;
     this.dog.root.position.set(this.x, 0, 0);
     this.dog.root.rotation.set(0, 0, 0);
     this.dog.pivot.rotation.set(0, 0, 0);
     if (startShield) this.giveShield(true);
   }
 
-  tables(){ return this.save.tables.length ? this.save.tables : [2, 5, 10]; }
+  tables(){
+    if (this.challenge) return [this.challenge.table];
+    return this.save.tables.length ? this.save.tables : [2, 5, 10];
+  }
 
   duration(type){
     const p = POWERUPS[type];
@@ -133,7 +150,7 @@ export class Run {
     this.time += dt;
     const P = this.power;
     const rocketing = P.rocket > 0;
-    const speedTarget = Math.min(RUN.maxSpeed, RUN.startSpeed + this.time * RUN.accel);
+    const speedTarget = Math.min(RUN.maxSpeed, RUN.startSpeed + this.time * this.accel);
     this.speed += ((rocketing ? Math.max(speedTarget, 24) : speedTarget) - this.speed) * Math.min(1, dt * 2);
 
     // forward
@@ -334,7 +351,16 @@ export class Run {
           this.streak = 0;
           this.mult = 1;
           this.hooks.answer(res, { streak:0, mult:1 });
-          if (this.power.rocket <= 0 && this.invuln <= 0) this.hit(null, 'wrong', res);
+          if (this.power.rocket <= 0 && (this.invuln <= 0 || this.challenge)) this.hit(null, 'wrong', res);
+        }
+        const C = this.challenge;
+        if (C){
+          C.answered++;
+          if (this.alive && C.answered >= C.queue.length && !C.done){
+            C.done = true;
+            this.hooks.challengeDone();
+          }
+          if (!this.alive) return;
         }
       }
     }
@@ -351,6 +377,18 @@ export class Run {
       this.hooks.shieldSaved(reason);
       return;
     }
+    if (this.challenge && this.challenge.hearts > 1){
+      // challenges run on hearts: lose one, blink, keep going
+      this.challenge.hearts--;
+      this.invuln = 1.6;
+      this.shake = 0.8;
+      this.fx.stars(this.x, this.y + 1.2, this.z);
+      this.hooks.sfx(reason === 'wrong' ? 'wrong' : 'crash');
+      if (obstacle) obstacle.sinking = 0.001;
+      this.hooks.heartLost(this.challenge.hearts, reason, res);
+      return;
+    }
+    if (this.challenge) this.challenge.hearts = 0;
     this.alive = false;
     this.crashReason = reason;
     this.crashRes = res;
@@ -380,6 +418,7 @@ export class Run {
 
   // ---------- rivals ----------
   handleRival(dt){
+    if (this.challenge) return;
     const r = RIVALS[this.rivalIdx];
     if (!r) return;
     const gap = r.score - this.score;
@@ -423,24 +462,4 @@ function nearestLane(x){
   let best = 0;
   for (let i = 1; i < 3; i++) if (Math.abs(LANE_X[i] - x) < Math.abs(LANE_X[best] - x)) best = i;
   return best;
-}
-
-function nameTag(text){
-  const font = '800 44px system-ui, sans-serif';
-  const c = document.createElement('canvas');
-  let x = c.getContext('2d');
-  x.font = font;
-  const w = Math.ceil(x.measureText(text).width + 48);
-  c.width = w; c.height = 96;
-  x = c.getContext('2d');
-  x.font = font;
-  x.fillStyle = 'rgba(20,20,40,0.75)';
-  x.beginPath(); x.roundRect(2, 14, w - 4, 68, 34); x.fill();
-  x.fillStyle = '#ffd166'; x.textAlign = 'center'; x.textBaseline = 'middle';
-  x.fillText(text, w / 2, 50);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
-  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map:t, depthTest:false, transparent:true }));
-  s.scale.set(0.45 * w / 96, 0.45, 1);
-  s.position.y = 1.55;
-  return s;
 }

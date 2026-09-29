@@ -4,9 +4,9 @@ import * as THREE from 'three';
 import { World } from './world.js';
 import { Effects } from './effects.js';
 import { Run } from './game.js';
-import { buildDog, animateDog, setWear } from './dog.js';
+import { buildDog, animateDog, setWear, nameTag } from './dog.js';
 import { MathEngine } from './mathq.js';
-import { DOGS, POWERUPS, RIVALS, xpForLevel } from './data.js';
+import { DOGS, POWERUPS, RIVALS, CHALLENGE, xpForLevel } from './data.js';
 import * as store from './save.js';
 import * as audio from './audio.js';
 import { sfx } from './audio.js';
@@ -20,13 +20,15 @@ bootBar.style.width = '20%';
 
 let save = store.load();
 P.ensureDaily(save);
+if (save.settings.touchButtons === null) save.settings.touchButtons = matchMedia('(pointer:coarse)').matches;
 const engine = new MathEngine(save.math);
 const world = new World($('#scene'), save.settings.quality);
 const fx = new Effects(world.scene);
 bootBar.style.width = '60%';
 
 let dog = null;
-let state = 'menu';          // menu | countdown | running | paused | revive | over
+let state = 'menu';
+let challengeTable = null;   // set while a Multiplication Challenge is running          // menu | countdown | running | paused | revive | over
 let run = null;
 let camMode = 'menu';        // menu | showcase | run
 let camBlend = 0;
@@ -37,6 +39,10 @@ function makeDog(id = save.dog, wear = save.wear){
   const def = DOGS.find(d => d.id === id) || DOGS[0];
   dog = buildDog(def, wear);
   dog.root.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  dog.tag = nameTag(store.dogName(save, def.id), '#ffffff');
+  dog.tag.position.y = 1.35;
+  dog.tag.visible = state === 'menu';
+  dog.root.add(dog.tag);
   world.scene.add(dog.root);
   if (run) run.dog = dog;
   return dog;
@@ -74,9 +80,10 @@ const hooks = {
     const shown = res.text.includes('?') ? res.text.replace('?', res.answer) : `${res.text} = ${res.answer}`;
     $('#qText').textContent = shown;
     setTimeout(() => { if (!qTimer) show('#question', false); }, 1100);
+    if (run.challenge) updateHearts();
     if (res.ok){
       sfx.correct();
-      popup(res.fast ? 'SUPER FAST!' : pick(['Correct!', 'Brilliant!', 'Paw-some!', 'Great!', 'Yes!']), 'good');
+      popup(res.fast ? 'SUPER FAST!' : pick(['Correct!', 'Brilliant!', 'Paw-some!', 'Great!', `Good dog, ${myName()}!`, `Go, ${myName()}!`]), 'good');
       popup(`+${info.pts}  🪙+${info.bonusCoins}`, 'gold', true, 50);
       if (res.fast) sfx.fast();
       if (info.streak % 3 === 0 && info.mult > 1){
@@ -93,7 +100,20 @@ const hooks = {
   crash: (reason, res) => {
     state = 'revive';
     audio.setMusicIntensity(0);
+    if (run.challenge){ setTimeout(() => finishChallenge(false), 1000); return; }
     setTimeout(() => openRevive(reason, res), 900);
+  },
+  heartLost: (hearts, reason, res) => {
+    updateHearts(true);
+    popup(hearts === 1 ? '💔 Last heart!' : '💔', 'bad');
+    if (reason === 'wrong' && res) toast(`Remember: ${factText(res)}`, `${hearts} heart${hearts === 1 ? '' : 's'} left`, 'pink');
+  },
+  challengeDone: () => {
+    popup('Challenge complete!', 'gold');
+    sfx.levelUp();
+    fx.burstConfetti(run.x, 3, run.z - 6, 140);
+    state = 'finishing';
+    setTimeout(() => finishChallenge(true), 1400);
   },
   rival: (r, what) => {
     if (what === 'taunt') toast(`🐾 ${r.name}`, `“${r.taunt}”`, 'pink');
@@ -125,6 +145,8 @@ const app = {
   claimDaily(i){ const c = P.claimDaily(save, i); if (c){ save.coins += c; sfx.buy(); toast(`Quest reward +${c} 🪙`, '', 'gold'); } app.commit(); },
   claimLogin(){ const c = P.takeLoginReward(save); if (c){ sfx.buy(); toast(`Daily reward +${c} 🪙`, `Day ${save.daily.loginStreak} streak`, 'gold'); } app.commit(); },
   applySettings,
+  renameDog: (id, done) => askName(id, done),
+  startChallenge: t => startRun(t),
   resetAll(){ save = store.reset(); P.ensureDaily(save); Object.assign(engine, new MathEngine(null)); run.save = save;
     makeDog(); app.commit(); UI.closePanel(); toast('Progress reset'); app.refreshBoosts(); },
 };
@@ -132,6 +154,8 @@ const app = {
 function applySettings(){
   const s = save.settings;
   audio.setSound(s.sound); audio.setMusic(s.music); audio.setVoice(s.voice);
+  show('#touchPad', !!s.touchButtons);
+  $('#hud').classList.toggle('pad', !!s.touchButtons);
   if (world.quality !== s.quality) world.setQuality(s.quality);
 }
 applySettings();
@@ -145,6 +169,7 @@ const SCREENS = {
   rivals:    ['Rivals', UI.renderRivals, false],
   settings:  ['Settings', UI.renderSettings, false],
   help:      ['How to play', UI.renderHelp, false],
+  challenge: ['Multiplication Challenge', UI.renderChallenge, false],
 };
 
 function openScreen(name){
@@ -176,29 +201,89 @@ function enterMenu(){
   UI.bindSave(save);
   UI.renderBoostRow(app, chosenBoosts);
   audio.setMusicIntensity(0);
-  if (P.loginReward(save)){
+  if (dog.tag) dog.tag.visible = true;
+  const daily = () => {
+    if (!P.loginReward(save)) return;
     const lr = P.loginReward(save);
     celebrate('Daily reward!', `<div class="unlock"><span>🎁</span> Day ${lr.day} — 🪙 ${lr.amount}</div>
       <p>Come back tomorrow for more!</p>`, () => app.claimLogin(), 'Claim');
-  }
+  };
+  // first visit: meet your dog and give it a name
+  if (!save.askedName){ save.askedName = true; store.save(save); askName(save.dog, daily, true); }
+  else daily();
 }
+
+// ---------- naming your dog ----------
+const NAME_IDEAS = ['Biscuit', 'Rocket', 'Pickle', 'Waffles', 'Noodle', 'Ziggy', 'Pepper', 'Bolt', 'Maple', 'Captain',
+  'Sprout', 'Pixel', 'Bean', 'Nacho', 'Comet', 'Muffin', 'Scout', 'Tofu', 'Sherlock', 'Dotty', 'Turbo', 'Cookie', 'Echo', 'Fudge'];
+let nameCb = null, nameFor = null;
+function myName(){ return store.dogName(save, save.dog); }
+function askName(id, done = null, first = false){
+  const def = DOGS.find(d => d.id === id) || DOGS[0];
+  nameFor = id; nameCb = done;
+  $('#nameTitle').textContent = first ? 'Meet your dog!' : 'Rename your dog';
+  $('#nameBreed').textContent = first ? `This ${def.breed} is ready to run. What's their name?` : `Your ${def.breed} is called…`;
+  const input = $('#nameInput');
+  input.value = store.dogName(save, id);
+  $('#nameCancel').textContent = first ? `Keep "${def.name}"` : 'Cancel';
+  const ideas = NAME_IDEAS.slice().sort(() => Math.random() - 0.5).slice(0, 5);
+  const sugg = $('#nameSugg'); sugg.innerHTML = '';
+  for (const n of ideas){
+    const b = document.createElement('button'); b.textContent = n;
+    b.onclick = () => { input.value = n; sfx.click(); };
+    sugg.appendChild(b);
+  }
+  show('#nameModal');
+  // don't pop the phone keyboard over the suggestions on first open
+  if (!matchMedia('(pointer:coarse)').matches) setTimeout(() => { input.focus(); input.select(); }, 50);
+}
+function closeName(saveIt){
+  const id = nameFor;
+  if (saveIt){
+    const clean = store.cleanName($('#nameInput').value);
+    const def = DOGS.find(d => d.id === id);
+    if (clean && clean !== def.name) save.dogNames[id] = clean; else delete save.dogNames[id];
+    store.save(save);
+    sfx.bark();
+    toast(`🐾 Hello, ${store.dogName(save, id)}!`, '', 'gold');
+    if (state === 'menu') makeDog(camMode === 'showcase' ? dog.def.id : save.dog);
+  }
+  $('#nameInput').blur();
+  show('#nameModal', false);
+  UI.bindSave(save);
+  const cb = nameCb; nameCb = null; nameFor = null;
+  cb?.();
+}
+$('#nameSave').onclick = () => closeName(true);
+$('#nameCancel').onclick = () => closeName(false);
+$('#nameDice').onclick = () => { $('#nameInput').value = NAME_IDEAS[Math.floor(Math.random() * NAME_IDEAS.length)]; sfx.click(); };
+$('#nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') closeName(true); if (e.key === 'Escape') closeName(false); });
+$('#btnName').onclick = () => { sfx.click(); askName(save.dog); };
+
+function factText(r){ return r.text.includes('?') ? r.text.replace('?', r.answer) : `${r.text} = ${r.answer}`; }
 
 $('#btnPlay').onclick = () => startRun();
 
-function startRun(){
-  if (!save.tables.length){ toast('Pick some times tables first!'); openScreen('tables'); return; }
+function startRun(challenge = null){
+  challengeTable = challenge;
+  if (!challenge && !save.tables.length){ toast('Pick some times tables first!'); openScreen('tables'); return; }
   audio.initAudio(); audio.startMusic();
   sfx.click();
-  show('#menu', false); show('#gameover', false); UI.closePanel();
+  UI.closePanel();                     // its onClose re-shows the menu, so close it first
+  show('#menu', false); show('#gameover', false);
   show('#hud');
   const opts = {};
-  for (const k of ['headstart', 'startshield']){
+  // boosts are for endless runs; a challenge is the same test for everyone
+  if (!challenge) for (const k of ['headstart', 'startshield']){
     if (chosenBoosts[k] && save.boosts[k] > 0){ save.boosts[k]--; opts[k] = true; }
     chosenBoosts[k] = false;
   }
   store.save(save);
   makeDog();
-  run.start({ startShield:opts.startshield });
+  dog.tag.visible = false;
+  run.start({ startShield:opts.startshield, challenge });
+  show('#challengeBar', !!challenge);
+  if (challenge){ $('#chTable').textContent = `×${challenge}`; updateHearts(); }
   camMode = 'run'; camBlend = 0;
   state = 'countdown';
   powerDirty = true;
@@ -210,7 +295,7 @@ function startRun(){
   const cd = $('#countdown'), span = cd.querySelector('span');
   show(cd);
   const tick = () => {
-    span.textContent = n > 0 ? n : 'GO!';
+    span.textContent = n > 0 ? n : `GO, ${myName().toUpperCase()}!`;
     span.style.animation = 'none'; void span.offsetWidth; span.style.animation = '';
     sfx.countdown(n === 0);
     if (n === 0){
@@ -230,7 +315,7 @@ function pause(){
   if (state !== 'running') return;
   state = 'paused';
   run.paused = true;
-  const list = P.missionView(save, run.stats).map(m => `${m.done ? '✅' : '⬜'} ${m.text} <b>${fmt(m.progress)}/${fmt(m.goal)}</b>`).join('<br>');
+  const list = run.challenge ? `🏅 ×${run.challenge.table} Challenge — ${run.challenge.answered}/${run.challenge.queue.length} answered, ${'❤️'.repeat(run.challenge.hearts)}` : P.missionView(save, run.stats).map(m => `${m.done ? '✅' : '⬜'} ${m.text} <b>${fmt(m.progress)}/${fmt(m.goal)}</b>`).join('<br>');
   $('#pauseMissions').innerHTML = list;
   show('#pause');
 }
@@ -241,7 +326,7 @@ function resume(){
 }
 $('#btnPause').onclick = pause;
 $('#btnResume').onclick = resume;
-$('#btnQuit').onclick = () => { show('#pause', false); run.alive = false; endRun(); };
+$('#btnQuit').onclick = () => { show('#pause', false); run.alive = false; if (run.challenge) finishChallenge(false); else endRun(); };
 document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
 
 // ---------- revive ----------
@@ -311,12 +396,11 @@ function doRevive(){
 }
 
 // ---------- end of run ----------
-function endRun(){
-  state = 'over';
-  show('#question', false); qTimer = null;
+// Bank a finished run: missions, quests, coins, totals, XP. Shared by endless and challenge.
+function settleRun({ countBest = true } = {}){
   const st = run.stats;
   const score = Math.floor(run.score);
-  const newBest = score > save.best;
+  const newBest = countBest && score > save.best;
   // missions & quests first: totalCorrect goals read the totals before this run is added
   const rewards = [];
   P.checkMissions(save, st);
@@ -333,8 +417,10 @@ function endRun(){
   });
 
   save.coins += run.coins;
-  save.best = Math.max(save.best, score);
-  save.bestDistance = Math.max(save.bestDistance, Math.floor(st.distance));
+  if (countBest){
+    save.best = Math.max(save.best, score);
+    save.bestDistance = Math.max(save.bestDistance, Math.floor(st.distance));
+  }
   save.runs++;
   save.totals.correct += st.correct; save.totals.asked += st.asked;
   save.totals.coins += st.coins; save.totals.distance += Math.floor(st.distance);
@@ -343,37 +429,106 @@ function endRun(){
   const lvlBefore = save.level, xpBefore = save.xp;
   const gained = P.addXp(save, xp);
   save.math = engine.serialize();
-  store.save(save);
+  return { st, score, newBest, rewards, xp, lvlBefore, xpBefore, gained };
+}
 
-  // fill the card
-  $('#goBanner').textContent = newBest ? 'New high score!' : score > 1500 ? 'Great run!' : pick(['Nice try!', 'Good run!', 'Woof!']);
-  $('#goScore').textContent = fmt(score);
-  show('#goBest', newBest && save.runs > 1);
+function fillCard(r, { banner, tip, stars = null }){
+  const { st } = r;
+  $('#goBanner').textContent = banner;
+  show('#goStars', stars !== null);
+  if (stars !== null) $('#goStars').innerHTML = [0, 1, 2].map(i => i < stars ? '<i>★</i>' : '★').join('');
+  $('#goScoreLabel').textContent = stars !== null ? `${myName()}'s score` : 'Score';
+  $('#goScore').textContent = fmt(r.score);
+  show('#goBest', r.newBest && save.runs > 1);
   $('#goDist').textContent = `${fmt(st.distance)} m`;
   $('#goCoins').textContent = fmt(run.coins);
-  $('#goAnswers').textContent = `${st.correct}/${st.asked}`;
+  $('#goAnswers').textContent = `${st.correct}/${stars !== null ? run.challenge.queue.length : st.asked}`;
   $('#goStreak').textContent = st.bestStreak;
-  $('#goXpGain').textContent = `+${xp} XP`;
-  $('#goLevel').textContent = lvlBefore;
+  $('#goXpGain').textContent = `+${r.xp} XP`;
+  $('#goLevel').textContent = r.lvlBefore;
   const bar = $('#goXp');
-  bar.style.transition = 'none'; bar.style.width = `${100 * xpBefore / xpForLevel(lvlBefore)}%`;
+  bar.style.transition = 'none'; bar.style.width = `${100 * r.xpBefore / xpForLevel(r.lvlBefore)}%`;
   requestAnimationFrame(() => requestAnimationFrame(() => {
     bar.style.transition = '';
-    bar.style.width = gained.length ? '100%' : `${100 * save.xp / xpForLevel(save.level)}%`;
-    if (gained.length) setTimeout(() => { $('#goLevel').textContent = save.level; bar.style.transition = 'none'; bar.style.width = '0%';
+    bar.style.width = r.gained.length ? '100%' : `${100 * save.xp / xpForLevel(save.level)}%`;
+    if (r.gained.length) setTimeout(() => { $('#goLevel').textContent = save.level; bar.style.transition = 'none'; bar.style.width = '0%';
       requestAnimationFrame(() => { bar.style.transition = ''; bar.style.width = `${100 * save.xp / xpForLevel(save.level)}%`; }); }, 1000);
   }));
-  const weak = engine.weakest(save.tables);
-  const r = run.crashRes;
-  $('#goTip').innerHTML = r && !r.ok ? `💡 Remember: <b>${r.text.includes('?') ? r.text.replace('?', r.answer) : `${r.text} = ${r.answer}`}</b>`
-    : weak.length ? `💡 Keep practising the <b>${weak.map(w => '×' + w).join(' and ')}</b> tables` : '';
-  $('#goRewards').innerHTML = rewards.map(x => `<div>${x}</div>`).join('');
+  $('#goTip').innerHTML = tip;
+  $('#goRewards').innerHTML = r.rewards.map(x => `<div>${x}</div>`).join('');
   show('#hud', false);
+}
+
+function endRun(){
+  state = 'over';
+  show('#question', false); qTimer = null;
+  const r = settleRun();
+  store.save(save);
+  const weak = engine.weakest(save.tables);
+  const cr = run.crashRes;
+  const name = UI.esc(myName());
+  fillCard(r, {
+    banner: r.newBest ? 'New high score!' : r.score > 1500 ? `Great run, ${myName()}!` : pick(['Nice try!', 'Good run!', `Good dog, ${myName()}!`]),
+    tip: cr && !cr.ok ? `💡 Remember: <b>${factText(cr)}</b>`
+      : weak.length ? `💡 ${name} says: keep practising the <b>${weak.map(w => '×' + w).join(' and ')}</b> tables` : '',
+  });
   setTimeout(() => {
     show('#gameover');
-    if (newBest) { sfx.levelUp(); fx.burstConfetti(run.x, 2, run.z - 4, 120); }
-    if (gained.length) setTimeout(() => showLevelUps(gained), 1300);
+    if (r.newBest) { sfx.levelUp(); fx.burstConfetti(run.x, 2, run.z - 4, 120); }
+    if (r.gained.length) setTimeout(() => showLevelUps(r.gained), 1300);
   }, 250);
+}
+
+// ---------- Multiplication Challenge results ----------
+function finishChallenge(completed){
+  if (state === 'results') return;
+  state = 'results';
+  show('#question', false); qTimer = null;
+  const C = run.challenge, t = C.table;
+  const correct = run.stats.correct;
+  const stars = CHALLENGE.stars.filter(n => correct >= n).length;
+  const prev = save.challenge[t] || 0;
+  const masteredBefore = store.mastered(save);
+  const r = settleRun({ countBest:false });
+  if (stars > prev){
+    save.challenge[t] = stars;
+    const bonus = CHALLENGE.starCoins.slice(prev, stars).reduce((a, b) => a + b, 0);
+    save.coins += bonus;
+    r.rewards.unshift(`⭐ New best on ×${t}: ${stars} star${stars > 1 ? 's' : ''} <b>+${bonus} 🪙</b>`);
+  }
+  const masteredNow = store.mastered(save);
+  const newDogs = DOGS.filter(d => d.challenge && masteredBefore < d.challenge && masteredNow >= d.challenge);
+  for (const d of newDogs) r.rewards.unshift(`🏅 You won ${d.name} the ${d.breed}!`);
+  store.save(save);
+
+  const missed = run.stats.asked - correct;
+  fillCard(r, {
+    stars,
+    banner: completed ? (stars === 3 ? `×${t} mastered!` : `×${t} Challenge done!`) : `×${t} Challenge over`,
+    tip: stars === 3 ? `🏆 Perfect! ${UI.esc(myName())} knows every fact in the ${t} times table.`
+      : !completed ? `💡 Out of hearts after ${C.answered} of ${C.queue.length}. ${run.crashRes && !run.crashRes.ok ? `Remember: <b>${factText(run.crashRes)}</b>` : 'Try again!'}`
+      : `💡 ${missed} wrong — ${stars < 3 ? `get all ${CHALLENGE.questions} right for 3 stars` : ''}`,
+  });
+  setTimeout(() => {
+    show('#gameover');
+    if (stars >= 2){ sfx.levelUp(); fx.burstConfetti(run.x, 2, run.z - 4, 120); }
+    const after = () => r.gained.length && setTimeout(() => showLevelUps(r.gained), 300);
+    if (newDogs.length) setTimeout(() => {
+      sfx.bark();
+      celebrate('New dog!', newDogs.map(d => `<div class="unlock"><span>🏅</span> ${d.name} the ${d.breed}</div>`).join('')
+        + '<p>Find them in the Dogs menu.</p>', after);
+    }, 1300);
+    else after();
+  }, 250);
+}
+
+function updateHearts(hit = false){
+  const C = run.challenge;
+  if (!C) return;
+  const h = $('#chHearts');
+  h.textContent = '❤️'.repeat(C.hearts) + '🤍'.repeat(CHALLENGE.hearts - C.hearts);
+  if (hit){ h.classList.remove('hit'); void h.offsetWidth; h.classList.add('hit'); }
+  $('#chProg').textContent = `${C.answered} / ${C.queue.length}`;
 }
 
 function missionText(idx){ return P.missionView({ ...save, missions:{ ...save.missions, active:[{ idx, progress:0 }] } })[0].text; }
@@ -399,13 +554,16 @@ function celebrate(title, html, cb = null, btn = 'Woof!'){
 }
 $('#celOk').onclick = () => { show('#celebrate', false); sfx.click(); const cb = celCb; celCb = null; cb?.(); UI.bindSave(save); };
 
-$('#btnAgain').onclick = () => { show('#gameover', false); run.dispose(); startRun(); };
+$('#btnAgain').onclick = () => { show('#gameover', false); run.dispose(); startRun(challengeTable); };
 $('#btnHome').onclick = () => { sfx.click(); enterMenu(); };
 
 // ---------- input ----------
+const typing = e => e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+const overlayOpen = () => !$('#celebrate').classList.contains('hidden') || !$('#nameModal').classList.contains('hidden');
+
 addEventListener('keydown', e => {
   audio.initAudio();
-  if (e.repeat) return;
+  if (e.repeat || typing(e)) return;
   const k = e.key.toLowerCase();
   if (state === 'running'){
     if (k === 'arrowleft' || k === 'a') run.move(-1);
@@ -418,30 +576,61 @@ addEventListener('keydown', e => {
     resume();
   } else if (state === 'menu'){
     if (k === 'escape' && UI.panelOpen()) UI.closePanel();
-    else if ((k === 'enter' || k === ' ') && !UI.panelOpen()) startRun();
-  } else if (state === 'over' && (k === 'enter' || k === ' ') && $('#celebrate').classList.contains('hidden')){
-    show('#gameover', false); run.dispose(); startRun();
+    else if ((k === 'enter' || k === ' ') && !UI.panelOpen() && !overlayOpen()) startRun();
+  } else if ((state === 'over' || state === 'results') && (k === 'enter' || k === ' ') && !overlayOpen() && !$('#gameover').classList.contains('hidden')){
+    show('#gameover', false); run.dispose(); startRun(challengeTable);
   }
 });
 
+// Touch: swipe anywhere (one swipe = one move), or use the on-screen buttons.
+const act = a => {
+  if (state !== 'running') return;
+  if (a === 'left') run.move(-1);
+  else if (a === 'right') run.move(1);
+  else if (a === 'jump') run.jump();
+  else if (a === 'slide') run.slide();
+};
+for (const b of document.querySelectorAll('#touchPad button')){
+  b.addEventListener('pointerdown', e => {
+    e.preventDefault(); e.stopPropagation();
+    audio.initAudio();
+    act(b.dataset.act);
+    b.classList.add('down');
+    navigator.vibrate?.(8);
+  });
+  const up = () => b.classList.remove('down');
+  b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('pointerleave', up);
+}
+
 let touch = null;
+const SWIPE = 24;           // px before a drag counts as a swipe
+function swipe(dx, dy){
+  if (Math.abs(dx) > Math.abs(dy)) act(dx > 0 ? 'right' : 'left');
+  else act(dy < 0 ? 'jump' : 'slide');
+}
 addEventListener('pointerdown', e => {
   audio.initAudio();
-  if (state === 'running' && e.pointerType !== 'mouse') touch = { x:e.clientX, y:e.clientY, t:performance.now(), done:false };
+  if (state !== 'running' || e.target.closest('button')) return;
+  touch = { id:e.pointerId, x:e.clientX, y:e.clientY, t:performance.now(), done:false };
 }, { passive:true });
 addEventListener('pointermove', e => {
-  if (!touch || touch.done || state !== 'running') return;
+  if (!touch || touch.done || e.pointerId !== touch.id || state !== 'running') return;
   const dx = e.clientX - touch.x, dy = e.clientY - touch.y;
-  const th = 28;
-  if (Math.abs(dx) > th || Math.abs(dy) > th){
-    touch.done = true;
-    if (Math.abs(dx) > Math.abs(dy)) run.move(dx > 0 ? 1 : -1);
-    else if (dy < 0) run.jump(); else run.slide();
-  }
+  if (Math.abs(dx) > SWIPE || Math.abs(dy) > SWIPE){ touch.done = true; swipe(dx, dy); }
 }, { passive:true });
-addEventListener('pointerup', () => { touch = null; }, { passive:true });
-// mouse users can drag too
-addEventListener('mousedown', e => { if (state === 'running') touch = { x:e.clientX, y:e.clientY, done:false }; });
+addEventListener('pointerup', e => {
+  // a quick flick can finish before a move event crosses the threshold
+  if (touch && !touch.done && e.pointerId === touch.id && performance.now() - touch.t < 300){
+    const dx = e.clientX - touch.x, dy = e.clientY - touch.y;
+    if (Math.abs(dx) > 12 || Math.abs(dy) > 12) swipe(dx, dy);
+  }
+  touch = null;
+}, { passive:true });
+addEventListener('pointercancel', () => { touch = null; }, { passive:true });
+// stop long-press menus and iOS pinch/double-tap zoom from stealing touches mid-run
+addEventListener('contextmenu', e => { if (!typing(e)) e.preventDefault(); });
+addEventListener('gesturestart', e => e.preventDefault());
+addEventListener('dblclick', e => e.preventDefault());
 
 // ---------- camera ----------
 const camPos = new THREE.Vector3(0, 2, -6), camLook = new THREE.Vector3();
@@ -468,8 +657,8 @@ function updateCamera(dt){
     const d = 4.6;
     const frac = narrow ? 0 : Math.min(534, innerWidth - 28) / innerWidth;
     const halfW = d * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * cam.aspect;
-    tmpPos.set(0, narrow ? 1.6 : 1.5, z - d);
-    tmpLook.set(-frac * halfW, narrow ? -0.35 : 0.75, z);
+    tmpPos.set(0, narrow ? 2.0 : 1.5, z - (narrow ? 5.6 : d));
+    tmpLook.set(-frac * halfW, narrow ? -1.25 : 0.75, z);
     camBlend = 1;
   } else {
     dog.root.rotation.y *= 0.95;
@@ -495,7 +684,7 @@ function updateCamera(dt){
 
 // ---------- HUD ----------
 const hudScore = $('#hudScore'), hudDist = $('#hudDist'), hudCoins = $('#hudCoins'), hudMult = $('#hudMult');
-let lastMult = 0, lastStreak = -1, missionTick = 0;
+let lastMult = 0, lastStreak = -1, missionTick = 0, lastChKey = '';
 function updateHud(dt){
   hudScore.textContent = fmt(run.score);
   hudDist.textContent = fmt(run.stats.distance);
@@ -531,7 +720,11 @@ function updateHud(dt){
   // next rival
   const r = RIVALS[run.rivalIdx];
   const bar = $('#rivalBar');
-  if (r && run.score < r.score){
+  if (run.challenge){
+    const key = `${run.challenge.hearts}|${run.challenge.answered}`;
+    if (key !== lastChKey){ lastChKey = key; updateHearts(); }
+  }
+  if (r && run.score < r.score && !run.challenge){
     show(bar);
     $('#rivalName').textContent = `🐾 ${r.name}`;
     $('#rivalScore').textContent = fmt(r.score);
@@ -564,7 +757,8 @@ function frame(now){
     animateDog(dog, dt, 'idle', 0);
     run.spawner.fill(-190, run.speed, 0);
     run.spawner.update(dt, run.z, clock);
-  } else if (state === 'revive' || state === 'over'){
+  } else if (state === 'revive' || state === 'over' || state === 'finishing' || state === 'results'){
+    if (run.alive) animateDog(dog, dt, 'idle', 0, { happy:true });
     if (run && !run.alive){
       // tumble
       dog.pivot.rotation.x += (-1.2 - dog.pivot.rotation.x) * Math.min(1, dt * 6);

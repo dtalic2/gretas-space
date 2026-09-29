@@ -46,6 +46,7 @@
     <div class="logo"><span class="l3">3</span><span class="lx">×</span><span class="l3">3</span></div>
     <div class="logo-sub">RUNNER</div>
     <div class="menu-best">Best <b data-bind="best">0</b></div>
+    <button class="name-plate" id="btnName" aria-label="Rename your dog">🐾 <b data-bind="dogName">Milo</b> <span>✏️</span></button>
   </div>
 
   <div class="menu-side left">
@@ -60,9 +61,12 @@
   </div>
 
   <div class="menu-bottom">
-    <button class="tables-btn" data-open="tables">
-      <small>Practising</small><b data-bind="tablesLabel">2, 3, 4, 5, 10</b><span>✏️</span>
-    </button>
+    <div class="mode-row">
+      <button class="tables-btn" data-open="tables">
+        <small>Practising</small><b data-bind="tablesLabel">2, 3, 4, 5, 10</b><span>✏️</span>
+      </button>
+      <button class="challenge-btn" data-open="challenge">🏅 <b>Challenge</b></button>
+    </div>
     <button id="btnPlay" class="play-btn">PLAY</button>
     <div class="boost-row" id="boostRow"></div>
   </div>
@@ -91,6 +95,12 @@
     <span class="rv-score" id="rivalScore">1500</span>
   </div>
 
+  <div class="challenge-bar hidden" id="challengeBar">
+    <span class="ch-table" id="chTable">×7</span>
+    <span class="ch-hearts" id="chHearts">❤️❤️❤️</span>
+    <span class="ch-prog" id="chProg">0 / 12</span>
+  </div>
+
   <div class="question hidden" id="question">
     <div class="q-text" id="qText">7 × 8</div>
     <div class="q-timer"><i id="qTimer"></i></div>
@@ -99,7 +109,18 @@
 
   <div class="powers" id="powers"></div>
   <div class="popups" id="popups"></div>
-  <div class="touch-hint hidden" id="touchHint">Swipe ← → to change lane, ↑ to jump, ↓ to slide</div>
+  <div class="touch-hint hidden" id="touchHint">Swipe or tap the buttons: ◀ ▶ lanes, ▲ jump, ▼ slide</div>
+
+  <div class="touch-pad hidden" id="touchPad">
+    <div class="tp-group">
+      <button data-act="left" aria-label="Move left">◀</button>
+      <button data-act="right" aria-label="Move right">▶</button>
+    </div>
+    <div class="tp-group">
+      <button data-act="slide" aria-label="Slide">▼</button>
+      <button data-act="jump" aria-label="Jump">▲</button>
+    </div>
+  </div>
 </div>
 
 <!-- ============ PANELS (shop, missions, settings…) ============ -->
@@ -149,7 +170,8 @@
 <div id="gameover" class="screen hidden">
   <div class="go-card">
     <div class="go-banner" id="goBanner">Great run!</div>
-    <div class="go-score"><small>Score</small><b id="goScore">0</b><em id="goBest" class="hidden">NEW BEST!</em></div>
+    <div class="go-stars hidden" id="goStars"></div>
+    <div class="go-score"><small id="goScoreLabel">Score</small><b id="goScore">0</b><em id="goBest" class="hidden">NEW BEST!</em></div>
     <div class="go-grid">
       <div><small>Distance</small><b id="goDist">0 m</b></div>
       <div><small>Coins</small><b id="goCoins">0</b></div>
@@ -177,6 +199,21 @@
     <h2 id="celTitle">Level up!</h2>
     <div id="celBody"></div>
     <button class="big-btn green" id="celOk">Woof!</button>
+  </div>
+</div>
+
+<!-- ============ NAME YOUR DOG ============ -->
+<div id="nameModal" class="modal hidden">
+  <div class="modal-card">
+    <h2 id="nameTitle">Name your dog!</h2>
+    <p class="name-breed" id="nameBreed">Your Beagle needs a name</p>
+    <div class="name-row">
+      <input id="nameInput" type="text" maxlength="14" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="done" placeholder="Type a name">
+      <button id="nameDice" aria-label="Random name">🎲</button>
+    </div>
+    <div class="name-sugg" id="nameSugg"></div>
+    <button class="big-btn green" id="nameSave">Save name</button>
+    <button class="big-btn" id="nameCancel">Cancel</button>
   </div>
 </div>
 

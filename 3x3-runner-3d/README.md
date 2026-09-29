@@ -30,11 +30,22 @@ on a phone. Any static host works for deployment.
 
 | Action | Keyboard | Touch |
 | --- | --- | --- |
-| Change lane | `←` `→` / `A` `D` | swipe left / right |
-| Jump | `↑` / `W` / `Space` | swipe up |
-| Slide (or slam down mid-air) | `↓` / `S` | swipe down |
+| Change lane | `←` `→` / `A` `D` | swipe left / right, or ◀ ▶ |
+| Jump | `↑` / `W` / `Space` | swipe up, or ▲ |
+| Slide (or slam down mid-air) | `↓` / `S` | swipe down, or ▼ |
 | Pause | `P` / `Esc` | ⏸ |
 | Start / run again | `Enter` | PLAY |
+
+On a touch screen you can swipe anywhere, and quick flicks count too. There are also
+on-screen buttons: ◀ ▶ for your left thumb and ▼ ▲ for your right. They're switched on
+automatically on touch devices and can be turned off in Settings. Long-press menus,
+pinch zoom and double-tap zoom are blocked so they can't interrupt a run.
+
+- **Name your dog.** The first time the game opens it asks what your dog is called. You
+  can type a name, pick a suggestion or roll the 🎲. Every dog can have its own name.
+  Rename one by tapping the name plate on the home screen, or by tapping your dog again
+  in *Dogs*. The name appears on the dog, in the countdown ("GO, REX!"), in cheers, on the
+  results card and in the rivals table.
 
 - **Answer gates.** Every 120–210 m a question such as `7 × 8` appears, with three
   colour-coded arches ahead. Run through the one with the right answer. There are no
@@ -56,7 +67,14 @@ on a phone. Any static host works for deployment.
   Chance.
 - **Dogs.** Milo the Beagle, then Pip the Pug (level 3), Biscuit the Corgi (5), Dotty
   the Dalmatian (8), Kiko the Shiba Inu (11), Blizzard the Alaskan Malamute (15) and
-  Sunny the Golden Retriever (20).
+  Sunny the Golden Retriever (20). Three more are won in the Challenge: Lulu the Poodle
+  (master 3 tables), Frank the Dachshund (6) and Dash the Greyhound (all 12).
+- **🏅 Multiplication Challenge.** Choose one table and run through all twelve of its
+  facts in random order, one after another, while the road speeds up faster than in a
+  normal run. You have three hearts, and a wrong gate or a crash costs one. You earn
+  ⭐ for 7 right, ⭐⭐ for 10 and ⭐⭐⭐ for all 12, with bonus coins the first time you
+  reach each star. Three stars masters the table, and mastered tables win the challenge
+  dogs. Boosts and rockets are left out so every attempt is the same test.
 - **Outfits.** 16 items in four slots (hats, glasses, neck, back), bought with coins.
   You can preview them on your dog before buying.
 - **Missions & daily quests.** Three missions are active at a time, and a new one takes

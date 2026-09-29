@@ -2,7 +2,7 @@
 // One JSON blob in localStorage. Every access is guarded: private windows and blocked
 // storage throw, and the game must still play (it just forgets on reload).
 
-import { MISSION_POOL } from './data.js';
+import { MISSION_POOL, DOGS } from './data.js';
 
 const KEY = 'tt-runner-3d-v1';
 
@@ -26,7 +26,9 @@ export function defaultSave(){
     totals: { correct:0, asked:0, coins:0, distance:0 },
     rivalsBeaten: [],
     math: null,                              // MathEngine.serialize()
-    settings: { sound:true, music:true, quality:'high', voice:true, shake:true },
+    dogNames: {},                            // custom names, by dog id
+    challenge: {},                           // best stars per table, e.g. { 7: 3 }
+    settings: { sound:true, music:true, quality:'high', voice:true, shake:true, touchButtons:null },
   };
 }
 
@@ -42,6 +44,19 @@ export function load(){
 
 export function save(state){
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* storage unavailable */ }
+}
+
+/** The player's name for a dog, falling back to the breed's default. */
+export function dogName(state, id){
+  return state.dogNames?.[id] || (DOGS.find(d => d.id === id) || DOGS[0]).name;
+}
+
+export function cleanName(raw){
+  return String(raw || '').replace(/[<>&"'`]/g, '').replace(/\s+/g, ' ').trim().slice(0, 14);
+}
+
+export function mastered(state){
+  return Object.values(state.challenge || {}).filter(s => s >= 3).length;
 }
 
 export function reset(){

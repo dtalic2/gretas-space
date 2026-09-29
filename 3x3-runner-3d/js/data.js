@@ -55,7 +55,31 @@ export const DOGS = [
     blurb:'Fetches answers before you finish asking.',
     body:0xe0a950, belly:0xf2cf8a, ears:0xc98f3a, nose:0x2a1a12,
     size:1.12, legLen:1.1, snout:1.05, earType:'floppy', tail:'plume', fluffy:true },
+  // Challenge dogs: won by mastering times tables (3 stars) in Multiplication Challenge.
+  { id:'poodle', name:'Lulu', breed:'Poodle', challenge:3,
+    blurb:'Fancy, fluffy, and fabulous at fractions of a second.',
+    body:0xf5e6ef, belly:0xffffff, ears:0xf0d8e6, nose:0x2a1a22,
+    size:1.0, legLen:1.15, snout:1.15, earType:'floppy', tail:'plume', fluffy:true, poof:true },
+  { id:'dachshund', name:'Frank', breed:'Dachshund', challenge:6,
+    blurb:'A long dog for long multiplication.',
+    body:0x8a4a1f, belly:0xb86b35, ears:0x5a2d10, nose:0x1a1a1a,
+    size:1.0, legLen:0.5, snout:1.35, earType:'floppy', tail:'straight', long:1.7 },
+  { id:'greyhound', name:'Dash', breed:'Greyhound', challenge:12,
+    blurb:'Master every table and you get the fastest dog alive.',
+    body:0x9aa3ad, belly:0xe8ecf0, ears:0x7d858f, nose:0x1a1a1a,
+    size:1.1, legLen:1.45, snout:1.45, earType:'fold', tail:'straight', chubby:0.78, long:1.1 },
 ];
+
+// ---------- Multiplication Challenge ----------
+// One table, the whole of it (×1 to ×12) in shuffled order, rapid-fire, three hearts.
+export const CHALLENGE = {
+  questions: 12,
+  hearts: 3,
+  gateEvery: [80, 100],
+  accel: 0.4,
+  stars: [7, 10, 12],        // correct answers needed for 1, 2, 3 stars
+  starCoins: [60, 120, 250], // paid once, the first time each star is earned
+};
 
 // ---------- Outfits ----------
 // slot: hat | eyes | neck | back. Shape keys are handled in dog.js.

@@ -185,6 +185,13 @@ export function buildDog(def, wear = {}, opts = {}){
     if (def.tailTip && !opts.tint) tail.add(mesh(SPHERE_LO, mat(def.tailTip), { y:0.3, z:0.17, sx:0.05, sy:0.07, sz:0.05 }));
   }
 
+  // poodle pom-poms: a topknot, ankle cuffs and a puff on the tail
+  if (def.poof){
+    head.add(mesh(SPHERE_LO, fur, { y:0.2, z:0.02, sx:0.17, sy:0.14, sz:0.17 }));
+    for (const l of legs) l.hip.add(mesh(SPHERE_LO, fur, { y:-legH + 0.06, sx:0.11, sy:0.1, sz:0.11 }));
+    tail.add(mesh(SPHERE_LO, fur, { y:0.3, z:0.17, sx:0.1, sy:0.1, sz:0.1 }));
+  }
+
   // --- outfit anchors ---
   const anchors = {
     hat: new THREE.Group(), eyes: new THREE.Group(), neck: new THREE.Group(), back: new THREE.Group(),
@@ -459,4 +466,25 @@ function darken(hex, f){ const c = new THREE.Color(hex); c.multiplyScalar(1 - f)
 function mulberry(a){
   return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
     t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+
+/** A floating name label (sprite) to hang over a dog. */
+export function nameTag(text, color = '#ffd166'){
+  const font = '800 44px system-ui, sans-serif';
+  const c = document.createElement('canvas');
+  let x = c.getContext('2d');
+  x.font = font;
+  const w = Math.ceil(x.measureText(text).width + 48);
+  c.width = w; c.height = 96;
+  x = c.getContext('2d');
+  x.font = font;
+  x.fillStyle = 'rgba(20,20,40,0.75)';
+  x.beginPath(); x.roundRect(2, 14, w - 4, 68, 34); x.fill();
+  x.fillStyle = color; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText(text, w / 2, 50);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map:t, depthTest:false, transparent:true }));
+  s.scale.set(0.45 * w / 96, 0.45, 1);
+  s.position.y = 1.55;
+  return s;
 }

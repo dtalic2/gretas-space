@@ -13,7 +13,7 @@
 }
 *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
 html,body{ width:100%; height:100%; overflow:hidden; background:#8fd0ff; font-family:var(--font); color:var(--ink);
-  user-select:none; -webkit-user-select:none; touch-action:none; overscroll-behavior:none; }
+  user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; touch-action:none; overscroll-behavior:none; }
 canvas#scene{ position:fixed; inset:0; width:100vw; height:100vh; display:block; }
 button{ font-family:inherit; cursor:pointer; border:0; color:inherit; }
 .hidden{ display:none !important; }
@@ -269,6 +269,58 @@ kbd{ background:#eef1f8; border:2px solid var(--ink); border-bottom-width:4px; b
 @keyframes toastIn{ from{ transform:translateX(60px); opacity:0; } to{ transform:none; opacity:1; } }
 @keyframes toastOut{ to{ transform:translateX(60px); opacity:0; } }
 
+/* ---------- dog name ---------- */
+.name-plate{ pointer-events:auto; display:inline-flex; align-items:center; gap:6px; margin:8px auto 0; background:#fff; border:3px solid var(--ink);
+  border-radius:999px; padding:2px 14px; font-size:20px; font-weight:800; box-shadow:0 4px 0 var(--ink); }
+.name-plate b{ color:var(--pink); }
+.name-plate span{ font-size:16px; }
+.menu-title .menu-best + .name-plate{ margin-left:8px; }
+.name-breed{ font-weight:700; opacity:.7; margin-bottom:8px; }
+.name-row{ display:flex; gap:8px; }
+.name-row input{ flex:1; min-width:0; font:inherit; font-size:28px; font-weight:800; text-align:center; padding:4px 10px; border:3px solid var(--ink);
+  border-radius:16px; background:#f4f7ff; color:var(--ink); user-select:text; -webkit-user-select:text; touch-action:manipulation; outline:none; }
+.name-row input:focus{ border-color:var(--blue); background:#fff; }
+.name-row button{ width:58px; font-size:28px; border-radius:16px; border:3px solid var(--ink); background:var(--yellow); box-shadow:0 4px 0 var(--ink); }
+.name-sugg{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:10px 0 2px; }
+.name-sugg button{ background:#eef1f8; border:2px solid var(--ink); border-radius:999px; padding:2px 12px; font-weight:800; font-size:16px; }
+.rename{ margin-top:6px; background:var(--pink); color:#fff; border:2px solid var(--ink); border-radius:999px; padding:0 10px; font-weight:800; font-size:14px; }
+.card .dogname{ color:var(--pink); }
+
+/* ---------- challenge ---------- */
+.mode-row{ display:flex; gap:8px; align-items:stretch; }
+.challenge-btn{ background:linear-gradient(#ffd96a, var(--yellow)); border:3px solid var(--ink); border-radius:16px; padding:4px 14px; font-size:18px;
+  box-shadow:0 4px 0 var(--ink); white-space:nowrap; }
+.challenge-bar{ position:absolute; top:calc(var(--safe-t) + 50px); left:50%; transform:translateX(-50%); display:flex; gap:10px; align-items:center;
+  background:rgba(29,35,64,.78); color:#fff; border-radius:999px; padding:2px 14px; font-weight:800; font-size:18px; white-space:nowrap; }
+.ch-table{ background:var(--yellow); color:var(--ink); border-radius:10px; padding:0 8px; }
+.ch-hearts{ letter-spacing:2px; }
+.ch-hearts.hit{ animation:pop .4s; }
+.ch-grid{ display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin:10px 0; }
+.ch-tbl{ border-radius:18px; background:#fff; border:3px solid var(--ink); box-shadow:0 4px 0 var(--ink); padding:6px 0 4px; font-weight:800; }
+.ch-tbl b{ display:block; font-size:28px; line-height:1.1; }
+.ch-tbl .st{ font-size:15px; letter-spacing:1px; color:#c9ced9; }
+.ch-tbl .st i{ font-style:normal; color:#f5a700; }
+.ch-tbl.gold{ background:#fff3c4; }
+.ch-dogs{ display:flex; flex-direction:column; gap:6px; margin-top:6px; }
+.ch-dog{ display:flex; align-items:center; gap:10px; background:#f4f7ff; border:3px solid var(--ink); border-radius:14px; padding:6px 10px; font-weight:700; }
+.ch-dog .sw{ width:30px; height:30px; border-radius:9px; border:3px solid var(--ink); flex:none; }
+.ch-dog .t{ flex:1; }
+.ch-dog.won{ background:#dcffe8; }
+.go-stars{ font-size:56px; letter-spacing:6px; line-height:1.1; margin-top:8px; color:#d5dae4; }
+.go-stars i{ font-style:normal; color:#f5a700; display:inline-block; animation:starIn .5s cubic-bezier(.2,1.8,.4,1) backwards; }
+.go-stars i:nth-child(2){ animation-delay:.25s; } .go-stars i:nth-child(3){ animation-delay:.5s; }
+@keyframes starIn{ from{ transform:scale(0) rotate(-90deg); } to{ transform:none; } }
+
+/* ---------- touch buttons ---------- */
+.touch-pad{ position:absolute; left:0; right:0; bottom:var(--safe-b); display:flex; justify-content:space-between; padding:0 12px; pointer-events:none; }
+.tp-group{ display:flex; gap:12px; }
+.touch-pad button{ pointer-events:auto; width:74px; height:74px; border-radius:50%; font-size:30px; font-weight:800; color:#fff;
+  background:rgba(29,35,64,.42); border:3px solid rgba(255,255,255,.85); box-shadow:0 4px 0 rgba(0,0,0,.25); touch-action:none;
+  -webkit-user-select:none; user-select:none; backdrop-filter:blur(2px); }
+.touch-pad button.down{ background:rgba(255,201,51,.85); color:var(--ink); transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.25); }
+#hud.pad .powers{ bottom:calc(var(--safe-b) + 92px); }
+#hud.pad .touch-hint{ bottom:calc(var(--safe-b) + 96px); }
+
 /* ---------- narrow / portrait ---------- */
 @media (max-width:700px){
   .side-btn{ width:66px; height:66px; font-size:11px; border-radius:18px; }
@@ -278,6 +330,10 @@ kbd{ background:#eef1f8; border:2px solid var(--ink); border-bottom-width:4px; b
   .panel-card{ max-height:62vh; border-radius:26px 26px 0 0; border-bottom:0; width:100%; animation:slideUp .3s cubic-bezier(.2,1.2,.4,1); }
   .panel.center .panel-card{ max-height:88vh; }
   .play-btn{ font-size:38px; padding:4px 54px 0; }
+  .touch-pad button{ width:66px; height:66px; font-size:26px; }
+  .tp-group{ gap:8px; }
+  .tables-btn{ font-size:15px; padding:2px 10px; } .challenge-btn{ font-size:15px; padding:2px 10px; }
+  .name-plate{ font-size:17px; }
   .go-grid{ grid-template-columns:repeat(2, 1fr); }
   .hud-left .score b{ font-size:32px; }
   .question{ top:calc(var(--safe-t) + 80px); padding:0 18px 4px; min-width:0; }

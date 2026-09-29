@@ -325,6 +325,9 @@ export class Spawner {
       }
 
       const clearLen = speed * this.opts.leadTime(speed) + 15;
+      if (z <= this.nextGateZ + 4 && this.opts.moreGates && !this.opts.moreGates()){
+        this.nextGateZ = -Infinity;          // challenge finished handing out questions
+      }
       if (z <= this.nextGateZ + 4){
         this.spawnGate(this.nextGateZ, clearLen);
         this.nextRowZ = this.nextGateZ - 26;
@@ -394,7 +397,8 @@ export class Spawner {
     // power-ups
     this.powerCooldown -= 1;
     if (this.powerCooldown <= 0 && Math.random() < 0.3){
-      const types = ['magnet', 'magnet', 'double', 'shield', 'rocket'];
+      // no rockets in a challenge: flying over a gate would lose one of its questions
+      const types = this.opts.noRocket ? ['magnet', 'magnet', 'double', 'shield'] : ['magnet', 'magnet', 'double', 'shield', 'rocket'];
       this.addPower(types[Math.floor(Math.random() * types.length)], free, z + 6);
       this.powerCooldown = 7 + Math.floor(Math.random() * 7);
     }

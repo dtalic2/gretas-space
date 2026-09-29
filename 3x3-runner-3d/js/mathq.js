@@ -53,6 +53,15 @@ export class MathEngine {
     return this.current;
   }
 
+  /** A fixed fact (Challenge mode walks through a whole table). */
+  make(a, b){
+    const answer = a * b;
+    const text = Math.random() < 0.5 ? `${a} × ${b}` : `${b} × ${a}`;
+    const options = shuffle([answer, ...distractors(a, b, answer, false)]);
+    this.current = { a, b, table:a, text, answer, options, asked: performance.now() };
+    return this.current;
+  }
+
   /** Grade a picked value against a question (defaults to the latest one asked). */
   grade(value, q = this.current){
     if (!q) return null;
