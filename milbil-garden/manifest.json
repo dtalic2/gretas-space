@@ -1,0 +1,15 @@
+{
+  "name": "M-I-L-B-I-L Garden",
+  "short_name": "Milbil Garden",
+  "description": "Grow crops, price them against rival farmers, and build up your farm.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#8fd16a",
+  "theme_color": "#8fd16a",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#8fd16a">
+  <title>M-I-L-B-I-L Garden</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <svg class="milbil" viewBox="0 0 64 64" aria-hidden="true">
+        <ellipse cx="32" cy="58" rx="18" ry="4" fill="#0002"/>
+        <path d="M14 20 Q32 2 50 20 L46 22 Q32 12 18 22Z" fill="#e2b04a"/>
+        <rect x="12" y="19" width="40" height="5" rx="2.5" fill="#c98f2c"/>
+        <circle cx="32" cy="38" r="19" fill="#ffb6c9"/>
+        <circle cx="25" cy="35" r="3.4" fill="#2b2233"/>
+        <circle cx="39" cy="35" r="3.4" fill="#2b2233"/>
+        <circle cx="26" cy="34" r="1.1" fill="#fff"/>
+        <circle cx="40" cy="34" r="1.1" fill="#fff"/>
+        <circle cx="20" cy="42" r="3" fill="#ff8fab"/>
+        <circle cx="44" cy="42" r="3" fill="#ff8fab"/>
+        <path d="M27 43 Q32 48 37 43" stroke="#2b2233" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      </svg>
+      <h1><span>M-I-L-B-I-L</span> Garden</h1>
+    </div>
+    <div class="stats">
+      <div class="stat coins" title="Coins"><span class="coin"></span><b id="coins">10</b></div>
+      <div class="stat" title="Market day">📅 Day <b id="day">1</b>
+        <div class="daybar"><i id="daybar"></i></div>
+      </div>
+      <div class="stat" title="Storage: harvested crops waiting at home">📦 <b id="storage">0/20</b></div>
+      <div class="stat" title="Your market stall">🎪 <b id="stallcount">0/12</b></div>
+    </div>
+  </header>
+
+  <div class="news" id="news"></div>
+
+  <main>
+    <section class="farm card">
+      <div class="farm-head">
+        <h2>🌾 Your Farm <small id="plotcount"></small></h2>
+        <div class="farm-actions">
+          <button class="btn" id="plantAll">🌱 Plant all</button>
+          <button class="btn green" id="harvestAll">🧺 Harvest all</button>
+        </div>
+      </div>
+      <div class="seeds" id="seeds"></div>
+      <div class="field" id="field"></div>
+      <p class="hint">Pick a seed, then tap soil to plant. Tap ✨ ripe crops to harvest them into storage. Then head to the <b>Market</b> to sell.</p>
+    </section>
+
+    <section class="panel card">
+      <nav class="tabs" id="tabs">
+        <button data-tab="market" class="on">🏪 Market</button>
+        <button data-tab="land">🗺️ Land</button>
+        <button data-tab="build">🔨 Build</button>
+        <button data-tab="shed">📦 Storage</button>
+      </nav>
+      <div class="tab-body" id="tab-market"></div>
+      <div class="tab-body" id="tab-land" hidden></div>
+      <div class="tab-body" id="tab-build" hidden></div>
+      <div class="tab-body" id="tab-shed" hidden></div>
+    </section>
+  </main>
+
+  <section class="ticker card">
+    <h3>📰 Around the market</h3>
+    <ul id="log"></ul>
+  </section>
+
+  <div class="toasts" id="toasts"></div>
+
+  <dialog id="dayReport">
+    <form method="dialog">
+      <h2 id="drTitle"></h2>
+      <div id="drBody"></div>
+      <button class="btn green big">Start the new day ☀️</button>
+    </form>
+  </dialog>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

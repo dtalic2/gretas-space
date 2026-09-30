@@ -4,14 +4,29 @@
     {
       "name": "high-water",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["flood-survival-3d/serve.py", "8124"],
+      "runtimeArgs": [
+        "flood-survival-3d/serve.py",
+        "8124"
+      ],
       "port": 8124
     },
     {
       "name": "3x3-runner",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["3x3-runner-3d/serve.py", "8125"],
+      "runtimeArgs": [
+        "3x3-runner-3d/serve.py",
+        "8125"
+      ],
       "port": 8125
+    },
+    {
+      "name": "milbil-garden",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "milbil-garden/serve.py",
+        "8126"
+      ],
+      "port": 8126
     }
   ]
 }
