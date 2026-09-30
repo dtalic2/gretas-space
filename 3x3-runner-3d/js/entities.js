@@ -28,7 +28,7 @@ const M = {
   glass: std(0x1d2b3a, { roughness:0.1, metalness:0.5 }),
   head: new THREE.MeshStandardMaterial({ color:0xffffff, emissive:0xfff6d5, emissiveIntensity:1.5 }),
   tail: new THREE.MeshStandardMaterial({ color:0xff2a2a, emissive:0xff0000, emissiveIntensity:1.2 }),
-  coin: std(0xffcf2e, { metalness:0.55, roughness:0.28, emissive:0xb87400, emissiveIntensity:0.55 }),
+  coin: std(0xffd23a, { metalness:0.6, roughness:0.22, emissive:0xd08a00, emissiveIntensity:0.7 }),
   coinSky: std(0x7fe3ff, { metalness:0.6, roughness:0.2, emissive:0x1a6a9a, emissiveIntensity:0.8 }),
   chrome: std(0xe0e4ea, { metalness:0.9, roughness:0.2 }),
 };

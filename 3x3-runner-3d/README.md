@@ -36,7 +36,7 @@ on a phone. Any static host works for deployment.
 | Pause | `P` / `Esc` | ⏸ |
 | Start / run again | `Enter` | PLAY |
 
-On a touch screen you can swipe anywhere, and quick flicks count too. There are also
+On a touch screen you can swipe anywhere. A short flick of about 15–25 px is enough (it scales with the screen), and one finger can chain moves, such as right then up, without lifting. A jump pressed just before landing is remembered, and an arrow flashes under your finger so you can see each swipe register. There are also
 on-screen buttons: ◀ ▶ for your left thumb and ▼ ▲ for your right. They're switched on
 automatically on touch devices and can be turned off in Settings. Long-press menus,
 pinch zoom and double-tap zoom are blocked so they can't interrupt a run.
@@ -85,6 +85,8 @@ pinch zoom and double-tap zoom are blocked so they can't interrupt a run.
   running on the pavement beside you, taunting you, and you overtake them live.
 - **Times tables.** Choose any mix of 1–12 in *Times Tables*. The questions lean towards
   the tables you get wrong most often, and the screen shows how well you know each one.
+
+As you run, the sky moves from day through golden hour to a pink dusk (about every 3.6 km), and the windows and street lamps light up. Town streets have bunting, zebra crossings and flower planters, hot-air balloons drift overhead, speed lines appear when you go fast, and the dog has a cartoon outline.
 
 The town cycles through three areas: a downtown high street, a suburb with houses and
 hedges, and a park.

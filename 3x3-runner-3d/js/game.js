@@ -7,7 +7,7 @@ import { Spawner, revealGate, markGate } from './entities.js';
 import { newRunStats } from './progress.js';
 import { shuffle } from './mathq.js';
 
-const HALF_W = 0.42, HALF_D = 0.45, STAND_H = 1.25, SLIDE_H = 0.55;
+const HALF_W = 0.34, HALF_D = 0.4, STAND_H = 1.25, SLIDE_H = 0.55;
 const ROCKET_Y = 7;
 
 export class Run {
@@ -37,7 +37,7 @@ export class Run {
     this.z = 0; this.prevZ = 0;
     this.lane = 1; this.x = LANE_X[1]; this.laneFrom = 1; this.laneT = 1;
     this.y = 0; this.vy = 0; this.ground = 0;
-    this.slideT = 0; this.mode = 'run';
+    this.slideT = 0; this.mode = 'run'; this.jumpBuffer = 0;
     this.speed = RUN.startSpeed;
     this.alive = true; this.paused = false;
     this.invuln = 0;
@@ -108,7 +108,9 @@ export class Run {
 
   jump(){
     if (!this.alive || this.paused || this.power.rocket > 0) return;
-    if (this.y <= this.ground + 0.05){
+    // pressed a moment before landing: remember it and jump on touchdown
+    if (this.y > this.ground + 0.05){ this.jumpBuffer = 0.22; return; }
+    {
       this.vy = RUN.jumpVel;
       this.slideT = 0;
       this.stats.jumps++;
@@ -179,9 +181,11 @@ export class Run {
       if (this.y <= this.ground){
         if (this.vy < -8) this.fx.puff(this.x, this.ground + 0.1, this.z);
         this.y = this.ground; this.vy = 0;
+        if (this.jumpBuffer > 0){ this.jumpBuffer = 0; this.jump(); }
       }
     }
     if (this.slideT > 0) this.slideT -= dt;
+    if (this.jumpBuffer > 0) this.jumpBuffer -= dt;
 
     // timers
     for (const k of ['magnet', 'double', 'rocket']){

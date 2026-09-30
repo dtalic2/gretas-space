@@ -223,6 +223,42 @@ export function setWear(dog, wear = {}){
     const o = OUTFITS.find(x => x.id === id);
     if (o) a.add(buildOutfit(o, dog));
   }
+  outline(dog.root);
+}
+
+// ---------- cartoon outline ----------
+// Each part gets a back-face "shell" pushed out along its normals, drawn in dark ink.
+// Thickness is set per part from its world scale so the line reads evenly everywhere.
+const INK = new THREE.Color(0x1d2340);
+const OUTLINE_VS = `uniform float thick;
+  void main(){
+    vec3 p = position + normalize(normal) * thick;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+  }`;
+const OUTLINE_FS = `uniform vec3 ink; void main(){ gl_FragColor = vec4(ink, 1.0); }`;
+const tmpS = new THREE.Vector3();
+
+function outline(root, width = 0.018){
+  root.updateMatrixWorld(true);
+  const rootScale = root.getWorldScale(tmpS).x;
+  const parts = [];
+  root.traverse(o => {
+    if (!o.isMesh || o.userData.isOutline || o.userData.outlined || o.material.transparent) return;
+    if (o.material.isMeshBasicMaterial) return;           // flames and such
+    if (o.material.side === THREE.DoubleSide) return;     // thin sheets like the cape
+    parts.push(o);
+  });
+  for (const m of parts){
+    const ws = m.getWorldScale(tmpS);
+    const avg = (Math.abs(ws.x) + Math.abs(ws.y) + Math.abs(ws.z)) / 3 / rootScale;
+    const shell = new THREE.Mesh(m.geometry, new THREE.ShaderMaterial({
+      uniforms: { thick: { value: width / Math.max(avg, 0.02) }, ink: { value: INK } },
+      vertexShader: OUTLINE_VS, fragmentShader: OUTLINE_FS, side: THREE.BackSide,
+    }));
+    shell.userData.isOutline = true;
+    m.userData.outlined = true;
+    m.add(shell);
+  }
 }
 
 function buildOutfit(o, dog){

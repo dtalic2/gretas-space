@@ -603,29 +603,55 @@ for (const b of document.querySelectorAll('#touchPad button')){
 }
 
 let touch = null;
-const SWIPE = 24;           // px before a drag counts as a swipe
-function swipe(dx, dy){
-  if (Math.abs(dx) > Math.abs(dy)) act(dx > 0 ? 'right' : 'left');
-  else act(dy < 0 ? 'jump' : 'slide');
+// Swipes are measured in CSS pixels but scaled to the screen, so a short flick with a
+// thumb counts on a phone. One finger can chain moves (left, then up) without lifting.
+const swipeDist = () => Math.max(14, Math.min(26, Math.min(innerWidth, innerHeight) * 0.035));
+function swipe(dx, dy, x, y){
+  const horiz = Math.abs(dx) > Math.abs(dy) * 0.8;     // favour lanes on diagonal flicks
+  const dir = horiz ? (dx > 0 ? 'right' : 'left') : (dy < 0 ? 'jump' : 'slide');
+  act(dir);
+  swipeMark(dir, x, y);
+  navigator.vibrate?.(6);
+  return dir;
 }
 addEventListener('pointerdown', e => {
   audio.initAudio();
   if (state !== 'running' || e.target.closest('button')) return;
-  touch = { id:e.pointerId, x:e.clientX, y:e.clientY, t:performance.now(), done:false };
+  touch = { id:e.pointerId, x:e.clientX, y:e.clientY, t:performance.now(), last:null, lastT:0, moved:false };
 }, { passive:true });
 addEventListener('pointermove', e => {
-  if (!touch || touch.done || e.pointerId !== touch.id || state !== 'running') return;
+  if (!touch || e.pointerId !== touch.id || state !== 'running') return;
   const dx = e.clientX - touch.x, dy = e.clientY - touch.y;
-  if (Math.abs(dx) > SWIPE || Math.abs(dy) > SWIPE){ touch.done = true; swipe(dx, dy); }
+  const need = touch.last ? swipeDist() * 1.6 : swipeDist();
+  if (Math.abs(dx) < need && Math.abs(dy) < need) return;
+  const now = performance.now();
+  const horiz = Math.abs(dx) > Math.abs(dy) * 0.8;
+  const dir = horiz ? (dx > 0 ? 'right' : 'left') : (dy < 0 ? 'jump' : 'slide');
+  // a repeat in the same direction needs a short pause, so one long drag isn't two moves
+  if (dir === touch.last && now - touch.lastT < 220) return;
+  swipe(dx, dy, e.clientX, e.clientY);
+  touch.last = dir; touch.lastT = now; touch.moved = true;
+  touch.x = e.clientX; touch.y = e.clientY;             // re-arm from here for a chained move
 }, { passive:true });
 addEventListener('pointerup', e => {
-  // a quick flick can finish before a move event crosses the threshold
-  if (touch && !touch.done && e.pointerId === touch.id && performance.now() - touch.t < 300){
+  // a quick flick can end before any move event crossed the threshold
+  if (touch && !touch.moved && e.pointerId === touch.id && performance.now() - touch.t < 350){
     const dx = e.clientX - touch.x, dy = e.clientY - touch.y;
-    if (Math.abs(dx) > 12 || Math.abs(dy) > 12) swipe(dx, dy);
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) swipe(dx, dy, e.clientX, e.clientY);
   }
   touch = null;
 }, { passive:true });
+
+// A little arrow flashes where your finger is, so you can see each swipe register.
+const SWIPE_ICON = { left:'◀', right:'▶', jump:'▲', slide:'▼' };
+function swipeMark(dir, x, y){
+  const m = document.createElement('div');
+  m.className = `swipe-mark ${dir}`;
+  m.textContent = SWIPE_ICON[dir];
+  m.style.left = `${x}px`; m.style.top = `${y}px`;
+  document.body.appendChild(m);
+  setTimeout(() => m.remove(), 450);
+}
 addEventListener('pointercancel', () => { touch = null; }, { passive:true });
 // stop long-press menus and iOS pinch/double-tap zoom from stealing touches mid-run
 addEventListener('contextmenu', e => { if (!typing(e)) e.preventDefault(); });
@@ -742,6 +768,21 @@ function updateHud(dt){
   audio.setMusicIntensity((run.speed - 13) / 19);
 }
 
+// ---------- contact shadow ----------
+const blob = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, 'rgba(20,20,40,1)'); g.addColorStop(0.6, 'rgba(20,20,40,0.5)'); g.addColorStop(1, 'rgba(20,20,40,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1.5),
+    new THREE.MeshBasicMaterial({ map:new THREE.CanvasTexture(c), transparent:true, depthWrite:false }));
+  m.rotation.x = -Math.PI / 2;
+  m.renderOrder = 1;
+  world.scene.add(m);
+  return m;
+})();
+
 // ---------- loop ----------
 let last = performance.now();
 function frame(now){
@@ -769,6 +810,19 @@ function frame(now){
     animateDog(dog, dt, 'idle', 0, { happy:true });
   }
 
+  // soft contact shadow under the dog, shrinking as it leaves the ground
+  const ground = state === 'menu' ? 0 : (run.ground || 0);
+  const lift = Math.max(0, dog.root.position.y - ground);
+  blob.position.set(dog.root.position.x, ground + 0.03, dog.root.position.z);
+  blob.scale.setScalar(1.1 / (1 + lift * 0.35) * (dog.def.size ?? 1));
+  blob.material.opacity = 0.42 / (1 + lift * 0.6);
+  blob.visible = dog.root.visible !== false && !(run.power?.rocket > 0 && state === 'running');
+
+  // speed lines once the dog is really moving (and always on the rocket)
+  const rush = state === 'running'
+    ? Math.max(0, Math.min(1, (run.speed - 19) / 10)) + (run.power.rocket > 0 ? 0.8 : 0) : 0;
+  world.updateSpeedLines(dt, Math.min(1, rush), run.speed || 0);
+
   const focusZ = state === 'menu' ? 0 : run.z;
   world.update(focusZ, dt, world.camera.position.z);
   fx.update(dt);
@@ -787,6 +841,6 @@ setTimeout(() => {
 requestAnimationFrame(frame);
 
 // handle for automated checks in the browser console
-window.__runner = { get run(){ return run; }, get state(){ return state; }, world, save:() => save };
+window.__runner = { get run(){ return run; }, get state(){ return state; }, world, save:() => save, snap:() => { snapCam = true; } };
 
 function pick(a){ return a[Math.floor(Math.random() * a.length)]; }
