@@ -1,89 +1,19 @@
 # 🌻 M-I-L-B-I-L Garden
 
-A 3D farming and trading game. You're a milbil farmer with **4 plots of land and 10
+A farming and trading game. You're a milbil farmer with **4 plots of land and 10
 coins**. Grow crops, send them to market, and price them against the other farmers
 to win the shoppers. Then spend what you earn on more land, sheds and greenhouses
 for exotic fruit.
 
 **▶ Play it: https://dtalic2.github.io/gretas-space/milbil-garden/**
 
-Built with **Three.js**, which is vendored in `vendor/`. No build step and nothing
-to install. Run it locally with:
+No build step and no dependencies. Run it locally with:
 
 ```bash
 python3 milbil-garden/serve.py      # http://localhost:8126
 ```
 
 ---
-
-## The world
-
-The whole farm is a 3D world you can look around:
-
-- **Your farm:** wooden beds inside a white fence. Crops grow as little 3D models:
-  carrots poke out of the soil, corn grows tall, tomatoes climb stakes, and mango,
-  star fruit and coconut grow into trees. Land you don't own yet is grass with a
-  for-sale peg.
-- **The market square:** Bramble 🦊, Old Mo 🐻, Posy 🐰 and Hank 🦝 each stand behind a
-  striped stall. The sign above each stall shows today's prices, and crates on the
-  counter show what they have left. Your stall is at the front, in your milbil's
-  colour. Little shoppers wander between the stalls, and one hurries to yours when
-  you make a sale.
-- **Your buildings:** sheds, the barn, the glass greenhouse and the Tropical Dome
-  appear in the yard with a pop when you buy them. Sprinklers spin in the corners
-  of the field, the scarecrow stands at the back, and your painted sign goes up
-  by your stall.
-- **Your milbil runs where you send it.** Tap the ground and it runs there (a
-  ring marks the spot), or steer it with **WASD** / the arrow keys; hold Shift to
-  walk. The camera follows it. When you leave it alone it goes back to pottering
-  round the field after a while.
-- **Your stall** is a proper wooden market stand: a pitched roof in your milbil's
-  colour, bunting, a painted front, shelves of jars at the back, a bell, a
-  "Greta's Stall" board on the roof, and a chalkboard out front listing today's
-  prices.
-- **The sky follows the market day:** from a pink sunrise through bright day and
-  golden hour to a pink dusk, when the lamps and cottage windows light up. Clouds
-  drift, butterflies flutter and the chimney smokes.
-
-| Action | Mouse | Touch |
-| --- | --- | --- |
-| Plant, harvest, open a stall | click | tap |
-| Spin the view | drag | drag one finger |
-| Zoom | scroll wheel | pinch |
-| Move the view | right-drag | drag two fingers |
-| Run somewhere | click the ground | tap the ground |
-| Steer your milbil | WASD / arrow keys (Shift walks) | — |
-| Run to your stall | 🏃 **My stall** button, or tap the stall | same |
-| Jump the camera to the farm, market or yard | 🌾 🏪 🏗️ buttons | same |
-
-Floating tags over each bed show how long is left, and ✨ when a crop is ready.
-The **Sell**, **Land**, **Build**, **Storage** and **News** buttons slide up a
-sheet with those screens. On a phone the view moves up so you can still see the
-world above the sheet. Tapping a stall, a for-sale plot or a building opens the
-right sheet too.
-
-## Your stall keeper
-
-The first time your milbil runs to your stall, you meet the **stall keeper**, a
-milbil in a green apron who stands on a crate behind your counter. **You name
-them** (🎲 suggests one) and pick their colour. After that their name goes on
-your stall's board ("Greta's Stall, with Bun") and in the Sell screen.
-
-The keeper:
-
-- says hello when you arrive, with news: "Hi Greta! 3 sold today! 🎉", or a
-  reminder to bring crops if the stall is empty
-- hops, cheers and rings the bell when something sells
-- turns to watch your milbil when it's nearby
-
-Tap the keeper while you're at the stall, or use 🏷️ in the Storage screen, to
-rename them. Starting a new farm keeps both your milbil and your keeper.
-
-Tapping any stall sends your milbil running to it. At your own stall the keeper
-greets you and the Sell screen opens. At a rival's stall the rival says
-something in character; Bramble brags about his cheapest price and Posy shows
-off her dearest. Rival stalls open the Sell screen too, so you can compare
-prices.
 
 ## Your milbil
 
@@ -98,6 +28,15 @@ Your milbil and its name appear in the top corner, in the farm's title
 market news when Bramble undercuts you. Tap your milbil any time, or use
 🎨 *Change my milbil* in the Storage tab, to change it. Starting a new farm keeps
 your milbil.
+
+## Your stall keeper
+
+A milbil wants to mind your market stall. In the Market tab, tap **Name them** to
+give them a name (🎲 suggests one) and pick their colour. They then sit at the
+top of your stall and chat about how it's going: "Send me some crops to sell!",
+"3 sold today! 🎉", and a "Ka-ching! 🔔" and a hop whenever something sells.
+Rename them with 🏷️ there or in the Storage tab. Starting a new farm keeps both
+your milbil and your keeper.
 
 ## The loop
 
@@ -198,12 +137,8 @@ last, and a farm can hold up to 30.
 
 - `js/data.js` holds every number: crops, rivals, buildings, plot prices.
 - `js/game.js` holds the state, farming, and the market simulation (no DOM).
-- `js/milbil.js` draws your milbil as an SVG (for the menus) and lists the looks you can pick.
-- `js/milbil3d.js` builds the same milbil in 3D.
-- `js/world.js` holds the 3D scene: layout, sky, picking, running, speech bubbles, the stall keeper, and keeping the world in step with the game.
-- `js/models3d.js` has every 3D model (crops, stalls, rivals, buildings, scenery), built from simple shapes.
-- `js/kit.js` has the shape and material helpers. `js/camera.js` is the orbit camera.
-- `js/main.js` holds the menus and sheets, including the milbil editor.
+- `js/milbil.js` draws your milbil as an SVG and lists the looks you can pick.
+- `js/main.js` holds the UI, including the milbil editor.
 
 The game saves to `localStorage` every few seconds. Crops keep growing while you're
 away because growth uses real timestamps, but the market only runs while the game

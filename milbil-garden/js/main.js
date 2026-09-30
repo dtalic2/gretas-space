@@ -1,7 +1,6 @@
 // UI: draws the state from game.js and turns taps into game actions.
 import { CROPS, CROP, RIVALS, RIVAL, BUILDINGS, MAX_PLOTS, DAY_LENGTH, plotBase } from './data.js';
 import * as G from './game.js';
-import { World } from './world.js';
 import { milbilSVG, randomLook, COLORS, HATS, EYES, EXTRAS, NAMES, cleanName } from './milbil.js';
 
 const $ = id => document.getElementById(id);
@@ -10,7 +9,7 @@ const fmt = n => Math.round(n).toLocaleString();
 const fmtTime = s => (s >= 60 ? `${Math.floor(s / 60)}m${Math.round(s % 60) ? ` ${Math.round(s % 60)}s` : ''}` : `${Math.round(s)}s`);
 
 const fresh = G.load();
-let tab = null;            // which sheet is open, if any
+let tab = 'market';
 let focusCrop = null;      // crop picked on the market board to price-check
 
 // ---------------------------------------------------------------- helpers
@@ -47,7 +46,6 @@ function setHtml(id, html) {
 // ---------------------------------------------------------------- header
 
 let shownCoins = null;
-let newsTimer = 0;
 function drawHeader() {
   if (shownCoins !== null && shownCoins !== G.S.coins) {
     $('coins').parentElement.classList.remove('bump');
@@ -60,16 +58,12 @@ function drawHeader() {
   $('daybar').style.width = `${(G.S.dayT / DAY_LENGTH) * 100}%`;
   $('storage').textContent = `${G.shedCount()}/${G.storageCap()}`;
   $('stallcount').textContent = `${G.stallCount()}/${G.stallCap()}`;
-  if ($('news').dataset.text !== G.S.news) {
-    $('news').dataset.text = G.S.news;
-    $('news').textContent = `🗞️ ${G.S.news}`;
-    $('news').classList.remove('faded');
-    clearTimeout(newsTimer);
-    newsTimer = setTimeout(() => $('news').classList.add('faded'), 9000);
-  }
+  $('news').textContent = `🗞️ ${G.S.news}`;
   const f = G.S.farmer;
   setHtml('meAvatar', milbilSVG(f, { cls: 'milbil', title: f.name || 'Your milbil' }));
   $('meName').textContent = f.name || 'Your milbil';
+  $('farmTitle').textContent = f.name ? `🌾 ${f.name}'s Farm` : '🌾 Your Farm';
+  $('plotcount').textContent = `${G.S.plots.length}/${MAX_PLOTS} plots`;
 }
 
 // ---------------------------------------------------------------- farm
@@ -87,6 +81,48 @@ function drawSeeds() {
       <span class="c">🪙${c.seed} · ${fmtTime(c.grow / G.growSpeed())}</span></button>`;
   }).join('');
   setHtml('seeds', html);
+}
+
+let plotEls = [];
+function buildField() {
+  const field = $('field');
+  field.innerHTML = '';
+  plotEls = G.S.plots.map((_, i) => {
+    const b = document.createElement('button');
+    b.className = 'plot';
+    b.dataset.i = i;
+    b.innerHTML = '<span class="tag"></span><span class="plant"></span><span class="bar"><i></i></span>';
+    field.appendChild(b);
+    return { b, tag: b.children[0], plant: b.children[1], bar: b.children[2], fill: b.children[2].firstChild, state: '' };
+  });
+}
+
+const STAGES = ['🌱', '🌿', '🪴'];
+function drawField() {
+  if (plotEls.length !== G.S.plots.length) buildField();
+  const now = Date.now();
+  G.S.plots.forEach((p, i) => {
+    const el = plotEls[i];
+    let state, glyph, tag = '';
+    if (!p.crop) {
+      state = 'empty'; glyph = '＋';
+    } else {
+      const t = G.plotProgress(p, now);
+      const c = CROP[p.crop];
+      if (t >= 1) { state = 'ready'; glyph = c.emoji; tag = c.name; } else {
+        state = 'grow';
+        glyph = t < 0.6 ? STAGES[Math.min(2, Math.floor(t * 5))] : c.emoji;
+        const left = Math.ceil((1 - t) * p.dur);
+        tag = `${c.emoji} ${fmtTime(left)}`;
+      }
+      el.fill.style.width = `${t * 100}%`;
+    }
+    if (!el.b.classList.contains(state)) el.b.className = `plot ${state}`;
+    if (el.plant.textContent !== glyph) el.plant.textContent = glyph;
+    if (el.tag.textContent !== tag) el.tag.textContent = tag;
+    el.bar.style.display = state === 'grow' ? '' : 'none';
+    el.b.title = !p.crop ? `Plant ${CROP[G.S.seed].name}` : state === 'ready' ? `Harvest ${CROP[p.crop].name}` : 'Growing…';
+  });
 }
 
 // ---------------------------------------------------------------- market
@@ -166,9 +202,7 @@ function drawMarket() {
   let html = '';
 
   html += `<h3 class="section-title">🧺 Your stall</h3>`;
-  html += G.hasHelper()
-    ? `<p class="muted">${milbilSVG({ color: G.S.helper.color, hat: 'none', eyes: 'happy', extra: 'none' }, { cls: 'avatar-chip' })} <b>${esc(G.S.helper.name)}</b> is minding your stall.</p>`
-    : `<p class="muted">🏃 Run to your stall to meet your stall keeper!</p>`;
+  html += keeperCard();
   if (!mine.length) {
     html += `<p class="muted">Nothing to sell yet. Harvest some crops, then send them here. Tap any crop on the price board below to check the competition first.</p>`;
   } else {
@@ -192,6 +226,53 @@ function drawMarket() {
   }).join('');
   html += `</tbody></table><p class="muted">✦ = exotic. They cost more to grow, but sell for much more — and fewer farmers compete for them.</p>`;
   setHtml('tab-market', html);
+}
+
+// ---------------------------------------------------------------- stall keeper
+
+const keeperLook = () => ({ color: G.S.helper.color, hat: 'none', eyes: 'happy', extra: 'none' });
+let cheerUntil = 0;
+
+function keeperLine() {
+  const me = G.hasFarmer() ? G.S.farmer.name : 'boss';
+  const onStall = G.stallCount(), inStore = G.shedCount(), sold = G.S.today.sold;
+  if (Date.now() < cheerUntil) return `Ka-ching! 🔔 That's ${sold} sold today, ${me}!`;
+  if (onStall === 0 && inStore > 0) return `Hi ${me}! Send me some crops to sell! 🧺`;
+  if (onStall === 0) return `Hi ${me}! Grow something and I'll sell it! 🌱`;
+  if (sold > 0) return `${sold} sold today! Keep them coming! 🎉`;
+  return `${onStall} on the stall. Waiting for shoppers…`;
+}
+
+function keeperCard() {
+  if (!G.hasHelper()) {
+    return `<div class="keeper new">${milbilSVG(keeperLook())}
+      <div class="say"><b>A milbil wants to mind your stall!</b>They'll cheer every sale. Give them a name?</div>
+      <button class="btn green small" data-helper>Name them</button></div>`;
+  }
+  return `<div class="keeper ${Date.now() < cheerUntil ? 'cheer' : ''}">${milbilSVG(keeperLook(), { title: G.S.helper.name })}
+    <div class="say"><b>${esc(G.S.helper.name)}, your stall keeper</b>${esc(keeperLine())}</div>
+    <button class="btn small" data-helper title="Rename">🏷️</button></div>`;
+}
+
+let hdraft = null;
+function drawHelperDlg() {
+  $('hdPreview').innerHTML = milbilSVG({ ...keeperLook(), color: hdraft.color }, { title: hdraft.name });
+  $('hdColors').innerHTML = COLORS.map(c =>
+    `<button type="button" class="swatch ${hdraft.color === c ? 'on' : ''}" data-hc="${c}" style="background:${c}" aria-label="colour ${c}"></button>`).join('');
+}
+
+function openHelperDialog() {
+  if ($('helperDlg').open || $('editor').open) return;
+  const first = !G.hasHelper();
+  hdraft = { ...G.S.helper };
+  $('hdName').value = hdraft.name;
+  $('hdTitle').textContent = first ? '🧺 Meet your stall keeper!' : `🏷️ Rename ${G.S.helper.name}`;
+  $('hdText').hidden = !first;
+  $('hdSave').textContent = first ? 'Welcome aboard! 🧺' : 'Save ✓';
+  $('hdLater').textContent = first ? 'Later' : 'Cancel';
+  $('hdErr').textContent = '';
+  drawHelperDlg();
+  $('helperDlg').showModal();
 }
 
 // ---------------------------------------------------------------- land
@@ -281,79 +362,36 @@ function drawPanels() {
   if (tab === 'land') drawLand();
   if (tab === 'build') drawBuild();
   if (tab === 'shed') drawShed();
-  if (tab === 'news') drawLog();
+  drawLog();
 }
 
-function drawAll() { drawHeader(); drawPanels(); }
-
-// ---------------------------------------------------------------- sheet
-
-const TITLES = { market: '🏪 Market — sell your crops', land: '🗺️ Land for sale', build: '🔨 Build & buy', shed: '📦 Storage & records', news: '📰 Around the market' };
-
-function openSheet(name, { keepCamera = false } = {}) {
-  tab = name;
-  for (const t of Object.keys(TITLES)) $(`tab-${t}`).hidden = t !== name;
-  for (const b of document.querySelectorAll('.navbtn')) b.classList.toggle('on', b.dataset.tab === name);
-  $('sheetTitle').textContent = TITLES[name];
-  $('sheet').classList.add('open');
-  document.body.classList.add('sheet-open');
-  world.setSheet(true);
-  if (!keepCamera) {
-    if (name === 'market') world.focus('market');
-    if (name === 'land') world.focus('farm');
-    if (name === 'build') world.focus('build');
-  }
-  $('sheet').setAttribute('aria-hidden', 'false');
-  drawPanels();
-  $('sheet').querySelector('.sheet-body').scrollTop = 0;
-}
-
-function closeSheet() {
-  tab = null;
-  focusCrop = null;
-  $('sheet').classList.remove('open');
-  document.body.classList.remove('sheet-open');
-  world.setSheet(false);
-  $('sheet').setAttribute('aria-hidden', 'true');
-  for (const b of document.querySelectorAll('.navbtn')) b.classList.remove('on');
-}
+function drawAll() { drawHeader(); drawField(); drawPanels(); }
 
 // ---------------------------------------------------------------- input
 
-function tendPlot(i, x, y) {
+$('field').addEventListener('click', e => {
+  const b = e.target.closest('.plot');
+  if (!b) return;
+  const i = +b.dataset.i;
   const p = G.S.plots[i];
-  if (!p) return;
+  const r = b.getBoundingClientRect();
   if (!p.crop) {
     const c = CROP[G.S.seed];
     if (G.plant(i)) {
-      world.onPlant(i);
-      floatText(`-${c.seed}🪙`, x, y - 20, '#b8461b');
+      floatText(`-${c.seed}🪙`, r.left + r.width / 2 - 18, r.top, '#b8461b');
+      b.classList.add('pop');
+      setTimeout(() => b.classList.remove('pop'), 400);
     }
   } else if (G.plotProgress(p) >= 1) {
     const c = CROP[p.crop];
     const n = G.harvest(i);
-    if (n) floatText(`+${n} ${c.emoji}`, x, y - 30);
+    if (n) floatText(`+${n} ${c.emoji}`, r.left + r.width / 2 - 20, r.top);
   } else {
     const c = CROP[p.crop];
-    world.walkToPlot(i);
-    toast(`${c.emoji} ${c.name} is ${Math.floor(G.plotProgress(p) * 100)}% grown — ${Math.ceil((1 - G.plotProgress(p)) * p.dur)}s to go.`);
+    toast(`${c.emoji} ${c.name} is ${Math.floor(G.plotProgress(p) * 100)}% grown.`);
   }
-}
-
-function onPick(pick, x, y) {
-  if (pick.type === 'plot') tendPlot(pick.i, x, y);
-  else if (pick.type === 'forsale') { toast('🪧 This land is for sale — see who is selling today.'); openSheet('land'); }
-  else if (pick.type === 'stall' || pick.type === 'helper') {
-    if (pick.type === 'helper' && G.hasHelper() && world.me.position.distanceTo(world.stallFront('you')) < 2.5) { openHelperDialog(); return; }
-    const id = pick.id || 'you';
-    world.runToStall(id);
-    if (tab) closeSheet();
-  }
-  else if (pick.type === 'ground') { world.runTo(pick.point); }
-  else if (pick.type === 'building') openSheet('build');
-  else if (pick.type === 'me') { world.wave(); openEditor(); }
   drawAll();
-}
+});
 
 $('seeds').addEventListener('click', e => {
   const b = e.target.closest('[data-seed]');
@@ -364,33 +402,23 @@ $('seeds').addEventListener('click', e => {
   drawAll();
 });
 
-$('plantAll').onclick = () => {
-  const empty = G.S.plots.map((p, i) => (p.crop ? -1 : i)).filter(i => i >= 0);
-  const n = G.plantAll();
-  if (n) {
-    toast(`🌱 Planted ${n} ${CROP[G.S.seed].name}.`);
-    for (const i of empty) if (G.S.plots[i].crop) world.onPlant(i);
-  }
-  drawAll();
-};
+$('plantAll').onclick = () => { const n = G.plantAll(); if (n) toast(`🌱 Planted ${n} ${CROP[G.S.seed].name}.`); drawAll(); };
 $('harvestAll').onclick = () => {
   const n = G.harvestAll();
   toast(n ? `🧺 Harvested ${n} crops into storage.` : 'Nothing is ripe yet.');
   drawAll();
 };
 
-for (const b of document.querySelectorAll('.navbtn')) {
-  b.onclick = () => (tab === b.dataset.tab ? closeSheet() : openSheet(b.dataset.tab));
-}
-$('sheetClose').onclick = closeSheet;
-for (const b of document.querySelectorAll('[data-cam]')) {
-  b.onclick = () => {
-    if (b.dataset.cam === 'stall') { world.runToStall('you'); if (tab) closeSheet(); }
-    else world.focus(b.dataset.cam);
-  };
-}
+$('tabs').addEventListener('click', e => {
+  const b = e.target.closest('[data-tab]');
+  if (!b) return;
+  tab = b.dataset.tab;
+  for (const x of $('tabs').children) x.classList.toggle('on', x === b);
+  for (const t of ['market', 'land', 'build', 'shed']) $(`tab-${t}`).hidden = t !== tab;
+  drawPanels();
+});
 
-$('sheet').addEventListener('click', e => {
+document.querySelector('.panel').addEventListener('click', e => {
   const t = e.target.closest('button, tr[data-focus]');
   if (!t || t.disabled) return;
   const d = t.dataset;
@@ -404,7 +432,7 @@ $('sheet').addEventListener('click', e => {
   else if (d.focus) {
     focusCrop = d.focus;
     drawPanels();
-    $('sheet').querySelector('.sheet-body').scrollTop = 0;
+    $('tab-market').scrollTop = 0;
     return;
   }
   else if (d.offer) G.buyOffer(d.offer);
@@ -413,7 +441,7 @@ $('sheet').addEventListener('click', e => {
   else if ('edit' in d) { openEditor(); return; }
   else if ('helper' in d) { openHelperDialog(); return; }
   else if ('reset' in d) {
-    if (confirm('Start a brand new farm? Your coins, land and crops will be gone.')) { G.reset(); G.save(); location.reload(); return; }
+    if (confirm('Start a brand new farm? Your coins, land and crops will be gone.')) { G.reset(); buildField(); }
   }
   drawAll();
 });
@@ -423,10 +451,10 @@ G.onEvent((type, data) => {
   if (type === 'build') toast(`${data.emoji} ${data.name} built!`, 'good');
   if (type === 'land') toast('🗺️ New land! Your farm just got bigger.', 'good');
   if (type === 'sale') {
-    const sp = world.onSale(data.price, data.crop);
-    if (!sp.behind) floatText(`+${data.price}🪙`, sp.x, sp.y);
+    cheerUntil = Date.now() + 2500;
+    const el = $('coins').getBoundingClientRect();
+    floatText(`+${data.price}`, el.left, el.bottom + 4);
   }
-  if (type === 'harvest') world.onHarvest(data.i);
   if (type === 'day') showReport(data);
 });
 
@@ -448,7 +476,6 @@ function showReport(y) {
 
 let last = performance.now();
 let acc = 0;
-let started = false;
 function frame(now) {
   const dt = Math.min(0.5, (now - last) / 1000);
   last = now;
@@ -458,99 +485,14 @@ function frame(now) {
     acc += dt;
   }
   drawHeader();
-  world.sync();
-  world.update(dt);
+  drawField();
   if (acc > 0.5) { acc = 0; drawPanels(); }
-  if (!started) { started = true; setTimeout(() => $('loading').classList.add('gone'), 150); }
   requestAnimationFrame(frame);
 }
 
 setInterval(G.save, 4000);
 document.addEventListener('visibilitychange', () => { if (document.hidden) G.save(); last = performance.now(); });
 window.addEventListener('pagehide', G.save);
-
-// ---------------------------------------------------------------- arriving at a stall
-
-function onArrive(goal) {
-  if (goal.type !== 'stall') return;
-  const me = G.hasFarmer() ? G.S.farmer.name : 'there';
-  if (goal.id === 'you') {
-    if (!G.hasHelper()) {
-      if (goal.passing) return;
-      world.helperSay('Hello! 👋 Who am I?', 3);
-      setTimeout(openHelperDialog, 500);
-      return;
-    }
-    const onStall = G.stallCount(), inStore = G.shedCount(), sold = G.S.today.sold;
-    let line;
-    if (onStall === 0 && inStore > 0) line = `Hi ${me}! Let's put some crops out! 🧺`;
-    else if (onStall === 0) line = `Hi ${me}! Grow something and I'll sell it! 🌱`;
-    else if (sold > 0) line = `Hi ${me}! ${sold} sold today! 🎉`;
-    else line = `Hi ${me}! ${onStall} on the stall, waiting for shoppers.`;
-    world.helperSay(line, 3.5);
-    if (!goal.passing) openSheet('market', { keepCamera: true });
-  } else {
-    const r = RIVAL[goal.id];
-    const book = Object.entries(G.S.rivals[goal.id] || {}).filter(([, l]) => l.qty > 0).sort((a, b) => a[1].price - b[1].price);
-    const lines = {
-      bramble: book.length ? `Cheapest in town! ${CROP[book[0][0]].emoji} just ${book[0][1].price}🪙` : 'Sold out, sly as ever! 🦊',
-      mo: book.length ? `Fair prices, same as always, ${me}.` : 'All gone for today!',
-      posy: book.length ? `Only the finest! ${CROP[book[book.length - 1][0]].emoji} ${book[book.length - 1][1].price}🪙 ✨` : 'Sold out, darling!',
-      hank: book.length ? `Prices? I'm feeling ${Math.random() < 0.5 ? 'generous' : 'greedy'} today!` : 'Nothing left, pal!',
-    };
-    world.rivalSay(goal.id, `${r.emoji} ${lines[goal.id]}`, 4);
-    openSheet('market', { keepCamera: true });
-  }
-}
-
-// ---------------------------------------------------------------- stall keeper
-
-let hdraft = null;
-function drawHelperDlg() {
-  $('hdPreview').innerHTML = milbilSVG({ color: hdraft.color, hat: 'none', eyes: 'happy', extra: 'none' }, { title: hdraft.name });
-  $('hdColors').innerHTML = COLORS.map(c =>
-    `<button type="button" class="swatch ${hdraft.color === c ? 'on' : ''}" data-hc="${c}" style="background:${c}" aria-label="colour ${c}"></button>`).join('');
-}
-function openHelperDialog() {
-  if ($('helperDlg').open || $('editor').open) return;
-  const first = !G.hasHelper();
-  hdraft = { ...G.S.helper };
-  $('hdName').value = hdraft.name;
-  $('hdTitle').textContent = first ? '🧺 Meet your stall keeper!' : `🏷️ Rename ${G.S.helper.name}`;
-  $('hdText').hidden = !first;
-  $('hdSave').textContent = first ? 'Welcome aboard! 🧺' : 'Save ✓';
-  $('hdLater').textContent = first ? 'Later' : 'Cancel';
-  $('hdErr').textContent = '';
-  drawHelperDlg();
-  $('helperDlg').showModal();
-}
-$('hdColors').addEventListener('click', e => {
-  const b = e.target.closest('[data-hc]');
-  if (!b) return;
-  hdraft.color = b.dataset.hc;
-  drawHelperDlg();
-});
-$('hdName').addEventListener('input', () => { hdraft.name = $('hdName').value; $('hdErr').textContent = ''; });
-$('hdRand').onclick = () => {
-  const taken = [G.S.farmer.name, hdraft.name];
-  const pool = NAMES.filter(n => !taken.includes(n));
-  hdraft.name = pool[Math.floor(Math.random() * pool.length)];
-  $('hdName').value = hdraft.name;
-  drawHelperDlg();
-};
-$('hdLater').onclick = () => $('helperDlg').close();
-$('helperForm').addEventListener('submit', e => {
-  const name = cleanName($('hdName').value);
-  if (!name) { e.preventDefault(); $('hdErr').textContent = 'Your stall keeper needs a name!'; $('hdName').focus(); return; }
-  const first = !G.hasHelper();
-  G.setHelper({ name, color: hdraft.color });
-  world.sync();
-  const me = G.hasFarmer() ? G.S.farmer.name : 'boss';
-  world.helperSay(first ? `I'm ${name}! Let's sell lots, ${me}! 🎉` : `Call me ${name}! 😊`, 4);
-  world.helperState.hop = 0.001;
-  if (first) openSheet('market', { keepCamera: true });
-  drawAll();
-});
 
 // ---------------------------------------------------------------- milbil editor
 
@@ -621,22 +563,31 @@ $('editorForm').addEventListener('submit', e => {
 });
 $('me').onclick = openEditor;
 
-const world = new World($('scene'), { onPick, onArrive });
-addEventListener('keydown', e => {
-  if (e.key === 'Escape' && tab) closeSheet();
-  if (/INPUT|TEXTAREA/.test(e.target.tagName) || document.querySelector('dialog[open]')) return;
-  const k = e.key.toLowerCase();
-  if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift'].includes(k)) {
-    world.keys.add(k);
-    if (k.startsWith('arrow')) e.preventDefault();
-  }
+$('hdColors').addEventListener('click', e => {
+  const b = e.target.closest('[data-hc]');
+  if (!b) return;
+  hdraft.color = b.dataset.hc;
+  drawHelperDlg();
 });
-addEventListener('keyup', e => world.keys.delete(e.key.toLowerCase()));
-addEventListener('blur', () => world.keys.clear());
+$('hdName').addEventListener('input', () => { hdraft.name = $('hdName').value; $('hdErr').textContent = ''; });
+$('hdRand').onclick = () => {
+  const pool = NAMES.filter(n => n !== G.S.farmer.name && n !== hdraft.name);
+  hdraft.name = pool[Math.floor(Math.random() * pool.length)];
+  $('hdName').value = hdraft.name;
+  drawHelperDlg();
+};
+$('hdLater').onclick = () => $('helperDlg').close();
+$('helperForm').addEventListener('submit', e => {
+  const name = cleanName($('hdName').value);
+  if (!name) { e.preventDefault(); $('hdErr').textContent = 'Your stall keeper needs a name!'; $('hdName').focus(); return; }
+  const first = !G.hasHelper();
+  G.setHelper({ name, color: hdraft.color });
+  toast(first ? `🧺 ${name} is minding your stall!` : `🏷️ Your stall keeper is now called ${name}.`, 'good');
+  drawAll();
+});
 
 drawAll();
 if (!G.hasFarmer()) openEditor();
 else if (fresh) toast('🌻 You have 4 plots and 10 coins. Plant lettuce to start!', 'good');
 requestAnimationFrame(frame);
-window.__G = G;
-window.__W = world;   // handy for poking at things from the console
+window.__G = G;   // handy for poking at things from the console
