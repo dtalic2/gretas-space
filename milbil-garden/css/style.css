@@ -269,6 +269,9 @@ dialog form > .btn { margin-top: 12px; width: 100%; }
 
 @media (max-width: 520px) {
   .pricer > .muted { flex-basis: 100%; }
+  .pricer { gap: 4px; }
+  .pricer .step, .pricer .step.wide { flex: 1 1 0; min-width: 0; width: auto; padding: 0; border-radius: 17px; font-size: .9rem; }
+  .pricer .val { flex: 1.8 1 0; min-width: 0; padding: 3px 2px; font-size: 1.05rem; }
   h1 { font-size: 1.25rem; }
   .milbil { width: 42px; height: 42px; }
   .me-name small { display: none; }
@@ -289,3 +292,8 @@ dialog form > .btn { margin-top: 12px; width: 100%; }
 .keeper.new { border-color: #f0cf6a; background: #fff8e3; }
 .keeper.cheer svg { animation: hop .5s; }
 @keyframes hop { 40% { transform: translateY(-10px) scale(1.05); } }
+@media (max-width: 360px) {
+  .pricer { gap: 3px; }
+  .pricer .step, .pricer .step.wide { font-size: .74rem; height: 30px; }
+  .pricer .val { white-space: nowrap; font-size: .9rem; }
+}

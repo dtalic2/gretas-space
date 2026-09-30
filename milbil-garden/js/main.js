@@ -179,6 +179,7 @@ function sellCard(c) {
       <span class="val">🪙${fmt(price)}</span>
       <button class="step" data-price="${c.id}" data-d="1" title="+1">+</button>
       <button class="step" data-price="${c.id}" data-d="5" title="+5">+5</button>
+      <button class="step wide" data-price="${c.id}" data-d="50" title="+50">+50</button>
     </div>
     <div class="quick">
       ${low != null ? `<button class="btn small" data-set="${c.id}" data-v="${low}">Match lowest (${fmt(low)})</button>

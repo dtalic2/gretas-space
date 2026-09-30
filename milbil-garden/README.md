@@ -62,7 +62,7 @@ For every crop you're selling, the Market tab shows:
 
 - the **guide price** and whether it went up ▲ or down ▼ today
 - every rival stall selling that crop, with its price and how many it has left
-- your price, with −50 / −5 / − / + / +5 buttons and quick picks: **Match lowest**,
+- your price, with −50 / −5 / − / + / +5 / +50 buttons and quick picks: **Match lowest**,
   **Undercut**, **Guide price**, and **Premium** (only when nobody else is selling)
 - a **forecast** of how fast you'll sell at that price. It replays 300 sample
   shoppers against today's stalls.
