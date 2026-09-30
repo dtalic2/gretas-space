@@ -137,6 +137,7 @@ function sellCard(c) {
     <div class="comp">${comps.length ? '' : '<span class="chip">No other farmer is selling these today!</span>'}${chips}</div>
     <div class="pricer">
       <span class="muted">Your price</span>
+      <button class="step wide" data-price="${c.id}" data-d="-50" title="-50" ${price <= 1 ? 'disabled' : ''}>−50</button>
       <button class="step" data-price="${c.id}" data-d="-5" title="-5">−5</button>
       <button class="step" data-price="${c.id}" data-d="-1" title="-1">−</button>
       <span class="val">🪙${fmt(price)}</span>
