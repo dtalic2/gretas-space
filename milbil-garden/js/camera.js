@@ -22,6 +22,7 @@ export class Rig {
     this.pointers = new Map();
     this.gesture = null;
     this.idle = 0;
+    this.follow = null;      // an Object3D to keep in the middle of the view
     this._bind();
     this.update(1);
   }
@@ -90,6 +91,7 @@ export class Rig {
   }
 
   pan(dx, dy) {
+    this.follow = null;      // moving the view yourself lets go of your milbil
     const s = this.dist * 0.0022;
     const fwd = new THREE.Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
     const right = new THREE.Vector3(fwd.z, 0, -fwd.x);
@@ -98,6 +100,7 @@ export class Rig {
   }
 
   flyTo(target, dist, yaw) {
+    this.follow = null;
     this.want.target.copy(target);
     if (dist) this.want.dist = dist;
     if (yaw != null) this.want.yaw = yaw;
@@ -116,6 +119,10 @@ export class Rig {
 
   update(dt) {
     this.idle += dt;
+    if (this.follow) {
+      this.want.target.set(this.follow.position.x, 0, this.follow.position.z);
+      this._clamp();
+    }
     const k = damp(this.rate, dt);
     this.yaw += (this.want.yaw - this.yaw) * k;
     this.pitch += (this.want.pitch - this.pitch) * k;

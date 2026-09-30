@@ -165,6 +165,9 @@ function drawMarket() {
   let html = '';
 
   html += `<h3 class="section-title">🧺 Your stall</h3>`;
+  html += G.hasHelper()
+    ? `<p class="muted">${milbilSVG({ color: G.S.helper.color, hat: 'none', eyes: 'happy', extra: 'none' }, { cls: 'avatar-chip' })} <b>${esc(G.S.helper.name)}</b> is minding your stall.</p>`
+    : `<p class="muted">🏃 Run to your stall to meet your stall keeper!</p>`;
   if (!mine.length) {
     html += `<p class="muted">Nothing to sell yet. Harvest some crops, then send them here. Tap any crop on the price board below to check the competition first.</p>`;
   } else {
@@ -257,6 +260,7 @@ function drawShed() {
     <span>Yesterday's sales</span><b>${y ? `${y.sold} for 🪙${fmt(y.earned)}` : '—'}</b>
   </div>
   <p style="margin-top:16px"><button class="btn small" data-edit>🎨 Change my milbil</button>
+  <button class="btn small" data-helper>🏷️ ${G.hasHelper() ? `Rename ${esc(G.S.helper.name)}` : 'Name your stall keeper'}</button>
   <button class="btn small" data-reset>🔄 Start a new farm</button></p>`;
   setHtml('tab-shed', html);
 }
@@ -285,7 +289,7 @@ function drawAll() { drawHeader(); drawPanels(); }
 
 const TITLES = { market: '🏪 Market — sell your crops', land: '🗺️ Land for sale', build: '🔨 Build & buy', shed: '📦 Storage & records', news: '📰 Around the market' };
 
-function openSheet(name) {
+function openSheet(name, { keepCamera = false } = {}) {
   tab = name;
   for (const t of Object.keys(TITLES)) $(`tab-${t}`).hidden = t !== name;
   for (const b of document.querySelectorAll('.navbtn')) b.classList.toggle('on', b.dataset.tab === name);
@@ -293,9 +297,11 @@ function openSheet(name) {
   $('sheet').classList.add('open');
   document.body.classList.add('sheet-open');
   world.setSheet(true);
-  if (name === 'market') world.focus('market');
-  if (name === 'land') world.focus('farm');
-  if (name === 'build') world.focus('build');
+  if (!keepCamera) {
+    if (name === 'market') world.focus('market');
+    if (name === 'land') world.focus('farm');
+    if (name === 'build') world.focus('build');
+  }
   $('sheet').setAttribute('aria-hidden', 'false');
   drawPanels();
   $('sheet').querySelector('.sheet-body').scrollTop = 0;
@@ -336,13 +342,13 @@ function tendPlot(i, x, y) {
 function onPick(pick, x, y) {
   if (pick.type === 'plot') tendPlot(pick.i, x, y);
   else if (pick.type === 'forsale') { toast('🪧 This land is for sale — see who is selling today.'); openSheet('land'); }
-  else if (pick.type === 'stall') {
-    if (pick.id !== 'you') {
-      const r = RIVAL[pick.id];
-      toast(`${r.emoji} ${r.name}: ${r.blurb}`);
-    }
-    openSheet('market');
+  else if (pick.type === 'stall' || pick.type === 'helper') {
+    if (pick.type === 'helper' && G.hasHelper() && world.me.position.distanceTo(world.stallFront('you')) < 2.5) { openHelperDialog(); return; }
+    const id = pick.id || 'you';
+    world.runToStall(id);
+    if (tab) closeSheet();
   }
+  else if (pick.type === 'ground') { world.runTo(pick.point); }
   else if (pick.type === 'building') openSheet('build');
   else if (pick.type === 'me') { world.wave(); openEditor(); }
   drawAll();
@@ -376,7 +382,12 @@ for (const b of document.querySelectorAll('.navbtn')) {
   b.onclick = () => (tab === b.dataset.tab ? closeSheet() : openSheet(b.dataset.tab));
 }
 $('sheetClose').onclick = closeSheet;
-for (const b of document.querySelectorAll('[data-cam]')) b.onclick = () => world.focus(b.dataset.cam);
+for (const b of document.querySelectorAll('[data-cam]')) {
+  b.onclick = () => {
+    if (b.dataset.cam === 'stall') { world.runToStall('you'); if (tab) closeSheet(); }
+    else world.focus(b.dataset.cam);
+  };
+}
 
 $('sheet').addEventListener('click', e => {
   const t = e.target.closest('button, tr[data-focus]');
@@ -399,6 +410,7 @@ $('sheet').addEventListener('click', e => {
   else if ('council' in d) G.buyCouncilPlot();
   else if (d.build) G.build(d.build);
   else if ('edit' in d) { openEditor(); return; }
+  else if ('helper' in d) { openHelperDialog(); return; }
   else if ('reset' in d) {
     if (confirm('Start a brand new farm? Your coins, land and crops will be gone.')) { G.reset(); G.save(); location.reload(); return; }
   }
@@ -410,7 +422,7 @@ G.onEvent((type, data) => {
   if (type === 'build') toast(`${data.emoji} ${data.name} built!`, 'good');
   if (type === 'land') toast('🗺️ New land! Your farm just got bigger.', 'good');
   if (type === 'sale') {
-    const sp = world.onSale();
+    const sp = world.onSale(data.price, data.crop);
     if (!sp.behind) floatText(`+${data.price}🪙`, sp.x, sp.y);
   }
   if (type === 'harvest') world.onHarvest(data.i);
@@ -440,7 +452,7 @@ function frame(now) {
   const dt = Math.min(0.5, (now - last) / 1000);
   last = now;
   // The market only runs while the day report is closed.
-  if (!$('dayReport').open && !$('editor').open) {
+  if (!$('dayReport').open && !$('editor').open && !$('helperDlg').open) {
     G.tick(dt);
     acc += dt;
   }
@@ -455,6 +467,89 @@ function frame(now) {
 setInterval(G.save, 4000);
 document.addEventListener('visibilitychange', () => { if (document.hidden) G.save(); last = performance.now(); });
 window.addEventListener('pagehide', G.save);
+
+// ---------------------------------------------------------------- arriving at a stall
+
+function onArrive(goal) {
+  if (goal.type !== 'stall') return;
+  const me = G.hasFarmer() ? G.S.farmer.name : 'there';
+  if (goal.id === 'you') {
+    if (!G.hasHelper()) {
+      if (goal.passing) return;
+      world.helperSay('Hello! 👋 Who am I?', 3);
+      setTimeout(openHelperDialog, 500);
+      return;
+    }
+    const onStall = G.stallCount(), inStore = G.shedCount(), sold = G.S.today.sold;
+    let line;
+    if (onStall === 0 && inStore > 0) line = `Hi ${me}! Let's put some crops out! 🧺`;
+    else if (onStall === 0) line = `Hi ${me}! Grow something and I'll sell it! 🌱`;
+    else if (sold > 0) line = `Hi ${me}! ${sold} sold today! 🎉`;
+    else line = `Hi ${me}! ${onStall} on the stall, waiting for shoppers.`;
+    world.helperSay(line, 3.5);
+    if (!goal.passing) openSheet('market', { keepCamera: true });
+  } else {
+    const r = RIVAL[goal.id];
+    const book = Object.entries(G.S.rivals[goal.id] || {}).filter(([, l]) => l.qty > 0).sort((a, b) => a[1].price - b[1].price);
+    const lines = {
+      bramble: book.length ? `Cheapest in town! ${CROP[book[0][0]].emoji} just ${book[0][1].price}🪙` : 'Sold out, sly as ever! 🦊',
+      mo: book.length ? `Fair prices, same as always, ${me}.` : 'All gone for today!',
+      posy: book.length ? `Only the finest! ${CROP[book[book.length - 1][0]].emoji} ${book[book.length - 1][1].price}🪙 ✨` : 'Sold out, darling!',
+      hank: book.length ? `Prices? I'm feeling ${Math.random() < 0.5 ? 'generous' : 'greedy'} today!` : 'Nothing left, pal!',
+    };
+    world.rivalSay(goal.id, `${r.emoji} ${lines[goal.id]}`, 4);
+    openSheet('market', { keepCamera: true });
+  }
+}
+
+// ---------------------------------------------------------------- stall keeper
+
+let hdraft = null;
+function drawHelperDlg() {
+  $('hdPreview').innerHTML = milbilSVG({ color: hdraft.color, hat: 'none', eyes: 'happy', extra: 'none' }, { title: hdraft.name });
+  $('hdColors').innerHTML = COLORS.map(c =>
+    `<button type="button" class="swatch ${hdraft.color === c ? 'on' : ''}" data-hc="${c}" style="background:${c}" aria-label="colour ${c}"></button>`).join('');
+}
+function openHelperDialog() {
+  if ($('helperDlg').open || $('editor').open) return;
+  const first = !G.hasHelper();
+  hdraft = { ...G.S.helper };
+  $('hdName').value = hdraft.name;
+  $('hdTitle').textContent = first ? '🧺 Meet your stall keeper!' : `🏷️ Rename ${G.S.helper.name}`;
+  $('hdText').hidden = !first;
+  $('hdSave').textContent = first ? 'Welcome aboard! 🧺' : 'Save ✓';
+  $('hdLater').textContent = first ? 'Later' : 'Cancel';
+  $('hdErr').textContent = '';
+  drawHelperDlg();
+  $('helperDlg').showModal();
+}
+$('hdColors').addEventListener('click', e => {
+  const b = e.target.closest('[data-hc]');
+  if (!b) return;
+  hdraft.color = b.dataset.hc;
+  drawHelperDlg();
+});
+$('hdName').addEventListener('input', () => { hdraft.name = $('hdName').value; $('hdErr').textContent = ''; });
+$('hdRand').onclick = () => {
+  const taken = [G.S.farmer.name, hdraft.name];
+  const pool = NAMES.filter(n => !taken.includes(n));
+  hdraft.name = pool[Math.floor(Math.random() * pool.length)];
+  $('hdName').value = hdraft.name;
+  drawHelperDlg();
+};
+$('hdLater').onclick = () => $('helperDlg').close();
+$('helperForm').addEventListener('submit', e => {
+  const name = cleanName($('hdName').value);
+  if (!name) { e.preventDefault(); $('hdErr').textContent = 'Your stall keeper needs a name!'; $('hdName').focus(); return; }
+  const first = !G.hasHelper();
+  G.setHelper({ name, color: hdraft.color });
+  world.sync();
+  const me = G.hasFarmer() ? G.S.farmer.name : 'boss';
+  world.helperSay(first ? `I'm ${name}! Let's sell lots, ${me}! 🎉` : `Call me ${name}! 😊`, 4);
+  world.helperState.hop = 0.001;
+  if (first) openSheet('market', { keepCamera: true });
+  drawAll();
+});
 
 // ---------------------------------------------------------------- milbil editor
 
@@ -525,8 +620,18 @@ $('editorForm').addEventListener('submit', e => {
 });
 $('me').onclick = openEditor;
 
-const world = new World($('scene'), { onPick });
-addEventListener('keydown', e => { if (e.key === 'Escape' && tab) closeSheet(); });
+const world = new World($('scene'), { onPick, onArrive });
+addEventListener('keydown', e => {
+  if (e.key === 'Escape' && tab) closeSheet();
+  if (/INPUT|TEXTAREA/.test(e.target.tagName) || document.querySelector('dialog[open]')) return;
+  const k = e.key.toLowerCase();
+  if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift'].includes(k)) {
+    world.keys.add(k);
+    if (k.startsWith('arrow')) e.preventDefault();
+  }
+});
+addEventListener('keyup', e => world.keys.delete(e.key.toLowerCase()));
+addEventListener('blur', () => world.keys.clear());
 
 drawAll();
 if (!G.hasFarmer()) openEditor();

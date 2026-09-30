@@ -10,6 +10,7 @@ import { COLORS } from './milbil.js';
 import { Rig } from './camera.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const geoRing = new THREE.RingGeometry(0.35, 0.5, 24);
 
 // ------------------------------------------------------------------ layout
 
@@ -63,8 +64,11 @@ function skyAt(t) {
 // ------------------------------------------------------------------ world
 
 export class World {
-  constructor(canvas, { onPick }) {
+  constructor(canvas, { onPick, onArrive }) {
     this.onPick = onPick;
+    this.onArrive = onArrive || (() => {});
+    this.keys = new Set();
+    this.bubbles = [];
     const coarse = matchMedia('(pointer: coarse)').matches;
     this.coarse = coarse;
     const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !coarse || devicePixelRatio < 2, powerPreference: 'high-performance' });
@@ -92,6 +96,7 @@ export class World {
     this._scenery();
     this._farm();
     this._market();
+    this.pickables.push(this.ground);
 
     this.plots = [];
     this.forSale = [];
@@ -167,7 +172,9 @@ export class World {
     g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
     const ground = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true }));
     ground.receiveShadow = true;
+    ground.userData.pick = { type: 'ground' };
     this.scene.add(ground);
+    this.ground = ground;
 
     // Soft hills around the edge.
     for (let i = 0; i < 16; i++) {
@@ -352,6 +359,7 @@ export class World {
     }
     this.myStallWide = -1;
     this._makeMyStall(1);
+    this._syncHelper();
 
     this.shoppers = [];
     for (let i = 0; i < 9; i++) {
@@ -367,7 +375,7 @@ export class World {
   _makeMyStall(wide) {
     if (this.myStall) { this.scene.remove(this.myStall); this.pickables.splice(this.pickables.indexOf(this.myStall), 1); }
     const col = new THREE.Color(G.S.farmer.color || '#ffb3c7').getHex();
-    const st = M.stall(col, 0xffffff, wide);
+    const st = M.myStall(col, wide);
     st.position.copy(MY_STALL.pos);
     st.rotation.y = MY_STALL.rot;
     st.userData.pick = { type: 'stall', id: 'you' };
@@ -377,6 +385,28 @@ export class World {
     this.myStallWide = wide;
     this.myStallColor = col;
     this.myStallKey = '';
+    this.helperKey = '';
+    this.stalls.you = st;
+  }
+
+  // The milbil who minds your stall, in their apron, standing on a crate.
+  _syncHelper() {
+    const h = G.S.helper;
+    const key = h.color;
+    if (key === this.helperKey && this.helper) return;
+    this.helperKey = key;
+    if (this.helper) this.helper.parent.remove(this.helper);
+    const body = makeMilbil({ color: h.color, hat: 'none', eyes: 'happy', extra: 'none' });
+    body.userData.bodyPivot.add(M.apron());
+    body.scale.setScalar(1.15);
+    body.position.y = 0.5;
+    const w = group(box(0.7, 0.5, 0.6, 0xb98552), body);
+    w.position.set(0.3, 0, -0.95);
+    w.userData.body = body;
+    w.userData.pick = { type: 'helper' };
+    this.myStall.add(w);
+    this.helper = w;
+    this.helperState = { hop: 0, wave: 0, lastSay: -99 };
   }
 
   // ---------------------------------------------------------------- picking
@@ -386,14 +416,18 @@ export class World {
     ray.setFromCamera(new THREE.Vector2((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1), this.camera);
     const hits = ray.intersectObjects(this.pickables, true);
     const picks = [];
+    let groundPoint = null;
     for (const h of hits) {
       let o = h.object;
       while (o && !o.userData.pick) o = o.parent;
-      if (o && !picks.includes(o.userData.pick)) picks.push(o.userData.pick);
+      if (!o) continue;
+      if (o.userData.pick.type === 'ground') { groundPoint = groundPoint || h.point.clone(); continue; }
+      if (!picks.includes(o.userData.pick)) picks.push(o.userData.pick);
     }
     // Your milbil often stands in front of a bed; the bed wins.
     const pick = picks.find(p => p.type === 'plot') || picks[0];
     if (pick) this.onPick(pick, x, y);
+    else if (groundPoint) this.onPick({ type: 'ground', point: groundPoint }, x, y);
   }
 
   screenPos(v) {
@@ -403,7 +437,11 @@ export class World {
 
   // On narrow screens the sheet covers the bottom of the view, so slide the
   // picture up to keep what you were looking at in sight.
-  setSheet(open) { this.shiftWant = open && innerWidth < 900 ? 0.3 : 0; }
+  // On wide screens the sheet sits on the right, so slide the picture left.
+  setSheet(open) {
+    this.shiftWant = open && innerWidth < 900 ? 0.24 : 0;
+    this.shiftXWant = open && innerWidth >= 900 ? 230 : 0;
+  }
 
   focus(where) {
     const far = this.shiftWant > 0 ? 1.35 : 1;   // pull back while a sheet covers half the screen
@@ -530,8 +568,9 @@ export class World {
       s.userData.pick = { type: 'stall', id: 'you' };
       return s;
     });
-    const wide = 1 + b.stall * 0.18;
+    const wide = 1 + b.stall * 0.15;
     if (Math.abs(wide - this.myStallWide) > 0.01) this._makeMyStall(wide);
+    this._syncHelper();
   }
 
   _syncLook() {
@@ -549,7 +588,7 @@ export class World {
     this.pickables.push(this.me);
     const name = f.name || 'Milbil';
     this.farmSign.userData.board.userData.draw(['Welcome to', `🌻 ${name}'s Farm`], { title: 'bold 40px system-ui', font: 'bold 48px system-ui' });
-    if (new THREE.Color(f.color).getHex() !== this.myStallColor) this._makeMyStall(this.myStallWide);
+    if (new THREE.Color(f.color).getHex() !== this.myStallColor) { this._makeMyStall(this.myStallWide); this._syncHelper(); }
   }
 
   _syncStalls() {
@@ -583,9 +622,11 @@ export class World {
     }
     const mine = items(S.stall);
     const name = G.hasFarmer() ? S.farmer.name : 'You';
-    this.myStall.userData.sign.userData.draw(
-      mine.length ? signLines(`⭐ ${name}`, mine) : [`⭐ ${name}`, 'stall empty'],
-      { title: 'bold 50px system-ui', font: 'bold 42px system-ui', bg: '#fffbe6', edge: '#e0558a' });
+    this.myStall.userData.sign.userData.draw([`⭐ ${name}'s Stall`, G.hasHelper() ? `with ${S.helper.name}` : 'fresh & local'],
+      { title: 'bold 54px system-ui', font: 'bold 40px system-ui', bg: '#fffbe6', edge: '#e0558a' });
+    const chalk = mine.slice(0, 4).map(([id, l]) => `${CROP[id].emoji} ${l.price}`);
+    this.myStall.userData.chalk.userData.draw(chalk.length ? ['TODAY', ...chalk] : ['TODAY', 'nothing', 'yet!'],
+      { title: 'bold 40px system-ui', font: 'bold 44px system-ui', color: '#ffffff', bg: '#2f4a3a', edge: '#8a5a36' });
     crates(this.myStall, mine);
     if (this.built.sign && this.built.sign[0]) {
       this.built.sign[0].userData.board.userData.draw(['Fresh from', `${name}'s farm!`], { title: 'bold 44px system-ui', font: 'bold 50px system-ui' });
@@ -594,6 +635,7 @@ export class World {
 
   sync() {
     this._syncLook();
+    this._syncHelper();
     this._syncPlots();
     this._syncBuildings();
     this._syncStalls();
@@ -609,10 +651,58 @@ export class World {
     const off = V(from.x - p.x, 0, from.z - p.z);
     if (off.lengthSq() < 0.01) off.set(0, 0, 1);
     off.normalize().multiplyScalar(1.1);
-    this.meState.target = p.clone().add(off);
-    this.meState.look = p.clone();
-    this.meState.next = 6;
+    this.runTo(p.clone().add(off), { look: p.clone(), follow: false });
   }
+
+  // Where to stand to be served at a stall.
+  stallFront(id) {
+    const st = this.stalls[id];
+    return V(0, 0, id === 'you' ? 1.75 : 1.5).applyAxisAngle(V(0, 1, 0), st.rotation.y).add(st.position);
+  }
+
+  // Run somewhere you tapped. `goal` is reported to onArrive when you get there.
+  runTo(point, { goal = null, look = null, follow = true } = {}) {
+    const st = this.meState;
+    const r = Math.hypot(point.x, point.z);
+    st.target = r > 40 ? point.clone().multiplyScalar(40 / r) : point.clone();
+    st.target.y = 0;
+    st.goal = goal;
+    st.look = look;
+    st.run = true;
+    st.controlled = this.time;
+    st.next = 8;
+    if (follow) this.rig.follow = this.me;
+    this.fxRing(st.target);
+  }
+
+  runToStall(id) {
+    const st = this.stalls[id];
+    this.runTo(this.stallFront(id), { goal: { type: 'stall', id }, look: st.position.clone() });
+  }
+
+  // Speech bubbles over a character's head.
+  say(obj, text, secs = 3.5, y = 2.2) {
+    let b = this.bubbles.find(x => x.obj === obj);
+    if (!b) {
+      const el = document.createElement('div');
+      el.className = 'bubble';
+      this.labels.appendChild(el);
+      b = { el, obj, y };
+      this.bubbles.push(b);
+    }
+    b.el.textContent = text;
+    b.until = this.time + secs;
+    b.y = y;
+    b.el.classList.remove('pop'); void b.el.offsetWidth; b.el.classList.add('pop');
+  }
+
+  helperSay(text, secs) {
+    if (!this.helper) return;
+    this.say(this.helper.userData.body, text, secs, 1.3);
+    this.helperState.lastSay = this.time;
+  }
+
+  rivalSay(id, text, secs) { this.say(this.stalls[id].userData.who.userData.body, text, secs, 1.6); }
 
   cheer() { this.meState.hop = 0.001; }
 
@@ -621,22 +711,43 @@ export class World {
     if (!m) return;
     const st = this.meState;
     let speed = 0;
-    if (st.target) {
+    // Keyboard: WASD / arrows move relative to the camera.
+    const k = this.keys;
+    const kx = (k.has('d') || k.has('arrowright') ? 1 : 0) - (k.has('a') || k.has('arrowleft') ? 1 : 0);
+    const kz = (k.has('s') || k.has('arrowdown') ? 1 : 0) - (k.has('w') || k.has('arrowup') ? 1 : 0);
+    if (kx || kz) {
+      const yaw = this.rig.yaw;
+      const fwd = V(Math.sin(yaw), 0, Math.cos(yaw));        // towards the camera
+      const right = V(fwd.z, 0, -fwd.x);
+      const d = right.multiplyScalar(kx).addScaledVector(fwd, kz).normalize();
+      speed = k.has('shift') ? 4 : 7;
+      m.position.addScaledVector(d, speed * dt);
+      const r = Math.hypot(m.position.x, m.position.z);
+      if (r > 40) m.position.multiplyScalar(40 / r);
+      st.face = Math.atan2(d.x, d.z);
+      st.target = null; st.goal = null;
+      st.controlled = this.time;
+      this.rig.follow = m;
+      this._checkNear();
+    } else if (st.target) {
       const d = V(st.target.x - m.position.x, 0, st.target.z - m.position.z);
       const len = d.length();
       if (len < 0.08) {
         st.target = null;
+        st.run = false;
         if (st.look) { st.face = Math.atan2(st.look.x - m.position.x, st.look.z - m.position.z); st.look = null; }
         st.hop = 0.001;
+        if (st.goal) { const g = st.goal; st.goal = null; this._arrive(g); }
       } else {
-        speed = Math.min(5, 1.5 + len * 2);
+        speed = st.run ? Math.min(7.5, 2 + len * 3) : Math.min(5, 1.5 + len * 2);
         d.multiplyScalar(Math.min(1, (speed * dt) / len));
         m.position.add(d);
         st.face = Math.atan2(d.x, d.z);
       }
     } else {
       st.next -= dt;
-      if (st.next <= 0) {
+      // After you've steered your milbil, it stays put for a while.
+      if (st.next <= 0 && this.time - (st.controlled || -99) > 25) {
         // Wander: visit a ripe plot if there is one, otherwise somewhere nearby.
         const ripe = this.plots.map((v, i) => (v.t >= 1 ? i : -1)).filter(i => i >= 0);
         if (ripe.length && Math.random() < 0.7) this.walkToPlot(ripe[Math.floor(Math.random() * ripe.length)]);
@@ -650,11 +761,34 @@ export class World {
     da = Math.atan2(Math.sin(da), Math.cos(da));
     m.rotation.y += da * Math.min(1, dt * 10);
     if (st.hop) { st.hop += dt * 2.4; if (st.hop >= 1) st.hop = 0; }
-    animateMilbil(m, this.time, speed, { hop: st.hop, wave: st.wave > 0 });
+    animateMilbil(m, this.time, speed, { hop: st.hop, wave: st.wave > 0, dt });
+    // Kick up little puffs of dust when running.
+    if (speed > 4) {
+      st.dust = (st.dust || 0) - dt;
+      if (st.dust <= 0) { st.dust = 0.09; this.fxDust(m.position); }
+    }
     if (st.wave > 0) st.wave -= dt;
   }
 
   wave() { this.meState.wave = 1.5; }
+
+  _arrive(goal) {
+    if (goal.type === 'stall') {
+      this.meState.wave = 1.2;
+      const id = goal.id;
+      if (id === 'you') {
+        this.helperState.wave = 1.5;
+        this.helperState.hop = 0.001;
+      }
+      this.onArrive(goal);
+    }
+  }
+
+  // Walking past your stall gets a hello, even without tapping it.
+  _checkNear() {
+    const d = this.me.position.distanceTo(this.stallFront('you'));
+    if (d < 1.6 && this.time - this.helperState.lastSay > 12) this.onArrive({ type: 'stall', id: 'you', passing: true });
+  }
 
   // ---------------------------------------------------------------- effects
 
@@ -666,6 +800,23 @@ export class World {
       this.scene.add(b);
       this.fx.push({ o: b, life: 0, max: rnd(0.6, 1), vel: V(rnd(-1, 1), rnd(1, 2.5), rnd(-1, 1)), kind: 'puff' });
     }
+  }
+
+  fxDust(pos) {
+    const b = ball(rnd(0.08, 0.14), 0, 0xe8dcc0, pos.x + rnd(-0.15, 0.15), 0.1, pos.z + rnd(-0.15, 0.15),
+      new THREE.MeshLambertMaterial({ color: 0xefe6d0, transparent: true, opacity: 0.8, flatShading: true }));
+    b.castShadow = false;
+    this.scene.add(b);
+    this.fx.push({ o: b, life: 0, max: 0.5, vel: V(rnd(-0.4, 0.4), rnd(0.4, 0.9), rnd(-0.4, 0.4)), kind: 'puff' });
+  }
+
+  // A ring on the ground where you tapped.
+  fxRing(pos) {
+    const r = new THREE.Mesh(geoRing, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthWrite: false }));
+    r.rotation.x = -Math.PI / 2;
+    r.position.set(pos.x, 0.06, pos.z);
+    this.scene.add(r);
+    this.fx.push({ o: r, life: 0, max: 0.6, vel: V(0, 0, 0), kind: 'ring' });
   }
 
   fxCoin(pos) {
@@ -686,8 +837,14 @@ export class World {
     }
   }
 
-  onSale() {
+  onSale(price, crop) {
     this.fxCoin(this.myStall.position);
+    this.helperState.hop = 0.001;
+    this.bellRing = 1;
+    if (this.time - this.helperState.lastSay > 3) {
+      const cheers = ['Sold! 🎉', `+${price}🪙!`, `One ${crop.emoji} sold!`, 'Ka-ching! 🔔', 'Thank you! 😊'];
+      this.helperSay(cheers[Math.floor(Math.random() * cheers.length)], 2);
+    }
     // Send a shopper over to your stall.
     const s = this.shoppers[Math.floor(Math.random() * this.shoppers.length)];
     const front = V(0, 0, 1.5).applyAxisAngle(V(0, 1, 0), this.myStall.rotation.y).add(this.myStall.position);
@@ -717,7 +874,8 @@ export class World {
     const t = this.time;
     this.rig.update(dt);
     this.shift += (this.shiftWant - this.shift) * Math.min(1, dt * 8);
-    if (Math.abs(this.shift) > 0.001) this.camera.setViewOffset(innerWidth, innerHeight, 0, this.shift * innerHeight, innerWidth, innerHeight);
+    this.shiftX = (this.shiftX || 0) + ((this.shiftXWant || 0) - (this.shiftX || 0)) * Math.min(1, dt * 8);
+    if (Math.abs(this.shift) > 0.001 || Math.abs(this.shiftX) > 0.5) this.camera.setViewOffset(innerWidth, innerHeight, this.shiftX, this.shift * innerHeight, innerWidth, innerHeight);
     else if (this.camera.view && this.camera.view.enabled) this.camera.clearViewOffset();
 
     // Sky follows the market day.
@@ -799,6 +957,8 @@ export class World {
     }
 
     this._updateMe(dt);
+    this._updateHelper(dt);
+    this._placeBubbles();
 
     for (let i = this.fx.length - 1; i >= 0; i--) {
       const f = this.fx[i];
@@ -808,11 +968,47 @@ export class World {
       f.o.position.addScaledVector(f.vel, dt);
       if (f.kind === 'coin') { f.o.rotation.z += dt * 10; f.vel.y *= 0.96; }
       else if (f.kind === 'spark') { f.vel.y -= 9 * dt; f.o.material.opacity = 1 - k; }
+      else if (f.kind === 'ring') { f.o.scale.setScalar(1 + k * 1.2); f.o.material.opacity = 0.9 * (1 - k); }
       else { f.vel.multiplyScalar(0.92); f.o.scale.setScalar(1 + k * 1.5); f.o.material.opacity = 0.9 * (1 - k); }
     }
 
     this.renderer.render(this.scene, this.camera);
     this._placeLabels();
+  }
+
+  _updateHelper(dt) {
+    if (!this.helper) return;
+    const hs = this.helperState;
+    const body = this.helper.userData.body;
+    // Face your milbil when it's close, otherwise watch the square.
+    const me = this.me && this.me.position;
+    const wp = this.helper.getWorldPosition(V(0, 0, 0));
+    let face = 0;
+    if (me && me.distanceTo(wp) < 7) face = Math.atan2(me.x - wp.x, me.z - wp.z) - this.myStall.rotation.y;
+    else face = Math.sin(this.time * 0.6) * 0.5;
+    let da = face - body.rotation.y;
+    da = Math.atan2(Math.sin(da), Math.cos(da));
+    body.rotation.y += da * Math.min(1, dt * 6);
+    if (hs.hop) { hs.hop += dt * 2.6; if (hs.hop >= 1) hs.hop = 0; }
+    animateMilbil(body, this.time, 0, { hop: hs.hop, wave: hs.wave > 0, dt });
+    if (hs.wave > 0) hs.wave -= dt;
+    const bell = this.myStall.userData.bell;
+    if (this.bellRing > 0) { this.bellRing -= dt * 1.5; bell.rotation.z = Math.sin(this.time * 30) * 0.4 * Math.max(0, this.bellRing); }
+  }
+
+  _placeBubbles() {
+    const w = innerWidth, h = innerHeight;
+    const v = new THREE.Vector3();
+    for (let i = this.bubbles.length - 1; i >= 0; i--) {
+      const b = this.bubbles[i];
+      if (this.time > b.until || !b.obj.parent) { b.el.remove(); this.bubbles.splice(i, 1); continue; }
+      b.obj.getWorldPosition(v);
+      v.y += b.y;
+      v.project(this.camera);
+      if (v.z > 1) { b.el.style.display = 'none'; continue; }
+      b.el.style.display = '';
+      b.el.style.transform = `translate(${((v.x + 1) / 2 * w).toFixed(1)}px, ${((1 - v.y) / 2 * h).toFixed(1)}px) translate(-50%, -100%)`;
+    }
   }
 
   _placeLabels() {

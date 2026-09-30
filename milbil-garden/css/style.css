@@ -46,6 +46,20 @@ input { -webkit-user-select: text; user-select: text; }
 .plabel .ready { background: #fff6b8; color: #6b4a00; border: 2px solid #ffd24a; animation: bounce 1s ease-in-out infinite; }
 @keyframes bounce { 50% { transform: translateY(-5px); } }
 
+/* speech bubbles over characters */
+.bubble {
+  position: absolute; left: 0; top: 0; will-change: transform; max-width: 220px; white-space: normal; text-align: center;
+  background: #fff; color: var(--ink); border: 2px solid #3a2e22; border-radius: 14px; padding: 5px 10px;
+  font-weight: bold; font-size: .85rem; box-shadow: 0 3px 8px #0003; margin-top: -10px;
+}
+.bubble::after {
+  content: ''; position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%);
+  border: 8px solid transparent; border-top-color: #3a2e22; border-bottom: 0;
+}
+.bubble.pop { animation: bpop .3s cubic-bezier(.3,1.6,.5,1); }
+@keyframes bpop { from { scale: .4; opacity: 0; } }
+.camnav button.run { background: #fff3c4; border-color: #ffd24a; }
+
 /* ---------- HUD ---------- */
 .hud {
   position: fixed; z-index: 10; top: calc(8px + var(--safe-t)); left: calc(8px + var(--safe-l)); right: calc(8px + var(--safe-r));

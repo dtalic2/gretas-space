@@ -580,3 +580,109 @@ export function well() {
   const r = roofPrism(1.5, 0.5, 1.0, 0xe0558a); r.rotation.y = Math.PI / 2; r.position.y = 1.65; g.add(r);
   return g;
 }
+
+// ------------------------------------------------------------------ your stall
+// A proper wooden market stand: planked counter, a pitched roof in your
+// colour, bunting, shelves at the back, a bell, and a chalkboard out front.
+
+export function myStall(color = 0xffb3c7, wide = 1) {
+  const g = group();
+  const W = 2.8 * wide, D = 1.1;
+  const wood = 0xc68a54, dark = 0x9a6a3e, trim = 0xfff6e8;
+
+  // Counter with vertical planks on the front.
+  g.add(box(W, 0.85, D, wood, 0, 0, 0));
+  const planks = Math.round(W / 0.28);
+  for (let i = 0; i < planks; i++) {
+    g.add(box(0.03, 0.8, 0.02, dark, -W / 2 + (i + 0.5) * (W / planks), 0.02, D / 2 + 0.01));
+  }
+  g.add(box(W + 0.16, 0.09, D + 0.16, 0xe0a86c, 0, 0.85, 0));
+  // A painted front panel in your colour.
+  g.add(box(W * 0.62, 0.34, 0.03, color, 0, 0.3, D / 2 + 0.03));
+
+  // Four posts and a pitched roof.
+  for (const x of [-W / 2 + 0.07, W / 2 - 0.07]) for (const z of [-D / 2 + 0.07, D / 2 - 0.07]) {
+    g.add(box(0.1, 2.3, 0.1, dark, x, 0, z));
+  }
+  const roof = new THREE.Group();
+  roof.position.y = 2.3;
+  for (const s of [-1, 1]) {
+    const panel = box(W + 0.5, 0.08, 1.0, color, 0, 0, 0);
+    panel.position.set(0, 0.28, s * 0.42);
+    panel.rotation.x = s * 0.62;
+    roof.add(panel);
+    // Shingle lines.
+    for (let k = 0; k < 3; k++) {
+      const line = box(W + 0.52, 0.03, 0.05, trim, 0, 0, 0);
+      line.position.set(0, 0.46 - k * 0.14, s * (0.16 + k * 0.2));
+      line.rotation.x = s * 0.62;
+      roof.add(line);
+    }
+  }
+  roof.add(box(W + 0.55, 0.1, 0.12, trim, 0, 0.56, 0));
+  g.add(roof);
+
+  // Bunting along the front edge.
+  const flags = ['#ff6b6b', '#ffd44f', '#6cc24a', '#5b8def', '#ff7eb6'];
+  const n = Math.round(W / 0.3);
+  for (let i = 0; i < n; i++) {
+    const x = -W / 2 + (i + 0.5) * (W / n);
+    const sag = Math.sin(((i + 0.5) / n) * Math.PI) * 0.12;
+    const f = cone(0.09, 0.2, 3, new THREE.Color(flags[i % 5]).getHex(), x, 2.02 - sag, D / 2 + 0.25);
+    f.rotation.x = Math.PI;
+    f.position.y = 2.12 - sag;
+    g.add(f);
+  }
+
+  // A shelf of jars behind where the keeper stands, and a hanging bell.
+  const SZ = -D / 2 - 1.0;
+  for (const x of [-W / 2 + 0.2, W / 2 - 0.2]) g.add(box(0.07, 1.5, 0.07, dark, x, 0, SZ));
+  g.add(box(W - 0.2, 0.06, 0.34, dark, 0, 0.75, SZ), box(W - 0.2, 0.06, 0.34, dark, 0, 1.4, SZ));
+  const jars = [0xff9fb0, 0xffd84a, 0x9fe07a, 0xb98cff, 0x9fd8ff];
+  for (let i = 0; i < 5; i++) {
+    g.add(cyl(0.08, 0.08, 0.22, 8, jars[i], -W / 2 + 0.45 + i * ((W - 0.9) / 4), 1.46, SZ));
+    g.add(cyl(0.085, 0.085, 0.04, 8, 0xfff6e8, -W / 2 + 0.45 + i * ((W - 0.9) / 4), 1.68, SZ));
+  }
+  for (let i = 0; i < 3; i++) g.add(box(0.36, 0.2, 0.28, 0xb98552, -W / 2 + 0.6 + i * ((W - 1.2) / 2), 0.81, SZ));
+  const bell = group(cyl(0.012, 0.012, 0.25, 4, 0x8a8a8a, 0, -0.25, 0), cone(0.08, 0.12, 8, 0, 0, -0.37, 0, GOLD));
+  bell.position.set(W / 2 - 0.3, 2.3, D / 2 - 0.1);
+  g.add(bell);
+  g.userData.bell = bell;
+
+  g.userData.crates = new THREE.Group();
+  g.userData.crates.position.y = 0.94;
+  g.add(g.userData.crates);
+
+  // Name board on the roof ridge.
+  const sign = signBoard(2.0, 0.62, { bg: '#fffbe6', edge: '#e0558a' });
+  sign.position.set(0, 3.25, 0.05);
+  g.add(sign);
+  g.userData.sign = sign;
+
+  // Chalkboard A-frame with today's prices, out front.
+  const chalk = signBoard(1.1, 0.95, { bg: '#2f4a3a', edge: '#8a5a36', color: '#ffffff' });
+  const frame = group(chalk);
+  chalk.position.set(0, 0.62, 0);
+  chalk.rotation.x = -0.18;
+  for (const s of [-1, 1]) {
+    const leg = box(0.05, 1.15, 0.05, dark, s * 0.5, 0, -0.1);
+    leg.rotation.x = 0.18;
+    frame.add(leg);
+  }
+  frame.position.set(-W / 2 - 0.35, 0, D / 2 + 0.6);
+  frame.rotation.y = 0.4;
+  g.add(frame);
+  g.userData.chalk = chalk;
+  g.userData.w = W;
+  return g;
+}
+
+// A green apron for your stall keeper.
+export function apron() {
+  const g = group(box(0.5, 0.42, 0.04, 0x4caf6a, 0, 0.18, 0.4));
+  g.add(box(0.2, 0.12, 0.02, 0xffffff, 0, 0.3, 0.43));
+  const strap = torus(0.33, 0.02, 0x4caf6a, Math.PI * 2, 0, 0.5, 0);
+  strap.rotation.x = Math.PI / 2;
+  g.add(strap);
+  return g;
+}

@@ -178,23 +178,28 @@ export function makeMilbil(look) {
 export function animateMilbil(m, t, speed, extra = {}) {
   const { bodyPivot, feet, arms } = m.userData;
   const walk = Math.min(1, speed / 2);
-  const step = t * 11;
+  const run = Math.min(1, Math.max(0, (speed - 2.5) / 3));
+  // Step phase accumulates, so speeding up doesn't make the feet jump.
+  m.userData.phase = (m.userData.phase || 0) + (extra.dt || 0.016) * (7 + speed * 2.2);
+  const step = m.userData.phase;
   const idle = Math.sin(t * 2.2) * 0.02;
   const hop = extra.hop ? Math.sin(Math.min(1, extra.hop) * Math.PI) * 0.45 : 0;
   bodyPivot.position.y = idle + Math.abs(Math.sin(step)) * 0.07 * walk + hop;
   bodyPivot.rotation.z = Math.sin(step) * 0.08 * walk;
+  bodyPivot.rotation.x = 0.22 * run;          // lean into a run
   const squash = 1 + Math.sin(t * 2.2) * 0.015;
   bodyPivot.scale.set(1 / squash, squash, 1 / squash);
   feet.forEach((f, i) => {
     const s = i ? 1 : -1;
-    f.position.z = 0.08 + Math.sin(step + i * Math.PI) * 0.12 * walk;
+    f.position.z = 0.08 + Math.sin(step + i * Math.PI) * (0.12 + 0.08 * run) * walk;
     f.position.y = 0.06 + Math.max(0, Math.sin(step + i * Math.PI)) * 0.06 * walk + hop * 0.8;
     f.position.x = s * 0.16;
   });
   arms.forEach((a, i) => {
     const s = i ? 1 : -1;
     const wave = extra.wave && i === 1 ? Math.sin(t * 16) * 0.3 + 0.55 : 0;
-    a.position.y = CY - 0.08 + wave * 0.3 + Math.sin(step + i * Math.PI) * 0.03 * walk;
+    a.position.y = CY - 0.08 + wave * 0.3 + Math.sin(step + i * Math.PI) * (0.03 + 0.07 * run) * walk;
+    a.position.z = 0.05 + Math.sin(step + i * Math.PI) * 0.12 * run;
     a.position.x = s * (R + 0.02 + wave * 0.05);
   });
 }

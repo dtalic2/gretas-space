@@ -40,6 +40,7 @@
   <div class="news" id="news"></div>
 
   <nav class="camnav" id="camnav">
+    <button data-cam="stall" class="run" title="Run to your stall">🏃<span>My stall</span></button>
     <button data-cam="farm" title="Look at your farm">🌾<span>Farm</span></button>
     <button data-cam="market" title="Look at the market">🏪<span>Market</span></button>
     <button data-cam="build" title="Look at your buildings">🏗️<span>Yard</span></button>
@@ -107,6 +108,29 @@
       <div class="ed-actions">
         <button type="button" class="btn" id="edCancel">Cancel</button>
         <button type="submit" class="btn green big" id="edSave">Let's farm! 🌱</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="helperDlg">
+    <form method="dialog" id="helperForm">
+      <h2 id="hdTitle">🧺 Meet your stall keeper!</h2>
+      <p class="muted" id="hdText">This milbil will mind your market stall, cheer every sale and ring the bell. What should they be called?</p>
+      <div class="ed-top">
+        <div class="ed-preview" id="hdPreview"></div>
+        <div class="ed-name">
+          <label for="hdName">Stall keeper's name</label>
+          <input id="hdName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="Pick a name">
+          <div class="ed-name-btns">
+            <button type="button" class="btn small" id="hdRand">🎲 Random name</button>
+          </div>
+        </div>
+      </div>
+      <div class="ed-group"><h3>Colour</h3><div class="swatches" id="hdColors"></div></div>
+      <p class="ed-err" id="hdErr"></p>
+      <div class="ed-actions">
+        <button type="button" class="btn" id="hdLater">Later</button>
+        <button type="submit" class="btn green big" id="hdSave">Welcome aboard! 🧺</button>
       </div>
     </form>
   </dialog>

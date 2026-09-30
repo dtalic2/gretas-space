@@ -48,6 +48,7 @@ function freshState() {
     news: 'Welcome to Milbil Garden! Plant some lettuce to get started.',
     seed: 'lettuce',
     farmer: defaultLook(),
+    helper: { name: '', color: '#ffe08a' },   // the milbil who runs your stall
   };
   return s;
 }
@@ -64,7 +65,7 @@ export function load() {
       if (s && s.v === 1) {
         // Fill anything added since the save was made.
         const base = freshState();
-        S = { ...base, ...s, built: { ...base.built, ...s.built }, farmer: { ...base.farmer, ...s.farmer } };
+        S = { ...base, ...s, built: { ...base.built, ...s.built }, farmer: { ...base.farmer, ...s.farmer }, helper: { ...base.helper, ...s.helper } };
         for (const c of CROPS) {
           if (S.fair[c.id] == null) S.fair[c.id] = c.fair;
           if (S.trend[c.id] == null) S.trend[c.id] = 0;
@@ -86,9 +87,10 @@ export function save() {
 // A new farm keeps the same milbil.
 export function reset() {
   try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ }
-  const farmer = S.farmer;
+  const { farmer, helper } = S;
   S = freshState();
   S.farmer = farmer;
+  S.helper = helper;
   stockRivals();
   makeOffers();
   emit('reset');
@@ -108,6 +110,18 @@ export function setFarmer(look) {
     hat: ok(HATS, look.hat, d.hat),
     eyes: ok(EYES, look.eyes, d.eyes),
     extra: ok(EXTRAS, look.extra, d.extra),
+  };
+  save();
+  emit('change');
+}
+
+export const helperName = () => S.helper.name || 'your stall keeper';
+export const hasHelper = () => !!S.helper.name;
+
+export function setHelper({ name, color }) {
+  S.helper = {
+    name: cleanName(name) || S.helper.name || 'Bun',
+    color: COLORS.includes(color) ? color : S.helper.color,
   };
   save();
   emit('change');
