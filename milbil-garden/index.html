@@ -2,27 +2,34 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#8fd16a">
   <title>M-I-L-B-I-L Garden</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon.svg">
   <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+  { "imports": { "three": "./vendor/three.module.js" } }
+  </script>
 </head>
 <body>
-  <header class="top">
-    <div class="brand">
-      <button class="me" id="me" title="Change your milbil">
-        <span id="meAvatar"></span>
-        <span class="me-name"><b id="meName">Your milbil</b><small>✏️ customise</small></span>
-      </button>
-      <h1><span>M-I-L-B-I-L</span> Garden</h1>
-    </div>
+  <canvas id="scene"></canvas>
+  <div id="labels"></div>
+
+  <div class="loading" id="loading"><div>🌻</div><p>Growing your garden…</p></div>
+
+  <header class="hud">
+    <button class="me" id="me" title="Change your milbil">
+      <span id="meAvatar"></span>
+      <span class="me-name"><b id="meName">Your milbil</b><small>✏️ customise</small></span>
+    </button>
     <div class="stats">
       <div class="stat coins" title="Coins"><span class="coin"></span><b id="coins">10</b></div>
-      <div class="stat" title="Market day">📅 Day <b id="day">1</b>
+      <div class="stat" title="Market day">📅 <b id="day">1</b>
         <div class="daybar"><i id="daybar"></i></div>
       </div>
       <div class="stat" title="Storage: harvested crops waiting at home">📦 <b id="storage">0/20</b></div>
@@ -32,38 +39,41 @@
 
   <div class="news" id="news"></div>
 
-  <main>
-    <section class="farm card">
-      <div class="farm-head">
-        <h2><span id="farmTitle">🌾 Your Farm</span> <small id="plotcount"></small></h2>
-        <div class="farm-actions">
-          <button class="btn" id="plantAll">🌱 Plant all</button>
-          <button class="btn green" id="harvestAll">🧺 Harvest all</button>
-        </div>
-      </div>
-      <div class="seeds" id="seeds"></div>
-      <div class="field" id="field"></div>
-      <p class="hint">Pick a seed, then tap soil to plant. Tap ✨ ripe crops to harvest them into storage. Then head to the <b>Market</b> to sell.</p>
-    </section>
+  <nav class="camnav" id="camnav">
+    <button data-cam="farm" title="Look at your farm">🌾<span>Farm</span></button>
+    <button data-cam="market" title="Look at the market">🏪<span>Market</span></button>
+    <button data-cam="build" title="Look at your buildings">🏗️<span>Yard</span></button>
+  </nav>
 
-    <section class="panel card">
-      <nav class="tabs" id="tabs">
-        <button data-tab="market" class="on">🏪 Market</button>
-        <button data-tab="land">🗺️ Land</button>
-        <button data-tab="build">🔨 Build</button>
-        <button data-tab="shed">📦 Storage</button>
-      </nav>
+  <footer class="dock">
+    <div class="seedrow">
+      <div class="seeds" id="seeds"></div>
+    </div>
+    <div class="dockrow">
+      <button class="act" id="plantAll" title="Plant the chosen seed in every empty plot">🌱<span>Plant all</span></button>
+      <button class="act green" id="harvestAll" title="Harvest every ripe plot">🧺<span>Harvest</span></button>
+      <span class="sep"></span>
+      <button class="navbtn" data-tab="market">🏪<span>Sell</span></button>
+      <button class="navbtn" data-tab="land">🗺️<span>Land</span></button>
+      <button class="navbtn" data-tab="build">🔨<span>Build</span></button>
+      <button class="navbtn" data-tab="shed">📦<span>Storage</span></button>
+      <button class="navbtn" data-tab="news">📰<span>News</span></button>
+    </div>
+  </footer>
+
+  <aside class="sheet" id="sheet" aria-hidden="true">
+    <div class="sheet-head">
+      <h2 id="sheetTitle">Market</h2>
+      <button class="close" id="sheetClose" aria-label="Close">✕</button>
+    </div>
+    <div class="sheet-body">
       <div class="tab-body" id="tab-market"></div>
       <div class="tab-body" id="tab-land" hidden></div>
       <div class="tab-body" id="tab-build" hidden></div>
       <div class="tab-body" id="tab-shed" hidden></div>
-    </section>
-  </main>
-
-  <section class="ticker card">
-    <h3>📰 Around the market</h3>
-    <ul id="log"></ul>
-  </section>
+      <div class="tab-body" id="tab-news" hidden><ul class="log" id="log"></ul></div>
+    </div>
+  </aside>
 
   <div class="toasts" id="toasts"></div>
 

@@ -1,19 +1,56 @@
 # 🌻 M-I-L-B-I-L Garden
 
-A farming and trading game. You're a milbil farmer with **4 plots of land and 10
+A 3D farming and trading game. You're a milbil farmer with **4 plots of land and 10
 coins**. Grow crops, send them to market, and price them against the other farmers
 to win the shoppers. Then spend what you earn on more land, sheds and greenhouses
 for exotic fruit.
 
 **▶ Play it: https://dtalic2.github.io/gretas-space/milbil-garden/**
 
-No build step and no dependencies. Run it locally with:
+Built with **Three.js**, which is vendored in `vendor/`. No build step and nothing
+to install. Run it locally with:
 
 ```bash
 python3 milbil-garden/serve.py      # http://localhost:8126
 ```
 
 ---
+
+## The world
+
+The whole farm is a 3D world you can look around:
+
+- **Your farm:** wooden beds inside a white fence. Crops grow as little 3D models:
+  carrots poke out of the soil, corn grows tall, tomatoes climb stakes, and mango,
+  star fruit and coconut grow into trees. Land you don't own yet is grass with a
+  for-sale peg.
+- **The market square:** Bramble 🦊, Old Mo 🐻, Posy 🐰 and Hank 🦝 each stand behind a
+  striped stall. The sign above each stall shows today's prices, and crates on the
+  counter show what they have left. Your stall is at the front, in your milbil's
+  colour. Little shoppers wander between the stalls, and one hurries to yours when
+  you make a sale.
+- **Your buildings:** sheds, the barn, the glass greenhouse and the Tropical Dome
+  appear in the yard with a pop when you buy them. Sprinklers spin in the corners
+  of the field, the scarecrow stands at the back, and your painted sign goes up
+  by your stall.
+- **Your milbil** wanders the field and walks over to whatever you tap.
+- **The sky follows the market day:** from a pink sunrise through bright day and
+  golden hour to a pink dusk, when the lamps and cottage windows light up. Clouds
+  drift, butterflies flutter and the chimney smokes.
+
+| Action | Mouse | Touch |
+| --- | --- | --- |
+| Plant, harvest, open a stall | click | tap |
+| Spin the view | drag | drag one finger |
+| Zoom | scroll wheel | pinch |
+| Move the view | right-drag | drag two fingers |
+| Jump to the farm, market or yard | 🌾 🏪 🏗️ buttons | same |
+
+Floating tags over each bed show how long is left, and ✨ when a crop is ready.
+The **Sell**, **Land**, **Build**, **Storage** and **News** buttons slide up a
+sheet with those screens. On a phone the view moves up so you can still see the
+world above the sheet. Tapping a stall, a for-sale plot or a building opens the
+right sheet too.
 
 ## Your milbil
 
@@ -128,8 +165,12 @@ last, and a farm can hold up to 30.
 
 - `js/data.js` holds every number: crops, rivals, buildings, plot prices.
 - `js/game.js` holds the state, farming, and the market simulation (no DOM).
-- `js/milbil.js` draws your milbil as an SVG and lists the looks you can pick.
-- `js/main.js` holds the UI, including the milbil editor.
+- `js/milbil.js` draws your milbil as an SVG (for the menus) and lists the looks you can pick.
+- `js/milbil3d.js` builds the same milbil in 3D.
+- `js/world.js` holds the 3D scene: layout, sky, picking, and keeping the world in step with the game.
+- `js/models3d.js` has every 3D model (crops, stalls, rivals, buildings, scenery), built from simple shapes.
+- `js/kit.js` has the shape and material helpers. `js/camera.js` is the orbit camera.
+- `js/main.js` holds the menus and sheets, including the milbil editor.
 
 The game saves to `localStorage` every few seconds. Crops keep growing while you're
 away because growth uses real timestamps, but the market only runs while the game

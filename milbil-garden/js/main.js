@@ -1,6 +1,7 @@
 // UI: draws the state from game.js and turns taps into game actions.
 import { CROPS, CROP, RIVALS, RIVAL, BUILDINGS, MAX_PLOTS, DAY_LENGTH, plotBase } from './data.js';
 import * as G from './game.js';
+import { World } from './world.js';
 import { milbilSVG, randomLook, COLORS, HATS, EYES, EXTRAS, NAMES, cleanName } from './milbil.js';
 
 const $ = id => document.getElementById(id);
@@ -9,7 +10,7 @@ const fmt = n => Math.round(n).toLocaleString();
 const fmtTime = s => (s >= 60 ? `${Math.floor(s / 60)}m${Math.round(s % 60) ? ` ${Math.round(s % 60)}s` : ''}` : `${Math.round(s)}s`);
 
 const fresh = G.load();
-let tab = 'market';
+let tab = null;            // which sheet is open, if any
 let focusCrop = null;      // crop picked on the market board to price-check
 
 // ---------------------------------------------------------------- helpers
@@ -46,6 +47,7 @@ function setHtml(id, html) {
 // ---------------------------------------------------------------- header
 
 let shownCoins = null;
+let newsTimer = 0;
 function drawHeader() {
   if (shownCoins !== null && shownCoins !== G.S.coins) {
     $('coins').parentElement.classList.remove('bump');
@@ -58,12 +60,16 @@ function drawHeader() {
   $('daybar').style.width = `${(G.S.dayT / DAY_LENGTH) * 100}%`;
   $('storage').textContent = `${G.shedCount()}/${G.storageCap()}`;
   $('stallcount').textContent = `${G.stallCount()}/${G.stallCap()}`;
-  $('news').textContent = `🗞️ ${G.S.news}`;
+  if ($('news').dataset.text !== G.S.news) {
+    $('news').dataset.text = G.S.news;
+    $('news').textContent = `🗞️ ${G.S.news}`;
+    $('news').classList.remove('faded');
+    clearTimeout(newsTimer);
+    newsTimer = setTimeout(() => $('news').classList.add('faded'), 9000);
+  }
   const f = G.S.farmer;
   setHtml('meAvatar', milbilSVG(f, { cls: 'milbil', title: f.name || 'Your milbil' }));
   $('meName').textContent = f.name || 'Your milbil';
-  $('farmTitle').textContent = f.name ? `🌾 ${f.name}'s Farm` : '🌾 Your Farm';
-  $('plotcount').textContent = `${G.S.plots.length}/${MAX_PLOTS} plots`;
 }
 
 // ---------------------------------------------------------------- farm
@@ -81,48 +87,6 @@ function drawSeeds() {
       <span class="c">🪙${c.seed} · ${fmtTime(c.grow / G.growSpeed())}</span></button>`;
   }).join('');
   setHtml('seeds', html);
-}
-
-let plotEls = [];
-function buildField() {
-  const field = $('field');
-  field.innerHTML = '';
-  plotEls = G.S.plots.map((_, i) => {
-    const b = document.createElement('button');
-    b.className = 'plot';
-    b.dataset.i = i;
-    b.innerHTML = '<span class="tag"></span><span class="plant"></span><span class="bar"><i></i></span>';
-    field.appendChild(b);
-    return { b, tag: b.children[0], plant: b.children[1], bar: b.children[2], fill: b.children[2].firstChild, state: '' };
-  });
-}
-
-const STAGES = ['🌱', '🌿', '🪴'];
-function drawField() {
-  if (plotEls.length !== G.S.plots.length) buildField();
-  const now = Date.now();
-  G.S.plots.forEach((p, i) => {
-    const el = plotEls[i];
-    let state, glyph, tag = '';
-    if (!p.crop) {
-      state = 'empty'; glyph = '＋';
-    } else {
-      const t = G.plotProgress(p, now);
-      const c = CROP[p.crop];
-      if (t >= 1) { state = 'ready'; glyph = c.emoji; tag = c.name; } else {
-        state = 'grow';
-        glyph = t < 0.6 ? STAGES[Math.min(2, Math.floor(t * 5))] : c.emoji;
-        const left = Math.ceil((1 - t) * p.dur);
-        tag = `${c.emoji} ${fmtTime(left)}`;
-      }
-      el.fill.style.width = `${t * 100}%`;
-    }
-    if (!el.b.classList.contains(state)) el.b.className = `plot ${state}`;
-    if (el.plant.textContent !== glyph) el.plant.textContent = glyph;
-    if (el.tag.textContent !== tag) el.tag.textContent = tag;
-    el.bar.style.display = state === 'grow' ? '' : 'none';
-    el.b.title = !p.crop ? `Plant ${CROP[G.S.seed].name}` : state === 'ready' ? `Harvest ${CROP[p.crop].name}` : 'Growing…';
-  });
 }
 
 // ---------------------------------------------------------------- market
@@ -312,36 +276,77 @@ function drawPanels() {
   if (tab === 'land') drawLand();
   if (tab === 'build') drawBuild();
   if (tab === 'shed') drawShed();
-  drawLog();
+  if (tab === 'news') drawLog();
 }
 
-function drawAll() { drawHeader(); drawField(); drawPanels(); }
+function drawAll() { drawHeader(); drawPanels(); }
+
+// ---------------------------------------------------------------- sheet
+
+const TITLES = { market: '🏪 Market — sell your crops', land: '🗺️ Land for sale', build: '🔨 Build & buy', shed: '📦 Storage & records', news: '📰 Around the market' };
+
+function openSheet(name) {
+  tab = name;
+  for (const t of Object.keys(TITLES)) $(`tab-${t}`).hidden = t !== name;
+  for (const b of document.querySelectorAll('.navbtn')) b.classList.toggle('on', b.dataset.tab === name);
+  $('sheetTitle').textContent = TITLES[name];
+  $('sheet').classList.add('open');
+  document.body.classList.add('sheet-open');
+  world.setSheet(true);
+  if (name === 'market') world.focus('market');
+  if (name === 'land') world.focus('farm');
+  if (name === 'build') world.focus('build');
+  $('sheet').setAttribute('aria-hidden', 'false');
+  drawPanels();
+  $('sheet').querySelector('.sheet-body').scrollTop = 0;
+}
+
+function closeSheet() {
+  tab = null;
+  focusCrop = null;
+  $('sheet').classList.remove('open');
+  document.body.classList.remove('sheet-open');
+  world.setSheet(false);
+  $('sheet').setAttribute('aria-hidden', 'true');
+  for (const b of document.querySelectorAll('.navbtn')) b.classList.remove('on');
+}
 
 // ---------------------------------------------------------------- input
 
-$('field').addEventListener('click', e => {
-  const b = e.target.closest('.plot');
-  if (!b) return;
-  const i = +b.dataset.i;
+function tendPlot(i, x, y) {
   const p = G.S.plots[i];
-  const r = b.getBoundingClientRect();
+  if (!p) return;
   if (!p.crop) {
     const c = CROP[G.S.seed];
     if (G.plant(i)) {
-      floatText(`-${c.seed}🪙`, r.left + r.width / 2 - 18, r.top, '#b8461b');
-      b.classList.add('pop');
-      setTimeout(() => b.classList.remove('pop'), 400);
+      world.onPlant(i);
+      floatText(`-${c.seed}🪙`, x, y - 20, '#b8461b');
     }
   } else if (G.plotProgress(p) >= 1) {
     const c = CROP[p.crop];
     const n = G.harvest(i);
-    if (n) floatText(`+${n} ${c.emoji}`, r.left + r.width / 2 - 20, r.top);
+    if (n) floatText(`+${n} ${c.emoji}`, x, y - 30);
   } else {
     const c = CROP[p.crop];
-    toast(`${c.emoji} ${c.name} is ${Math.floor(G.plotProgress(p) * 100)}% grown.`);
+    world.walkToPlot(i);
+    toast(`${c.emoji} ${c.name} is ${Math.floor(G.plotProgress(p) * 100)}% grown — ${Math.ceil((1 - G.plotProgress(p)) * p.dur)}s to go.`);
   }
+}
+
+function onPick(pick, x, y) {
+  if (pick.type === 'plot') tendPlot(pick.i, x, y);
+  else if (pick.type === 'forsale') { toast('🪧 This land is for sale — see who is selling today.'); openSheet('land'); }
+  else if (pick.type === 'stall') {
+    if (pick.id !== 'you') {
+      const r = RIVAL[pick.id];
+      toast(`${r.emoji} ${r.name}: ${r.blurb}`);
+    }
+    openSheet('market');
+  }
+  else if (pick.type === 'building') openSheet('build');
+  else if (pick.type === 'me') { world.wave(); openEditor(); }
   drawAll();
-});
+}
 
 $('seeds').addEventListener('click', e => {
   const b = e.target.closest('[data-seed]');
@@ -352,23 +357,28 @@ $('seeds').addEventListener('click', e => {
   drawAll();
 });
 
-$('plantAll').onclick = () => { const n = G.plantAll(); if (n) toast(`🌱 Planted ${n} ${CROP[G.S.seed].name}.`); drawAll(); };
+$('plantAll').onclick = () => {
+  const empty = G.S.plots.map((p, i) => (p.crop ? -1 : i)).filter(i => i >= 0);
+  const n = G.plantAll();
+  if (n) {
+    toast(`🌱 Planted ${n} ${CROP[G.S.seed].name}.`);
+    for (const i of empty) if (G.S.plots[i].crop) world.onPlant(i);
+  }
+  drawAll();
+};
 $('harvestAll').onclick = () => {
   const n = G.harvestAll();
   toast(n ? `🧺 Harvested ${n} crops into storage.` : 'Nothing is ripe yet.');
   drawAll();
 };
 
-$('tabs').addEventListener('click', e => {
-  const b = e.target.closest('[data-tab]');
-  if (!b) return;
-  tab = b.dataset.tab;
-  for (const x of $('tabs').children) x.classList.toggle('on', x === b);
-  for (const t of ['market', 'land', 'build', 'shed']) $(`tab-${t}`).hidden = t !== tab;
-  drawPanels();
-});
+for (const b of document.querySelectorAll('.navbtn')) {
+  b.onclick = () => (tab === b.dataset.tab ? closeSheet() : openSheet(b.dataset.tab));
+}
+$('sheetClose').onclick = closeSheet;
+for (const b of document.querySelectorAll('[data-cam]')) b.onclick = () => world.focus(b.dataset.cam);
 
-document.querySelector('.panel').addEventListener('click', e => {
+$('sheet').addEventListener('click', e => {
   const t = e.target.closest('button, tr[data-focus]');
   if (!t || t.disabled) return;
   const d = t.dataset;
@@ -382,7 +392,7 @@ document.querySelector('.panel').addEventListener('click', e => {
   else if (d.focus) {
     focusCrop = d.focus;
     drawPanels();
-    $('tab-market').scrollTop = 0;
+    $('sheet').querySelector('.sheet-body').scrollTop = 0;
     return;
   }
   else if (d.offer) G.buyOffer(d.offer);
@@ -390,7 +400,7 @@ document.querySelector('.panel').addEventListener('click', e => {
   else if (d.build) G.build(d.build);
   else if ('edit' in d) { openEditor(); return; }
   else if ('reset' in d) {
-    if (confirm('Start a brand new farm? Your coins, land and crops will be gone.')) { G.reset(); buildField(); }
+    if (confirm('Start a brand new farm? Your coins, land and crops will be gone.')) { G.reset(); G.save(); location.reload(); return; }
   }
   drawAll();
 });
@@ -400,9 +410,10 @@ G.onEvent((type, data) => {
   if (type === 'build') toast(`${data.emoji} ${data.name} built!`, 'good');
   if (type === 'land') toast('🗺️ New land! Your farm just got bigger.', 'good');
   if (type === 'sale') {
-    const el = $('coins').getBoundingClientRect();
-    floatText(`+${data.price}`, el.left, el.bottom + 4);
+    const sp = world.onSale();
+    if (!sp.behind) floatText(`+${data.price}🪙`, sp.x, sp.y);
   }
+  if (type === 'harvest') world.onHarvest(data.i);
   if (type === 'day') showReport(data);
 });
 
@@ -424,6 +435,7 @@ function showReport(y) {
 
 let last = performance.now();
 let acc = 0;
+let started = false;
 function frame(now) {
   const dt = Math.min(0.5, (now - last) / 1000);
   last = now;
@@ -433,8 +445,10 @@ function frame(now) {
     acc += dt;
   }
   drawHeader();
-  drawField();
+  world.sync();
+  world.update(dt);
   if (acc > 0.5) { acc = 0; drawPanels(); }
+  if (!started) { started = true; setTimeout(() => $('loading').classList.add('gone'), 150); }
   requestAnimationFrame(frame);
 }
 
@@ -511,8 +525,12 @@ $('editorForm').addEventListener('submit', e => {
 });
 $('me').onclick = openEditor;
 
+const world = new World($('scene'), { onPick });
+addEventListener('keydown', e => { if (e.key === 'Escape' && tab) closeSheet(); });
+
 drawAll();
 if (!G.hasFarmer()) openEditor();
 else if (fresh) toast('🌻 You have 4 plots and 10 coins. Plant lettuce to start!', 'good');
 requestAnimationFrame(frame);
-window.__G = G;   // handy for poking at things from the console
+window.__G = G;
+window.__W = world;   // handy for poking at things from the console
