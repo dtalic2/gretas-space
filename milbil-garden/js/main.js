@@ -1,8 +1,10 @@
 // UI: draws the state from game.js and turns taps into game actions.
 import { CROPS, CROP, RIVALS, RIVAL, BUILDINGS, MAX_PLOTS, DAY_LENGTH, plotBase } from './data.js';
 import * as G from './game.js';
+import { milbilSVG, randomLook, COLORS, HATS, EYES, EXTRAS, NAMES, cleanName } from './milbil.js';
 
 const $ = id => document.getElementById(id);
+const esc = t => String(t).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const fmt = n => Math.round(n).toLocaleString();
 const fmtTime = s => (s >= 60 ? `${Math.floor(s / 60)}m${Math.round(s % 60) ? ` ${Math.round(s % 60)}s` : ''}` : `${Math.round(s)}s`);
 
@@ -57,6 +59,10 @@ function drawHeader() {
   $('storage').textContent = `${G.shedCount()}/${G.storageCap()}`;
   $('stallcount').textContent = `${G.stallCount()}/${G.stallCap()}`;
   $('news').textContent = `🗞️ ${G.S.news}`;
+  const f = G.S.farmer;
+  setHtml('meAvatar', milbilSVG(f, { cls: 'milbil', title: f.name || 'Your milbil' }));
+  $('meName').textContent = f.name || 'Your milbil';
+  $('farmTitle').textContent = f.name ? `🌾 ${f.name}'s Farm` : '🌾 Your Farm';
   $('plotcount').textContent = `${G.S.plots.length}/${MAX_PLOTS} plots`;
 }
 
@@ -155,7 +161,7 @@ function sellCard(c) {
   const chips = [
     `<span class="chip guide" title="What the town thinks it's worth today">📋 Guide 🪙${fmt(fair)} ${trendArrow(c.id)}</span>`,
     ...comps.map((x, k) => `<span class="chip ${k === 0 ? 'low' : ''}" title="${x.rival.name} has ${x.qty} for sale">${x.rival.emoji} ${x.rival.name} 🪙${fmt(x.price)} ×${x.qty}</span>`),
-    onStall ? `<span class="chip you">🧑‍🌾 You 🪙${fmt(price)} ×${onStall}</span>` : '',
+    onStall ? `<span class="chip you">${milbilSVG(G.S.farmer, { cls: 'avatar-chip' })} ${esc(G.farmerName())} 🪙${fmt(price)} ×${onStall}</span>` : '',
   ].join('');
   return `<div class="sell">
     <div class="sell-head">
@@ -286,14 +292,15 @@ function drawShed() {
     <span>Coins spent (all time)</span><b>🪙${fmt(G.S.total.spent)}</b>
     <span>Yesterday's sales</span><b>${y ? `${y.sold} for 🪙${fmt(y.earned)}` : '—'}</b>
   </div>
-  <p style="margin-top:16px"><button class="btn small" data-reset>🔄 Start a new farm</button></p>`;
+  <p style="margin-top:16px"><button class="btn small" data-edit>🎨 Change my milbil</button>
+  <button class="btn small" data-reset>🔄 Start a new farm</button></p>`;
   setHtml('tab-shed', html);
 }
 
 // ---------------------------------------------------------------- log
 
 function drawLog() {
-  setHtml('log', G.S.log.slice(0, 20).map(l => `<li class="${l.kind}">Day ${l.day}: ${l.text}</li>`).join('')
+  setHtml('log', G.S.log.slice(0, 20).map(l => `<li class="${l.kind}">Day ${l.day}: ${esc(l.text)}</li>`).join('')
     || '<li class="muted">Quiet so far…</li>');
 }
 
@@ -381,6 +388,7 @@ document.querySelector('.panel').addEventListener('click', e => {
   else if (d.offer) G.buyOffer(d.offer);
   else if ('council' in d) G.buyCouncilPlot();
   else if (d.build) G.build(d.build);
+  else if ('edit' in d) { openEditor(); return; }
   else if ('reset' in d) {
     if (confirm('Start a brand new farm? Your coins, land and crops will be gone.')) { G.reset(); buildField(); }
   }
@@ -400,10 +408,11 @@ G.onEvent((type, data) => {
 
 function showReport(y) {
   $('drTitle').textContent = `🌙 End of day ${y.day}`;
+  const who = esc(G.farmerName());
   const rows = Object.entries(y.byCrop).map(([id, v]) =>
     `<tr><td>${CROP[id].emoji} ${CROP[id].name}</td><td>${v.n} sold</td><td>🪙${fmt(v.coins)}</td></tr>`).join('');
   $('drBody').innerHTML = (y.sold
-    ? `<p>You sold <b>${y.sold}</b> crops for <b>🪙${fmt(y.earned)}</b>.</p><table class="report">${rows}</table>`
+    ? `<p>${G.hasFarmer() ? `${who}, you` : 'You'} sold <b>${y.sold}</b> crops for <b>🪙${fmt(y.earned)}</b>.</p><table class="report">${rows}</table>`
     : '<p>You didn\'t sell anything today. Send crops to your stall and price them to beat the other farmers!</p>')
     + `<p>🗞️ ${G.S.news}</p><p class="muted">Rivals have restocked and set new prices. ${G.S.offers.length} farmer${G.S.offers.length === 1 ? ' is' : 's are'} selling land today.</p>`;
   const dlg = $('dayReport');
@@ -419,7 +428,7 @@ function frame(now) {
   const dt = Math.min(0.5, (now - last) / 1000);
   last = now;
   // The market only runs while the day report is closed.
-  if (!$('dayReport').open) {
+  if (!$('dayReport').open && !$('editor').open) {
     G.tick(dt);
     acc += dt;
   }
@@ -433,7 +442,77 @@ setInterval(G.save, 4000);
 document.addEventListener('visibilitychange', () => { if (document.hidden) G.save(); last = performance.now(); });
 window.addEventListener('pagehide', G.save);
 
+// ---------------------------------------------------------------- milbil editor
+
+let draft = null;
+
+function optionButtons(list, key) {
+  return list.map(o => `<button type="button" class="opt ${draft[key] === o.id ? 'on' : ''}" data-k="${key}" data-v="${o.id}">
+    ${milbilSVG({ ...draft, [key]: o.id })}${o.name}</button>`).join('');
+}
+
+function drawEditor() {
+  $('edPreview').innerHTML = milbilSVG(draft, { title: draft.name });
+  $('edColors').innerHTML = COLORS.map(c =>
+    `<button type="button" class="swatch ${draft.color === c ? 'on' : ''}" data-k="color" data-v="${c}" style="background:${c}" aria-label="colour ${c}"></button>`).join('');
+  $('edHats').innerHTML = optionButtons(HATS, 'hat');
+  $('edEyes').innerHTML = optionButtons(EYES, 'eyes');
+  $('edExtras').innerHTML = optionButtons(EXTRAS, 'extra');
+}
+
+function openEditor() {
+  const first = !G.hasFarmer();
+  draft = { ...G.S.farmer };
+  $('edName').value = draft.name;
+  $('edTitle').textContent = first ? '🌻 Make your milbil' : '🎨 Change your milbil';
+  $('edSave').textContent = first ? 'Let\'s farm! 🌱' : 'Save ✓';
+  $('edCancel').hidden = first;
+  $('edErr').textContent = '';
+  drawEditor();
+  $('editor').showModal();
+  if (first) $('edName').focus();
+}
+
+$('editor').addEventListener('click', e => {
+  const b = e.target.closest('[data-k]');
+  if (!b) return;
+  draft[b.dataset.k] = b.dataset.v;
+  drawEditor();
+});
+$('edName').addEventListener('input', () => {
+  draft.name = $('edName').value;
+  $('edErr').textContent = '';
+  $('edPreview').innerHTML = milbilSVG(draft, { title: draft.name });
+});
+$('edRandName').onclick = () => {
+  const others = NAMES.filter(n => n !== draft.name);
+  draft.name = others[Math.floor(Math.random() * others.length)];
+  $('edName').value = draft.name;
+  drawEditor();
+};
+$('edRandAll').onclick = () => {
+  const keep = cleanName($('edName').value);
+  draft = randomLook();
+  if (keep) draft.name = keep;
+  $('edName').value = draft.name;
+  drawEditor();
+};
+$('edCancel').onclick = () => $('editor').close();
+// You can't skip making your milbil the first time.
+$('editor').addEventListener('cancel', e => { if (!G.hasFarmer()) e.preventDefault(); });
+$('editorForm').addEventListener('submit', e => {
+  const name = cleanName($('edName').value);
+  if (!name) { e.preventDefault(); $('edErr').textContent = 'Your milbil needs a name!'; $('edName').focus(); return; }
+  const first = !G.hasFarmer();
+  G.setFarmer({ ...draft, name });
+  drawAll();
+  if (first) toast(`🌻 Welcome, ${name}! You have 4 plots and 10 coins. Plant lettuce to start!`, 'good');
+  else toast(`✨ Looking good, ${name}!`, 'good');
+});
+$('me').onclick = openEditor;
+
 drawAll();
-if (fresh) toast('🌻 You have 4 plots and 10 coins. Plant lettuce to start!', 'good');
+if (!G.hasFarmer()) openEditor();
+else if (fresh) toast('🌻 You have 4 plots and 10 coins. Plant lettuce to start!', 'good');
 requestAnimationFrame(frame);
 window.__G = G;   // handy for poking at things from the console

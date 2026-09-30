@@ -3,6 +3,7 @@ import {
   START, MAX_PLOTS, DAY_LENGTH, CROPS, CROP, RIVALS, RIVAL,
   plotBase, COUNCIL_MARKUP, BUILDINGS, BUILDING,
 } from './data.js';
+import { defaultLook, cleanName, COLORS, HATS, EYES, EXTRAS } from './milbil.js';
 
 const SAVE_KEY = 'milbil-garden-v1';
 
@@ -46,6 +47,7 @@ function freshState() {
     log: [],
     news: 'Welcome to Milbil Garden! Plant some lettuce to get started.',
     seed: 'lettuce',
+    farmer: defaultLook(),
   };
   return s;
 }
@@ -62,7 +64,7 @@ export function load() {
       if (s && s.v === 1) {
         // Fill anything added since the save was made.
         const base = freshState();
-        S = { ...base, ...s, built: { ...base.built, ...s.built } };
+        S = { ...base, ...s, built: { ...base.built, ...s.built }, farmer: { ...base.farmer, ...s.farmer } };
         for (const c of CROPS) {
           if (S.fair[c.id] == null) S.fair[c.id] = c.fair;
           if (S.trend[c.id] == null) S.trend[c.id] = 0;
@@ -81,12 +83,34 @@ export function save() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { /* ignore */ }
 }
 
+// A new farm keeps the same milbil.
 export function reset() {
   try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ }
+  const farmer = S.farmer;
   S = freshState();
+  S.farmer = farmer;
   stockRivals();
   makeOffers();
   emit('reset');
+}
+
+// ---------------------------------------------------------------- farmer
+
+export const farmerName = () => S.farmer.name || 'You';
+export const hasFarmer = () => !!S.farmer.name;
+
+export function setFarmer(look) {
+  const ok = (list, v, d) => (list.some(x => (x.id || x) === v) ? v : d);
+  const d = defaultLook();
+  S.farmer = {
+    name: cleanName(look.name) || S.farmer.name || 'Pib',
+    color: ok(COLORS, look.color, d.color),
+    hat: ok(HATS, look.hat, d.hat),
+    eyes: ok(EYES, look.eyes, d.eyes),
+    extra: ok(EXTRAS, look.extra, d.extra),
+  };
+  save();
+  emit('change');
 }
 
 function log(text, kind = '') {
@@ -369,7 +393,7 @@ function brambleReacts() {
     const next = Math.max(floor, Math.min(target, Math.round(S.fair[id] * 1.2)));
     if (next !== mine.price) {
       if (next < mine.price && S.stall[id] && S.stall[id].qty && S.stall[id].price - 1 === next) {
-        log(`${r.emoji} Bramble cut his ${CROP[id].emoji} to ${next}🪙 to beat you!`, 'warn');
+        log(`${r.emoji} Bramble cut his ${CROP[id].emoji} to ${next}🪙 to beat ${hasFarmer() ? S.farmer.name : 'you'}!`, 'warn');
       }
       mine.price = next;
     }

@@ -15,6 +15,20 @@ python3 milbil-garden/serve.py      # http://localhost:8126
 
 ---
 
+## Your milbil
+
+On your first visit you make your milbil, the farmer you play as. Give it a
+**name** (up to 14 letters) and pick its **colour** (10), **hat** (straw hat, cap,
+beanie, flower crown, sprout, crown or none), **eyes** (round, happy, sparkly,
+sleepy, wink) and an **extra** (glasses, freckles, bow or scarf). You can't skip
+naming it. 🎲 picks a random name and ✨ *Surprise me* randomises the whole look.
+
+Your milbil and its name appear in the top corner, in the farm's title
+("Greta's Farm"), on your market stall next to the rivals' stalls, and in the
+market news when Bramble undercuts you. Tap your milbil any time, or use
+🎨 *Change my milbil* in the Storage tab, to change it. Starting a new farm keeps
+your milbil.
+
 ## The loop
 
 1. **Plant.** Pick a seed from the bar and tap soil. Each seed costs coins.
@@ -114,7 +128,8 @@ last, and a farm can hold up to 30.
 
 - `js/data.js` holds every number: crops, rivals, buildings, plot prices.
 - `js/game.js` holds the state, farming, and the market simulation (no DOM).
-- `js/main.js` holds the UI.
+- `js/milbil.js` draws your milbil as an SVG and lists the looks you can pick.
+- `js/main.js` holds the UI, including the milbil editor.
 
 The game saves to `localStorage` every few seconds. Crops keep growing while you're
 away because growth uses real timestamps, but the market only runs while the game
