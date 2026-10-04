@@ -27,6 +27,15 @@
         "8126"
       ],
       "port": 8126
+    },
+    {
+      "name": "random-spin",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "random-spin/serve.py",
+        "8127"
+      ],
+      "port": 8127
     }
   ]
 }

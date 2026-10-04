@@ -1,0 +1,15 @@
+{
+  "name": "Random Spin",
+  "short_name": "Spin",
+  "description": "A random number from 0 to 36 and a random colour, red or black, every turn.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d3b24",
+  "theme_color": "#0d3b24",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
