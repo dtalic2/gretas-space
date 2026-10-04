@@ -222,9 +222,9 @@
       return { number, colour: colourOf(number) };
     }
 
-    // Lands on 0 one turn in three; otherwise 1-36, each equally likely.
+    // Lands on 0 every other turn on average; otherwise 1-36, each equally likely.
     function rollTurn() {
-      return turnFor(randomInt(3) === 0 ? 0 : 1 + randomInt(MAX));
+      return turnFor(randomInt(2) === 0 ? 0 : 1 + randomInt(MAX));
     }
 
     let history = [];
