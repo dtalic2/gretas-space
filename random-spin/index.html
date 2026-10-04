@@ -21,6 +21,11 @@
       --black: #151515;
       --text: #f4f4f4;
     }
+    /* The table is always green felt, so dark mode keeps the same colours. */
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --felt: #0d3b24; --felt-light: #17583a; --text: #f4f4f4; }
+    }
+    :root[data-theme="dark"] { --felt: #0d3b24; --felt-light: #17583a; --text: #f4f4f4; }
 
     html, body { height: 100%; }
 
