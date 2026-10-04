@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0d3b24">
+  <title>Random Spin</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --felt: #0d3b24;
+      --felt-light: #17583a;
+      --gold: #f5d76e;
+      --red: #c62828;
+      --black: #151515;
+      --text: #f4f4f4;
+    }
+    /* The table is always green felt, so dark mode keeps the same colours. */
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --felt: #0d3b24; --felt-light: #17583a; --text: #f4f4f4; }
+    }
+    :root[data-theme="dark"] { --felt: #0d3b24; --felt-light: #17583a; --text: #f4f4f4; }
+
+    html, body { height: 100%; }
+
+    body {
+      background: radial-gradient(circle at 50% 30%, var(--felt-light), var(--felt) 70%);
+      color: var(--text);
+      font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+      overscroll-behavior: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      letter-spacing: 4px;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin: 8px 0 4px;
+    }
+    .sub { opacity: 0.75; font-size: 0.95rem; margin-bottom: 20px; }
+
+    .stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .ball {
+      width: min(70vw, 300px);
+      height: min(70vw, 300px);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 8px solid var(--gold);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 -12px 30px rgba(0, 0, 0, 0.35);
+      background: #2b2b2b;
+      transition: background-color 0.2s;
+    }
+    .ball.red { background: var(--red); }
+    .ball.black { background: var(--black); }
+    .ball.spinning { animation: wobble 0.12s linear infinite; }
+    .ball.landed { animation: pop 0.35s ease-out; }
+
+    .number {
+      font-size: min(32vw, 140px);
+      font-weight: 900;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    .colour {
+      margin-top: 18px;
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      min-height: 2.2rem;
+    }
+    .colour.red { color: #ff6b6b; }
+    .colour.black { color: #e0e0e0; }
+
+    .spin {
+      margin-top: 28px;
+      width: 100%;
+      max-width: 320px;
+      padding: 20px;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      border: none;
+      border-radius: 18px;
+      color: #1a1a1a;
+      background: linear-gradient(180deg, #ffe58a, var(--gold));
+      box-shadow: 0 6px 0 #b9973a, 0 10px 20px rgba(0, 0, 0, 0.35);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .spin:active { transform: translateY(4px); box-shadow: 0 2px 0 #b9973a, 0 4px 10px rgba(0, 0, 0, 0.35); }
+    .spin:disabled { opacity: 0.7; }
+
+    .history-wrap { width: 100%; max-width: 420px; margin-top: 24px; }
+    .history-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+      opacity: 0.85;
+      margin-bottom: 8px;
+    }
+    .history-head button {
+      background: none;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 0.85rem;
+    }
+    .history {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      min-height: 40px;
+    }
+    .chip {
+      flex: 0 0 auto;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1rem;
+      border: 2px solid rgba(255, 255, 255, 0.5);
+    }
+    .chip.red { background: var(--red); }
+    .chip.black { background: var(--black); }
+    .stats { margin-top: 8px; font-size: 0.85rem; opacity: 0.75; text-align: center; }
+
+    @keyframes wobble {
+      0% { transform: rotate(-4deg); }
+      50% { transform: rotate(4deg); }
+      100% { transform: rotate(-4deg); }
+    }
+    @keyframes pop {
+      0% { transform: scale(0.85); }
+      60% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <h1>Random Spin</h1>
+  <p class="sub">A number from 0 to 36, and red or black</p>
+
+  <main class="stage">
+    <div class="ball" id="ball"><span class="number" id="number">?</span></div>
+    <div class="colour" id="colour">Tap Spin</div>
+    <button class="spin" id="spin">SPIN</button>
+  </main>
+
+  <section class="history-wrap">
+    <div class="history-head">
+      <span>Last turns</span>
+      <button id="clear">Clear</button>
+    </div>
+    <div class="history" id="history"></div>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <script>
+    const MAX = 36;
+    const COLOURS = ['red', 'black'];
+    const HISTORY_KEY = 'random-spin-zero-history';
+    const HISTORY_LIMIT = 50;
+
+    const ball = document.getElementById('ball');
+    const numberEl = document.getElementById('number');
+    const colourEl = document.getElementById('colour');
+    const spinBtn = document.getElementById('spin');
+    const historyEl = document.getElementById('history');
+    const statsEl = document.getElementById('stats');
+
+    // Unbiased random integer in [0, n) using the browser's secure generator.
+    function randomInt(n) {
+      const limit = Math.floor(0x100000000 / n) * n;
+      const buf = new Uint32Array(1);
+      do { crypto.getRandomValues(buf); } while (buf[0] >= limit);
+      return buf[0] % n;
+    }
+
+    // Lands on 0 one turn in three; otherwise 1-36, each equally likely.
+    function rollTurn() {
+      const number = randomInt(3) === 0 ? 0 : 1 + randomInt(MAX);
+      return { number, colour: COLOURS[randomInt(2)] };
+    }
+
+    let history = [];
+    try { history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch (e) { history = []; }
+
+    function saveHistory() {
+      try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
+    }
+
+    function show(turn) {
+      numberEl.textContent = turn.number;
+      ball.classList.remove('red', 'black');
+      ball.classList.add(turn.colour);
+    }
+
+    function renderHistory() {
+      historyEl.innerHTML = '';
+      for (const t of history) {
+        const chip = document.createElement('div');
+        chip.className = 'chip ' + t.colour;
+        chip.textContent = t.number;
+        historyEl.appendChild(chip);
+      }
+      const reds = history.filter(t => t.colour === 'red').length;
+      statsEl.textContent = history.length
+        ? `${history.length} turns · ${reds} red · ${history.length - reds} black`
+        : '';
+    }
+
+    function spin() {
+      spinBtn.disabled = true;
+      ball.classList.remove('landed');
+      ball.classList.add('spinning');
+      colourEl.className = 'colour';
+      colourEl.textContent = '...';
+
+      const start = performance.now();
+      const duration = 900;
+      const tick = () => {
+        if (performance.now() - start < duration) {
+          show({ number: randomInt(MAX + 1), colour: COLOURS[randomInt(2)] });
+          setTimeout(tick, 60);
+          return;
+        }
+        const turn = rollTurn();
+        show(turn);
+        ball.classList.remove('spinning');
+        void ball.offsetWidth; // restart the pop animation
+        ball.classList.add('landed');
+        colourEl.className = 'colour ' + turn.colour;
+        colourEl.textContent = turn.colour;
+        if (navigator.vibrate) navigator.vibrate(40);
+
+        history.unshift(turn);
+        history = history.slice(0, HISTORY_LIMIT);
+        saveHistory();
+        renderHistory();
+        spinBtn.disabled = false;
+      };
+      tick();
+    }
+
+    spinBtn.addEventListener('click', spin);
+    document.getElementById('clear').addEventListener('click', () => {
+      history = [];
+      saveHistory();
+      renderHistory();
+    });
+
+    if (history.length) {
+      show(history[0]);
+      colourEl.className = 'colour ' + history[0].colour;
+      colourEl.textContent = history[0].colour;
+    }
+    renderHistory();
+  </script>
+</body>
+</html>
