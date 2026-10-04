@@ -193,7 +193,6 @@
 
   <script>
     const MAX = 36;
-    const COLOURS = ['red', 'black'];
     const START_NUMBER = 18;
     const HISTORY_KEY = 'random-spin-history';
     const HISTORY_LIMIT = 50;
@@ -213,9 +212,14 @@
       return buf[0] % n;
     }
 
-    // 0 is always green; every other number is red or black at random.
+    // 0 is green, odd numbers are red and even numbers are black.
+    function colourOf(number) {
+      if (number === 0) return 'green';
+      return number % 2 ? 'red' : 'black';
+    }
+
     function turnFor(number) {
-      return { number, colour: number === 0 ? 'green' : COLOURS[randomInt(2)] };
+      return { number, colour: colourOf(number) };
     }
 
     function rollTurn() {
@@ -224,7 +228,7 @@
 
     let history = [];
     try { history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch (e) { history = []; }
-    history = history.map(t => (t.number === 0 ? { number: 0, colour: 'green' } : t));
+    history = history.map(t => turnFor(t.number));
 
     function saveHistory() {
       try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}

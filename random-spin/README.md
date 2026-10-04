@@ -3,13 +3,13 @@
 Tap **SPIN** and every turn you get:
 
 - a random **number from 0 to 36** (inclusive), and
-- a random **colour**, **red** or **black**, except 0, which is always **green**.
+- its **colour**: odd numbers (1, 3, 5 …) are **red**, even numbers (2, 4, 6 …)
+  are **black**, and 0 is **green**.
 
 Every round starts with **18** on the ball before the numbers start flashing.
 
-The number and the colour are picked separately, so any number from 1 to 36
-can come up in either colour. Both use the browser's secure random generator
-(`crypto.getRandomValues`) with no bias.
+The number is picked with the browser's secure random generator
+(`crypto.getRandomValues`) with no bias, and the colour follows from the number.
 
 The last 50 turns show as chips under the button, with a red/black/green count.
 They're saved on the phone, and **Clear** wipes them.
