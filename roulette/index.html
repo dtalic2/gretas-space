@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Roulette Wheel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Figtree:wght@400;600;700&display=swap">
+<style>
+  /* Layout: one column on casino felt — wheel, spin control, result plate, history rail */
+  :root {
+    --felt: #0d3b2a;
+    --felt-deep: #062016;
+    --felt-hi: #165a3d;
+    --brass: #d4a94f;
+    --brass-dark: #7a5a1c;
+    --ivory: #f3ead7;
+    --muted: #a3bdaf;
+    --red: #b8202b;
+    --black: #17181b;
+    --green: #11804a;
+    --panel: rgba(0, 0, 0, 0.28);
+    --display: 'Cinzel', 'Trajan Pro', Georgia, serif;
+    --body: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { min-height: 100%; }
+  body {
+    margin: 0;
+    background-color: var(--felt-deep);
+    background-image: radial-gradient(ellipse at 50% 28%, var(--felt-hi) 0%, var(--felt) 42%, var(--felt-deep) 100%);
+    background-attachment: fixed;
+    color: var(--ivory);
+    font-family: var(--body);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .wrap {
+    max-width: 620px;
+    margin: 0 auto;
+    padding-inline: 16px;
+    padding-block: 20px 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+  }
+  header { text-align: center; }
+  h1 {
+    font-family: var(--display);
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    font-size: clamp(1.7rem, 6vw, 2.4rem);
+    margin: 0;
+    color: var(--brass);
+    text-wrap: balance;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+  }
+  .sub {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  .stage {
+    width: 100%;
+    max-width: 560px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(0, 0, 0, 0.3);
+  }
+  canvas { width: 100%; height: 100%; display: block; }
+  .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; }
+  button { font: inherit; cursor: pointer; }
+  .spin {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 1.15rem;
+    letter-spacing: 0.2em;
+    padding: 14px 44px 14px 48px;
+    border-radius: 999px;
+    border: 2px solid var(--brass);
+    background: linear-gradient(#ecc777, #b4882f);
+    color: #2a1d05;
+    box-shadow: 0 4px 0 var(--brass-dark), 0 10px 20px rgba(0, 0, 0, 0.4);
+    transition: transform 0.08s, box-shadow 0.08s, opacity 0.2s;
+  }
+  .spin:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--brass-dark), 0 4px 10px rgba(0, 0, 0, 0.4); }
+  .spin:disabled { opacity: 0.5; cursor: default; }
+  .ghost {
+    padding: 10px 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(243, 234, 215, 0.3);
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  .ghost:hover { color: var(--ivory); border-color: rgba(243, 234, 215, 0.6); }
+  :focus-visible { outline: 3px solid var(--ivory); outline-offset: 3px; }
+
+  .result {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    max-width: 440px;
+    min-height: 92px;
+    padding: 14px 18px;
+    border-radius: 16px;
+    background: var(--panel);
+    border: 1px solid rgba(212, 169, 79, 0.35);
+  }
+  .result-text { min-width: 0; }
+  .result-title { font-family: var(--display); font-weight: 800; font-size: 1.35rem; letter-spacing: 0.04em; line-height: 1.2; }
+  .result-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .tag {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: rgba(243, 234, 215, 0.1);
+    color: var(--ivory);
+  }
+  .tag.plain { background: none; padding-inline: 0; text-transform: none; letter-spacing: 0; font-size: 0.85rem; color: var(--muted); }
+
+  .chip {
+    flex: none;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 1.55rem;
+    color: #fff;
+    border: 3px dashed rgba(255, 255, 255, 0.55);
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.25), 0 6px 12px rgba(0, 0, 0, 0.35);
+    font-variant-numeric: tabular-nums;
+  }
+  .chip.red { background: var(--red); }
+  .chip.black { background: var(--black); }
+  .chip.green { background: var(--green); }
+  .chip.idle { background: transparent; color: var(--muted); border-color: rgba(243, 234, 215, 0.3); }
+  .chip.pop { animation: pop 0.45s cubic-bezier(.2, 1.6, .4, 1); }
+  @keyframes pop { from { transform: scale(0.4); } to { transform: scale(1); } }
+
+  .history { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 10px; }
+  .history-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .history h2 { margin: 0; font-family: var(--display); font-size: 0.85rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--brass); }
+  .stats { font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .hist-row { display: flex; flex-wrap: wrap; gap: 6px; min-height: 34px; }
+  .hist-row .chip { width: 34px; height: 34px; font-size: 0.85rem; border-width: 2px; box-shadow: none; }
+  .hist-row .chip:first-child { box-shadow: 0 0 0 2px var(--brass); }
+  .empty { color: var(--muted); font-size: 0.85rem; align-self: center; }
+  .clear { align-self: flex-start; padding: 6px 12px; font-size: 0.78rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .chip.pop { animation: none; }
+    .spin { transition: none; }
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <h1>Roulette</h1>
+    <p class="sub">European single zero &middot; 37 pockets</p>
+  </header>
+
+  <div class="stage">
+    <canvas id="wheel" role="img" aria-label="Roulette wheel with ball"></canvas>
+  </div>
+
+  <div class="controls">
+    <button id="spin" class="spin" type="button">Spin</button>
+    <button id="sound" class="ghost" type="button" aria-pressed="true">Sound on</button>
+  </div>
+
+  <section class="result" aria-live="polite">
+    <div id="chip" class="chip idle">?</div>
+    <div class="result-text">
+      <div id="rtitle" class="result-title">Place your bets</div>
+      <div id="rtags" class="result-tags"><span class="tag plain">Press Spin to launch the ball.</span></div>
+    </div>
+  </section>
+
+  <section class="history">
+    <div class="history-head">
+      <h2>Last spins</h2>
+      <span id="stats" class="stats"></span>
+    </div>
+    <div id="hist" class="hist-row"></div>
+    <button id="clear" class="ghost clear" type="button" hidden>Clear history</button>
+  </section>
+</main>
+
+<script>
+(() => {
+  const TAU = Math.PI * 2;
+  // Real European wheel order, clockwise from zero
+  const ORDER = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+  const N = ORDER.length;
+  const STEP = TAU / N;
+  const REDS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
+  const colorOf = n => n === 0 ? 'green' : (REDS.has(n) ? 'red' : 'black');
+  const FILL = { red: '#b8202b', black: '#17181b', green: '#11804a' };
+  const POCKET = { red: '#5e0f15', black: '#08090a', green: '#073d23' };
+  const BRASS = '#d4a94f';
+
+  // Radii as a fraction of the wheel radius
+  const R_TRACK = 0.905, R_DIAMOND = 0.80, R_POCKET = 0.592, BALL = 0.026;
+  const DIAMONDS = Array.from({ length: 8 }, (_, k) => k * TAU / 8 + TAU / 16);
+
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const IDLE_SPEED = reduceMotion ? 0 : 0.22;
+  const SPEEDUP = reduceMotion ? 1.8 : 1;
+
+  const canvas = document.getElementById('wheel');
+  const ctx = canvas.getContext('2d');
+  const bowl = document.createElement('canvas');
+  const wheel = document.createElement('canvas');
+  const sheen = document.createElement('canvas');
+  let size = 0, R = 0;
+
+  const spinBtn = document.getElementById('spin');
+  const soundBtn = document.getElementById('sound');
+  const clearBtn = document.getElementById('clear');
+  const chipEl = document.getElementById('chip');
+  const titleEl = document.getElementById('rtitle');
+  const tagsEl = document.getElementById('rtags');
+  const histEl = document.getElementById('hist');
+  const statsEl = document.getElementById('stats');
+
+  // ---------- State ----------
+  const S = {
+    phase: 'idle',          // idle | spin | drop | bounce | settle | rest
+    tw: 0, ww: IDLE_SPEED,  // wheel angle + angular speed (clockwise)
+    tb: 0, wb: 0,           // ball angle + angular speed (world frame)
+    r: R_POCKET, vr: 0,     // ball radius + radial speed
+    phi: 0, wrel: 0,        // ball angle + speed relative to the wheel
+    h: 0, vh: 0,            // hop height while bouncing between pockets
+    hits: new Set(), settleT: 0, pocket: null,
+  };
+  let history = [];
+
+  // ---------- Drawing ----------
+  function ring(g, r0, r1, a0 = 0, a1 = TAU) {
+    g.beginPath();
+    g.arc(0, 0, r1 * R, a0, a1);
+    g.arc(0, 0, r0 * R, a1, a0, true);
+    g.closePath();
+  }
+
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    const s = Math.round(rect.width * dpr);
+    if (!s || s === size) return;
+    size = s; R = s / 2;
+    for (const c of [canvas, bowl, wheel, sheen]) c.width = c.height = s;
+    build();
+  }
+
+  function build() {
+    buildBowl();
+    buildWheel();
+    buildSheen();
+  }
+
+  function buildBowl() {
+    const g = bowl.getContext('2d');
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, size, size);
+    g.translate(R, R);
+
+    let gr = g.createRadialGradient(0, 0, 0.9 * R, 0, 0, R);
+    gr.addColorStop(0, '#6b3418');
+    gr.addColorStop(0.55, '#4a220e');
+    gr.addColorStop(1, '#1e0c04');
+    g.beginPath(); g.arc(0, 0, R * 0.998, 0, TAU); g.fillStyle = gr; g.fill();
+
+    // Ball track and lower slope
+    gr = g.createRadialGradient(0, 0, 0.745 * R, 0, 0, 0.945 * R);
+    gr.addColorStop(0, '#120803');
+    gr.addColorStop(0.45, '#2c150a');
+    gr.addColorStop(0.6, '#5e3018');
+    gr.addColorStop(0.88, '#9a5b30');
+    gr.addColorStop(1, '#5a2b13');
+    ring(g, 0.745, 0.945); g.fillStyle = gr; g.fill();
+
+    g.strokeStyle = BRASS;
+    g.lineWidth = 0.012 * R;
+    g.beginPath(); g.arc(0, 0, 0.95 * R, 0, TAU); g.stroke();
+    g.strokeStyle = 'rgba(212,169,79,0.45)';
+    g.lineWidth = 0.004 * R;
+    g.beginPath(); g.arc(0, 0, 0.86 * R, 0, TAU); g.stroke();
+
+    // Brass deflectors ("diamonds")
+    DIAMONDS.forEach((theta, k) => {
+      g.save();
+      g.rotate(theta - Math.PI / 2);
+      g.translate(R_DIAMOND * R, 0);
+      if (k % 2) g.rotate(Math.PI / 2);
+      const L = 0.034 * R, W = 0.015 * R;
+      const lg = g.createLinearGradient(-L, -W, L, W);
+      lg.addColorStop(0, '#fbe4a6'); lg.addColorStop(0.5, BRASS); lg.addColorStop(1, '#6d4f17');
+      g.beginPath(); g.moveTo(-L, 0); g.lineTo(0, -W); g.lineTo(L, 0); g.lineTo(0, W); g.closePath();
+      g.fillStyle = lg; g.fill();
+      g.lineWidth = 0.003 * R; g.strokeStyle = '#4d360d'; g.stroke();
+      g.restore();
+    });
+  }
+
+  function buildWheel() {
+    const g = wheel.getContext('2d');
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, size, size);
+    g.translate(R, R);
+
+    g.beginPath(); g.arc(0, 0, 0.75 * R, 0, TAU); g.fillStyle = '#1a0d06'; g.fill();
+
+    for (let i = 0; i < N; i++) {
+      const a = -Math.PI / 2 + i * STEP, a0 = a - STEP / 2, a1 = a + STEP / 2;
+      const n = ORDER[i], col = colorOf(n);
+      ring(g, 0.64, 0.745, a0, a1); g.fillStyle = FILL[col]; g.fill();
+      ring(g, 0.545, 0.64, a0, a1); g.fillStyle = POCKET[col]; g.fill();
+
+      g.save();
+      g.rotate(a + Math.PI / 2);
+      g.fillStyle = '#f6efe0';
+      g.font = `700 ${Math.round(0.05 * R)}px Cinzel, Georgia, serif`;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText(String(n), 0, -0.693 * R);
+      g.restore();
+    }
+
+    // Depth inside the pockets
+    let gr = g.createRadialGradient(0, 0, 0.545 * R, 0, 0, 0.64 * R);
+    gr.addColorStop(0, 'rgba(0,0,0,0.55)');
+    gr.addColorStop(0.6, 'rgba(0,0,0,0.1)');
+    gr.addColorStop(1, 'rgba(255,255,255,0.06)');
+    ring(g, 0.545, 0.64); g.fillStyle = gr; g.fill();
+
+    // Frets between pockets
+    g.strokeStyle = BRASS;
+    g.lineCap = 'round';
+    for (let i = 0; i < N; i++) {
+      const b = -Math.PI / 2 + i * STEP - STEP / 2;
+      const c = Math.cos(b), s = Math.sin(b);
+      g.lineWidth = 0.007 * R;
+      g.beginPath(); g.moveTo(c * 0.548 * R, s * 0.548 * R); g.lineTo(c * 0.64 * R, s * 0.64 * R); g.stroke();
+      g.lineWidth = 0.003 * R;
+      g.beginPath(); g.moveTo(c * 0.64 * R, s * 0.64 * R); g.lineTo(c * 0.745 * R, s * 0.745 * R); g.stroke();
+    }
+    g.lineWidth = 0.006 * R;
+    for (const r of [0.545, 0.64, 0.747]) { g.beginPath(); g.arc(0, 0, r * R, 0, TAU); g.stroke(); }
+
+    // Cone with alternating veneer
+    gr = g.createRadialGradient(0, 0, 0.12 * R, 0, 0, 0.54 * R);
+    gr.addColorStop(0, '#9a5528');
+    gr.addColorStop(0.7, '#6a3416');
+    gr.addColorStop(1, '#3d1b09');
+    g.beginPath(); g.arc(0, 0, 0.542 * R, 0, TAU); g.fillStyle = gr; g.fill();
+    for (let k = 0; k < 8; k++) {
+      if (k % 2) continue;
+      g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, 0.542 * R, k * TAU / 8, (k + 1) * TAU / 8); g.closePath();
+      g.fillStyle = 'rgba(255,220,170,0.06)'; g.fill();
+    }
+    g.strokeStyle = 'rgba(212,169,79,0.5)';
+    g.lineWidth = 0.004 * R;
+    g.beginPath(); g.arc(0, 0, 0.42 * R, 0, TAU); g.stroke();
+
+    // Turret: four arms with knobs
+    for (let k = 0; k < 4; k++) {
+      g.save();
+      g.rotate(k * Math.PI / 2);
+      const lg = g.createLinearGradient(0, -0.02 * R, 0, 0.02 * R);
+      lg.addColorStop(0, '#f6dc99'); lg.addColorStop(0.5, BRASS); lg.addColorStop(1, '#6d4f17');
+      g.fillStyle = lg;
+      g.beginPath();
+      g.moveTo(0, -0.022 * R); g.lineTo(0.3 * R, -0.011 * R); g.lineTo(0.3 * R, 0.011 * R); g.lineTo(0, 0.022 * R);
+      g.closePath(); g.fill();
+      const kg = g.createRadialGradient(0.31 * R, -0.01 * R, 0, 0.32 * R, 0, 0.036 * R);
+      kg.addColorStop(0, '#fff3cf'); kg.addColorStop(0.5, BRASS); kg.addColorStop(1, '#5c4212');
+      g.beginPath(); g.arc(0.32 * R, 0, 0.034 * R, 0, TAU); g.fillStyle = kg; g.fill();
+      g.restore();
+    }
+    const cg = g.createRadialGradient(-0.02 * R, -0.025 * R, 0, 0, 0, 0.085 * R);
+    cg.addColorStop(0, '#fff3cf'); cg.addColorStop(0.45, BRASS); cg.addColorStop(1, '#5c4212');
+    g.beginPath(); g.arc(0, 0, 0.08 * R, 0, TAU); g.fillStyle = cg; g.fill();
+  }
+
+  // Lighting that stays fixed while the wheel turns underneath
+  function buildSheen() {
+    const g = sheen.getContext('2d');
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, size, size);
+    g.translate(R, R);
+    let gr = g.createRadialGradient(0, 0, 0.7 * R, 0, 0, 0.76 * R);
+    gr.addColorStop(0, 'rgba(0,0,0,0)');
+    gr.addColorStop(1, 'rgba(0,0,0,0.45)');
+    ring(g, 0.7, 0.76); g.fillStyle = gr; g.fill();
+    gr = g.createLinearGradient(-R, -R, R * 0.4, R * 0.4);
+    gr.addColorStop(0, 'rgba(255,240,210,0.16)');
+    gr.addColorStop(0.5, 'rgba(255,240,210,0.03)');
+    gr.addColorStop(1, 'rgba(0,0,0,0.12)');
+    g.beginPath(); g.arc(0, 0, R, 0, TAU); g.fillStyle = gr; g.fill();
+  }
+
+  function draw(now) {
+    if (!size) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, size, size);
+    ctx.drawImage(bowl, 0, 0);
+
+    ctx.save();
+    ctx.translate(R, R);
+    ctx.rotate(S.tw);
+    ctx.drawImage(wheel, -R, -R);
+    if (S.phase === 'rest' && S.pocket != null) {
+      const a = -Math.PI / 2 + S.pocket * STEP;
+      const pulse = reduceMotion ? 0.8 : 0.55 + 0.35 * Math.sin(now / 220);
+      ring(ctx, 0.545, 0.745, a - STEP / 2, a + STEP / 2);
+      ctx.fillStyle = `rgba(255,230,150,${0.12 * pulse})`;
+      ctx.fill();
+      ctx.strokeStyle = `rgba(255,226,140,${pulse})`;
+      ctx.lineWidth = 0.008 * R;
+      ctx.stroke();
+    }
+    ctx.restore();
+    ctx.drawImage(sheen, 0, 0);
+
+    // Ball
+    const lift = Math.min(S.h * 3.5, 0.09);
+    const r = (S.phase === 'spin' || S.phase === 'drop') ? S.r : R_POCKET + lift;
+    const br = BALL * R * (1 + Math.min(S.h * 9, 0.35));
+    const x = R + Math.sin(S.tb) * r * R;
+    const y = R - Math.cos(S.tb) * r * R;
+    ctx.beginPath();
+    ctx.ellipse(x + br * 0.35 + lift * R * 0.3, y + br * 0.5 + lift * R * 0.4, br * 1.05, br * 0.85, 0, 0, TAU);
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fill();
+    const bg = ctx.createRadialGradient(x - br * 0.35, y - br * 0.4, br * 0.1, x, y, br);
+    bg.addColorStop(0, '#ffffff');
+    bg.addColorStop(0.55, '#ece8df');
+    bg.addColorStop(1, '#8f8a80');
+    ctx.beginPath(); ctx.arc(x, y, br, 0, TAU); ctx.fillStyle = bg; ctx.fill();
+  }
+
+  // ---------- Sound ----------
+  let actx = null, noise = null, rollGain = null, muted = false;
+  function initAudio() {
+    if (actx) { actx.resume?.(); return; }
+    try {
+      actx = new (window.AudioContext || window.webkitAudioContext)();
+      noise = actx.createBuffer(1, actx.sampleRate, actx.sampleRate);
+      const d = noise.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      const src = actx.createBufferSource();
+      src.buffer = noise; src.loop = true;
+      const bp = actx.createBiquadFilter();
+      bp.type = 'bandpass'; bp.frequency.value = 650; bp.Q.value = 0.8;
+      rollGain = actx.createGain(); rollGain.gain.value = 0;
+      src.connect(bp).connect(rollGain).connect(actx.destination);
+      src.start();
+    } catch (e) { actx = null; }
+  }
+  function click(freq, vol) {
+    if (!actx || muted) return;
+    const t = actx.currentTime;
+    const src = actx.createBufferSource(); src.buffer = noise;
+    const bp = actx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = freq; bp.Q.value = 5;
+    const g = actx.createGain();
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+    src.connect(bp).connect(g).connect(actx.destination);
+    src.start(t, Math.random() * 0.5, 0.07);
+  }
+  function updateRoll() {
+    if (!rollGain) return;
+    let target = 0;
+    if (!muted) {
+      if (S.phase === 'spin' || S.phase === 'drop') target = 0.012 + 0.05 * Math.min(1, Math.abs(S.wb) / 15);
+      else if (S.phase === 'bounce') target = 0.012;
+    }
+    rollGain.gain.setTargetAtTime(target, actx.currentTime, 0.08);
+  }
+
+  // ---------- Physics ----------
+  const mod = (a, m) => ((a % m) + m) % m;
+  const angDiff = (a, b) => Math.abs(mod(a - b + Math.PI, TAU) - Math.PI);
+
+  function spin() {
+    if (S.phase !== 'idle' && S.phase !== 'rest') return;
+    S.ww = Math.max(S.ww, 2.0 + Math.random() * 0.9);
+    S.tb = Math.random() * TAU;
+    S.wb = -(13 + Math.random() * 4);
+    S.r = R_TRACK; S.vr = 0; S.h = 0; S.vh = 0;
+    S.hits.clear(); S.pocket = null; S.settleT = 0;
+    S.phase = 'spin';
+    spinBtn.disabled = true;
+    setStatus('Ball in play', 'The ball is circling the track.');
+  }
+
+  function step(dt) {
+    if (S.ww > IDLE_SPEED) S.ww = Math.max(IDLE_SPEED, S.ww - (0.05 + 0.05 * S.ww) * dt * SPEEDUP);
+    S.tw += S.ww * dt;
+
+    switch (S.phase) {
+      case 'spin': {
+        S.wb += (0.9 + 0.06 * Math.abs(S.wb)) * dt * SPEEDUP;
+        S.tb += S.wb * dt;
+        if (Math.abs(S.wb) < 4.4) {
+          S.phase = 'drop'; S.vr = 0;
+          setStatus('No more bets', 'The ball is dropping toward the pockets.');
+        }
+        break;
+      }
+      case 'drop': {
+        S.wb = Math.min(S.wb + 1.6 * dt, -1.2);
+        S.vr -= 0.9 * dt;
+        S.r += S.vr * dt;
+        S.tb += S.wb * dt;
+        if (S.r < R_DIAMOND + 0.03 && S.r > R_DIAMOND - 0.03) {
+          DIAMONDS.forEach((d, k) => {
+            if (!S.hits.has(k) && angDiff(S.tb, d) < 0.045) {
+              S.hits.add(k);
+              S.vr = Math.abs(S.vr) * 0.3 + 0.08 + Math.random() * 0.1;
+              S.wb *= 0.55 + Math.random() * 0.35;
+              click(1900, 0.5);
+            }
+          });
+        }
+        if (S.r <= R_POCKET) {
+          S.phase = 'bounce';
+          S.phi = S.tb - S.tw;
+          S.wrel = S.wb - S.ww;
+          S.h = 0; S.vh = 0.1 + Math.random() * 0.08;
+          click(2600, 0.35);
+        }
+        break;
+      }
+      case 'bounce': {
+        S.vh -= 1.6 * dt;
+        S.h += S.vh * dt;
+        if (S.h <= 0) {
+          S.h = 0;
+          if (S.vh < -0.03) { S.vh = -S.vh * 0.42; S.wrel *= 0.8; click(2300, 0.25); }
+          else S.vh = 0;
+        }
+        const grounded = S.h === 0 && S.vh === 0;
+        S.wrel *= Math.exp(-(grounded ? 2.2 : 0.3) * dt * SPEEDUP);
+        const prev = S.phi;
+        S.phi += S.wrel * dt;
+        const kPrev = Math.floor(prev / STEP + 0.5), kNow = Math.floor(S.phi / STEP + 0.5);
+        if (kPrev !== kNow && S.h < 0.02) {
+          const sp = Math.abs(S.wrel);
+          if (sp > 1.0) {
+            S.vh = Math.min(0.32, 0.05 + sp * 0.04 * (0.6 + Math.random() * 0.8));
+            S.wrel *= 0.55 + Math.random() * 0.2;
+            if (Math.random() < 0.15) S.wrel *= -0.5;
+            click(3200, 0.2 + Math.min(0.3, sp * 0.05));
+          } else {
+            S.phi = prev;
+            S.wrel *= -0.35;
+            click(3400, 0.12);
+          }
+        }
+        if (grounded && Math.abs(S.wrel) < 0.35) {
+          S.phase = 'settle';
+          S.settleT = 0;
+        }
+        S.tb = S.tw + S.phi;
+        break;
+      }
+      case 'settle': {
+        const target = Math.round(S.phi / STEP) * STEP;
+        S.phi += (target - S.phi) * (1 - Math.exp(-7 * dt));
+        S.settleT += dt;
+        S.tb = S.tw + S.phi;
+        if (S.settleT > 0.6) {
+          S.phi = target;
+          finish(mod(Math.round(target / STEP), N));
+        }
+        break;
+      }
+      default:
+        S.tb = S.tw + S.phi;
+    }
+  }
+
+  function finish(pocket) {
+    S.phase = 'rest';
+    S.pocket = pocket;
+    const n = ORDER[pocket];
+    history.unshift(n);
+    history = history.slice(0, 100);
+    save();
+    showResult(n, true);
+    renderHistory();
+    spinBtn.disabled = false;
+  }
+
+  // ---------- UI ----------
+  function describe(n) {
+    if (n === 0) return { name: 'Zero', tags: ['Green', 'House pocket'] };
+    const c = REDS.has(n) ? 'Red' : 'Black';
+    return {
+      name: `${c} ${n}`,
+      tags: [c, n % 2 ? 'Odd' : 'Even', n <= 18 ? '1–18' : '19–36',
+        ['1st', '2nd', '3rd'][Math.floor((n - 1) / 12)] + ' dozen',
+        ['3rd', '1st', '2nd'][n % 3] + ' column'],
+    };
+  }
+
+  function setStatus(title, note) {
+    chipEl.className = 'chip idle';
+    chipEl.textContent = '?';
+    titleEl.textContent = title;
+    tagsEl.innerHTML = '';
+    const s = document.createElement('span');
+    s.className = 'tag plain'; s.textContent = note;
+    tagsEl.append(s);
+  }
+
+  function showResult(n, animate) {
+    const d = describe(n);
+    chipEl.className = `chip ${colorOf(n)}` + (animate ? ' pop' : '');
+    chipEl.textContent = n;
+    titleEl.textContent = d.name;
+    tagsEl.innerHTML = '';
+    for (const t of d.tags) {
+      const s = document.createElement('span');
+      s.className = 'tag'; s.textContent = t;
+      tagsEl.append(s);
+    }
+  }
+
+  function renderHistory() {
+    histEl.innerHTML = '';
+    if (!history.length) {
+      const e = document.createElement('span');
+      e.className = 'empty'; e.textContent = 'Your results will line up here, newest first.';
+      histEl.append(e);
+    }
+    for (const n of history.slice(0, 18)) {
+      const c = document.createElement('span');
+      c.className = `chip ${colorOf(n)}`;
+      c.textContent = n;
+      c.title = describe(n).name;
+      histEl.append(c);
+    }
+    const red = history.filter(n => colorOf(n) === 'red').length;
+    const black = history.filter(n => colorOf(n) === 'black').length;
+    const zero = history.length - red - black;
+    statsEl.textContent = history.length
+      ? `Red ${red} · Black ${black} · Zero ${zero} in ${history.length} spin${history.length === 1 ? '' : 's'}`
+      : '';
+    clearBtn.hidden = !history.length;
+  }
+
+  function save() {
+    try { localStorage.setItem('roulette-history', JSON.stringify(history)); } catch (e) {}
+  }
+  function load() {
+    try {
+      const v = JSON.parse(localStorage.getItem('roulette-history') || '[]');
+      return Array.isArray(v) ? v : [];
+    } catch (e) { return []; }
+  }
+  const valid = list => list.filter(n => Number.isInteger(n) && n >= 0 && n <= 36).slice(0, 100);
+
+  spinBtn.addEventListener('click', () => { initAudio(); spin(); });
+  soundBtn.addEventListener('click', () => {
+    muted = !muted;
+    soundBtn.textContent = muted ? 'Sound off' : 'Sound on';
+    soundBtn.setAttribute('aria-pressed', String(!muted));
+    updateRoll();
+  });
+  clearBtn.addEventListener('click', () => { history = []; save(); renderHistory(); });
+
+  let last = 0;
+  function loop(now) {
+    let dt = Math.min(0.05, (now - (last || now)) / 1000);
+    last = now;
+    while (dt > 0) { const h = Math.min(dt, 1 / 240); step(h); dt -= h; }
+    updateRoll();
+    draw(now);
+    requestAnimationFrame(loop);
+  }
+
+  function start(data) {
+    history = valid(Array.isArray(data?.history) ? data.history : load());
+    renderHistory();
+    if (history.length) {
+      S.pocket = ORDER.indexOf(history[0]);
+      S.phi = S.pocket * STEP;
+      S.phase = 'rest';
+      showResult(history[0], false);
+    } else {
+      S.phi = Math.floor(Math.random() * N) * STEP;
+    }
+    resize();
+    new ResizeObserver(resize).observe(canvas);
+    document.fonts?.load(`700 20px Cinzel`).then(() => size && buildWheel()).catch(() => {});
+    requestAnimationFrame(loop);
+  }
+
+  window.claude?.hot?.snapshot?.(() => ({ history }));
+  window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
+</body>
+</html>
