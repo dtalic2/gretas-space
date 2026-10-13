@@ -166,7 +166,7 @@ export function openSettings(G){
         <button type="button" class="row as-btn" data-act="rename"><span class="r-e">✏️</span><span class="r-t"><b>Rename your milbil</b><small>${esc(G.state.name)}</small></span></button>
         <button type="button" class="row as-btn" data-act="help"><span class="r-e">❓</span><span class="r-t"><b>How to play</b><small>The short version</small></span></button>
         <button type="button" class="row as-btn danger" data-act="reset"><span class="r-e">🗑️</span><span class="r-t"><b>Start again</b><small>Wipes your garden, coins and Milbil Book</small></span></button>
-        <p class="note">Map © OpenStreetMap contributors, © CARTO. Milbil drawings by Greta.</p>`;
+        <p class="note">Map © OpenStreetMap contributors. Milbil drawings by Greta.</p>`;
     },
     onAct: async (act) => {
       const st = G.state.settings;

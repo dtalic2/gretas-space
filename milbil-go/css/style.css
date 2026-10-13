@@ -56,7 +56,7 @@ h1, h2, h3, p { margin: 0; }
 .tile {
   position: absolute; width: 257px; height: 257px;
   opacity: 0; transition: opacity .35s;
-  filter: saturate(1.25) brightness(1.02);
+  filter: saturate(1.1);
   pointer-events: none;
 }
 .tile.in { opacity: 1; }

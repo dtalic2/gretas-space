@@ -99,9 +99,11 @@ longitude and the clock (`js/geo.js`):
 - Reloading never rerolls anything, and milbils keep coming and going while the
   game is shut.
 
-The map is CARTO's Voyager street tiles (OpenStreetMap data), falling back to
-OpenStreetMap's own tiles. It's tipped back with a CSS 3D transform to give the
-angled look. You, the milbils and the shops are a flat layer on top, placed with
+The map is OpenStreetMap's own street tiles, falling back to OpenStreetMap
+France's. Neither needs an API key or an account. Both ask for light use and a
+credit on screen, which is fine for a family game. If lots of people ever play
+it, switch to a tile service with a key. The map is tipped back with a CSS 3D
+transform to give the angled look. You, the milbils and the shops are a flat layer on top, placed with
 the same projection maths, so they stand upright and are easy to tap. If no
 tiles load, you play on a grassy field instead.
 

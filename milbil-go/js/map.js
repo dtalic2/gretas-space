@@ -22,9 +22,15 @@ const MAX_NATIVE = 19;
 const MIN_ZOOM = 16.3, MAX_ZOOM = 19.6;
 const D2R = Math.PI / 180;
 
+// Street tiles that need no API key. OpenStreetMap's own server first; if a tile
+// won't come from there, OpenStreetMap France's (the "Humanitarian" style).
+// Both ask for light use and a credit on screen, which the corner gives them.
+// (CARTO's free tiles used to be first here, but they now want a key — and
+// instead of failing they send a picture saying so, which looks like a map tile.)
 const PROVIDERS = [
-  (z, x, y, hi) => `https://${'abcd'[(x + y) % 4]}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${x}/${y}${hi ? '@2x' : ''}.png`,
-  (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`,
+  { url: (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png` },
+  { url: (z, x, y) => `https://${'abc'[(x + y) % 3]}.tile.openstreetmap.fr/hot/${z}/${x}/${y}.png`,
+    credit: ' · tiles <a href="https://www.openstreetmap.fr/" target="_blank" rel="noopener">OSM France</a>' },
 ];
 
 export class MapView {
@@ -41,19 +47,20 @@ export class MapView {
     this.tileKey = '';
     this.failures = 0;
     this.loaded = 0;
-    this.hiDpi = (window.devicePixelRatio || 1) > 1.3;
+    this.credited = false;
 
     root.classList.add('map');
     root.innerHTML = `
       <div class="map-ground"><div class="map-plane"><div class="map-tiles"></div><div class="map-ring"></div></div></div>
       <div class="map-sky"></div>
       <div class="map-sprites"></div>
-      <div class="map-attrib">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · © <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a></div>`;
+      <div class="map-attrib">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</div>`;
     this.ground = root.querySelector('.map-ground');
     this.plane = root.querySelector('.map-plane');
     this.tileLayer = root.querySelector('.map-tiles');
     this.ring = root.querySelector('.map-ring');
     this.spriteLayer = root.querySelector('.map-sprites');
+    this.attrib = root.querySelector('.map-attrib');
 
     this._gestures();
   }
@@ -215,13 +222,18 @@ export class MapView {
     img.style.top = `${(y - oy) * TILE}px`;
     const wx = ((x % n) + n) % n;
     let provider = 0;
-    img.onload = () => { img.classList.add('in'); this.loaded++; };
+    img.onload = () => {
+      img.classList.add('in');
+      this.loaded++;
+      const credit = PROVIDERS[provider].credit;
+      if (credit && !this.credited){ this.credited = true; this.attrib.insertAdjacentHTML('beforeend', credit); }
+    };
     img.onerror = () => {
       this.failures++;
-      if (++provider < PROVIDERS.length) img.src = PROVIDERS[provider](z, wx, y, this.hiDpi);
+      if (++provider < PROVIDERS.length) img.src = PROVIDERS[provider].url(z, wx, y);
       else img.remove();
     };
-    img.src = PROVIDERS[0](z, wx, y, this.hiDpi);
+    img.src = PROVIDERS[0].url(z, wx, y);
     this.tileLayer.appendChild(img);
     this.tiles.set(`${z}/${x}/${y}`, { el: img, x, y });
   }
