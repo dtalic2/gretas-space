@@ -224,14 +224,15 @@ export const OWN_TREE_MAX_ITEMS   = 14;
 // The map
 // ---------------------------------------------------------------------------
 
-// Places you walk to. `weight` is how often each kind turns up on the map —
-// the Magic Tree and the Animal Shop are nearly as common as the Seed Shop.
+// Places you walk to. Every kind is equally common: the map is laid out in
+// blocks that each hold one of every shop (see shopsNear in geo.js), so the
+// Magic Tree and the Animal Shop are always as close as the Seed Shop.
 export const SHOP_TYPES = {
-  seed:      { name:'Seed Shop',   emoji:'🌱', weight:24, color:'#3fae4a', dark:'#2a7f33', blurb:'Seeds for your garden' },
-  market:    { name:'Market',      emoji:'🧺', weight:22, color:'#f2a93b', dark:'#c27a12', blurb:'Sell your harvest here' },
-  magic:     { name:'Magic Tree',  emoji:'✨', weight:20, color:'#9b5de5', dark:'#6a35b8', blurb:'Rare seeds, charms and the Magic Sapling' },
-  animal:    { name:'Animal Shop', emoji:'🐾', weight:19, color:'#f06c4f', dark:'#c0442a', blurb:'Animals that help your garden grow' },
-  carpenter: { name:'Carpenter',   emoji:'🔨', weight:15, color:'#a8743f', dark:'#7a5025', blurb:'Soil plots, tools and decorations' },
+  seed:      { name:'Seed Shop',   emoji:'🌱', color:'#3fae4a', dark:'#2a7f33', blurb:'Seeds for your garden' },
+  market:    { name:'Market',      emoji:'🧺', color:'#f2a93b', dark:'#c27a12', blurb:'Sell your harvest here' },
+  magic:     { name:'Magic Tree',  emoji:'✨', color:'#9b5de5', dark:'#6a35b8', blurb:'Rare seeds, charms and the Magic Sapling' },
+  animal:    { name:'Animal Shop', emoji:'🐾', color:'#f06c4f', dark:'#c0442a', blurb:'Animals that help your garden grow' },
+  carpenter: { name:'Carpenter',   emoji:'🔨', color:'#a8743f', dark:'#7a5025', blurb:'Soil plots, tools and decorations' },
 };
 
 // Shopkeepers, for the sign over the door. Greta's milbils run the shops.
@@ -239,14 +240,16 @@ export const KEEPERS = ['Petal', 'Chomp', 'Hattie', 'Sunny', 'Scoop', 'Pib', 'Nu
   'Bobbin', 'Wix', 'Doodle', 'Crumb', 'Pocket', 'Snug', 'Fen', 'Biscuit', 'Tam', 'Ollo', 'Peep',
   'Sprig', 'Noodle', 'Tumble', 'Winkle', 'Puddle', 'Gus', 'Bean', 'Marzi'];
 
-export const REACH_M        = 45;    // how close you must be to catch or shop
-export const SHOP_CELL_M    = 95;    // one shop at most per cell this size
-export const SHOP_CHANCE    = 0.62;
-export const SPAWN_CELL_M   = 60;    // one milbil at most per cell this size...
+// The world is small on purpose: it should be playable in a park, a playground
+// or a big back garden. Every kind of shop is within about 50 m of anywhere,
+// and a few milbils are always just a short stroll away.
+export const REACH_M        = 30;    // how close you must be to catch or shop
+export const SHOP_CELL_M    = 34;    // one shop lot per cell this size; 3x2 cells make a block
+export const SPAWN_CELL_M   = 25;    // one milbil at most per cell this size...
 export const SPAWN_PERIOD_S = 300;   // ...per five-minute window
-export const SPAWN_CHANCE   = 0.38;
-export const SHOW_SHOPS_M   = 550;
-export const SHOW_MILBILS_M = 400;
+export const SPAWN_CHANCE   = 0.35;
+export const SHOW_SHOPS_M   = 260;
+export const SHOW_MILBILS_M = 200;
 
 // ---------------------------------------------------------------------------
 // Milbils
@@ -292,7 +295,7 @@ export const SPECIES = [
     blurb:'Knows exactly when a carrot is ready.', perk:{ sell:0.10 }, perkText:'+10% on every sale' },
   { id:'sporty', name:'Sporty', rarity:'uncommon',
     look:{ line:'#e05252', hat:'cap' },
-    blurb:'Fastest legs on the field.', perk:{ reach:15 }, perkText:'Reach 15 m further' },
+    blurb:'Fastest legs on the field.', perk:{ reach:8 }, perkText:'Reach 8 m further' },
   { id:'cosy', name:'Cosy', rarity:'uncommon',
     look:{ line:'#3f7fe0', hat:'beanie', extra:'scarf' },
     blurb:'Wears a scarf in summer, just in case.', perk:{ seedSave:0.10 }, perkText:'1 in 10 plantings keeps its seed' },
@@ -317,7 +320,7 @@ export const SPECIES = [
     blurb:'Has never once dropped an ice cream.', perk:{ sell:0.15 }, perkText:'+15% on every sale' },
   { id:'floaty', name:'Floaty', rarity:'rare',
     look:{ line:'#ff4d6d', hold:'balloon' },
-    blurb:'Hold on tight on windy days.', perk:{ reach:25 }, perkText:'Reach 25 m further' },
+    blurb:'Hold on tight on windy days.', perk:{ reach:12 }, perkText:'Reach 12 m further' },
   { id:'starry', name:'Starry', rarity:'rare',
     look:{ line:'#ffc93c', eyes:'sparkle', badge:'star' },
     blurb:'Twinkles a bit when nobody is looking.', perk:{ luck:0.10 }, perkText:'+10% double harvest' },
@@ -336,7 +339,7 @@ export const SPECIES = [
     blurb:'Appears after rain. Or before. Or whenever it likes.', perk:{ grow:0.25, luck:0.10 }, perkText:'+25% growth, +10% double harvest' },
   { id:'ghost', name:'Boo', rarity:'epic', night:true,
     look:{ line:'#9fb4ff', fill:'#eef2ff', ghost:true, eyes:'big' },
-    blurb:'Mostly comes out at night. Easier to find after dark.', perk:{ catch:0.20, reach:10 }, perkText:'+20% catch chance, reach 10 m further' },
+    blurb:'Mostly comes out at night. Easier to find after dark.', perk:{ catch:0.20, reach:5 }, perkText:'+20% catch chance, reach 5 m further' },
 
   // Greta's own drawings.
   { id:'petal',  name:'Petal',  rarity:'legendary', art:'art/petal.png',
@@ -347,7 +350,7 @@ export const SPECIES = [
     perk:{ coins:3.0, catch:0.15 }, perkText:'4x coins from catches, +15% catch chance' },
   { id:'hattie', name:'Hattie', rarity:'legendary', art:'art/hattie.png',
     blurb:'Has never been seen without the hat. Possibly sleeps in it.',
-    perk:{ reach:30, sell:0.15 }, perkText:'Reach 30 m further, +15% on sales' },
+    perk:{ reach:15, sell:0.15 }, perkText:'Reach 15 m further, +15% on sales' },
   { id:'sunny',  name:'Sunny',  rarity:'legendary', art:'art/sunny.png',
     blurb:'Big eyes, bigger heart, and the warmest milbil on the map.',
     perk:{ grow:0.35, thirst:0.80 }, perkText:'+35% growth, thirsty crops keep 80% speed' },

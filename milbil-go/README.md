@@ -52,7 +52,12 @@ You can buy **anything you have the coins for**. Nothing needs a level.
 
 In 3x3 Garden, the Magic Tree and Animal Pen stock was almost never available.
 Here **nothing is ever out of stock**, and on the map Magic Trees and Animal
-Shops are almost as common as Seed Shops.
+Shops are exactly as common as Seed Shops.
+
+The world is **small on purpose**, so you can play it in a park, a playground or
+a big back garden. Every kind of shop is usually about 35 m away, and almost
+always within 60 m. You only need to be within 30 m of a shop or milbil to use
+it, and standing still, a dozen or more milbils an hour wander into reach.
 
 You start with 10 coins and 4 carrot seeds. Catching a milbil also pays coins,
 so you can't end up stuck with nothing.
@@ -89,10 +94,11 @@ Your level is just a badge, because nothing is locked behind it.
 Nothing about the map is stored or downloaded. It's all worked out from latitude,
 longitude and the clock (`js/geo.js`):
 
-- The world is a grid of cells. Each ~95 m cell may hold one shop, which is
-  always in the same spot for everyone. That gives about 10–15 shops within 250 m
-  of anywhere.
-- Each ~60 m cell may get one wild milbil every five minutes. It turns up a little
+- The world is a grid of 34 m cells, grouped in blocks of 3×2. Each block holds
+  exactly one of every kind of shop plus an empty lot, shuffled differently in
+  every block. So a Market or a Magic Tree is never more than a short walk away,
+  and each shop is always in the same spot for everyone.
+- Each 25 m cell may get one wild milbil every five minutes. It turns up a little
   after its window opens and wanders off 2–4 minutes later. Every cell runs on its
   own phase, so they don't all change at once. A caught milbil is remembered until
   it would have left, so it can't come back.

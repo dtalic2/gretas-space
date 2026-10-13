@@ -19,7 +19,9 @@ import { toWorld, metersPerPixel } from './geo.js';
 
 const TILE = 256;
 const MAX_NATIVE = 19;
-const MIN_ZOOM = 16.3, MAX_ZOOM = 19.6;
+const ZOOM = 19.1;        // where the map starts: close in, because the game world is park-sized
+const MIN_ZOOM = 18.4, MAX_ZOOM = 19.9;   // past 19 the tiles are just enlarged
+const TEXTURE_MAX = 4000; // device pixels: just under the 4096 many GPUs allow
 const D2R = Math.PI / 180;
 
 // Street tiles that need no API key. OpenStreetMap's own server first; if a tile
@@ -38,7 +40,7 @@ export class MapView {
     this.root = root;
     this.onTap = onTap || (() => {});
     this.center = { lat: 0, lng: 0 };
-    this.zoom = 18.3;
+    this.zoom = ZOOM;
     this.bearing = 0;      // degrees; turns the map on screen
     this.tilt = 50;        // degrees the ground is tipped back
     this.reachM = 45;
@@ -142,7 +144,12 @@ export class MapView {
     if (!f.W) return;
 
     // ground
-    const S = Math.ceil(2 * f.R / f.s / 2) * 2;
+    // The plane is drawn as one big texture, and phones and graphics cards
+    // refuse textures past about 4096 pixels: the overflow just isn't drawn.
+    // Cap it so its size times the screen's pixel density stays under that,
+    // and let the sky and the faded edge cover the rest.
+    const S = Math.min(Math.floor(TEXTURE_MAX / Math.max(1, window.devicePixelRatio || 1)),
+                       Math.ceil(2 * f.R / f.s / 2) * 2);
     this.ground.style.perspective = `${f.P}px`;
     this.ground.style.perspectiveOrigin = `${f.ax}px ${f.ay}px`;
     const ps = this.plane.style;
@@ -160,13 +167,15 @@ export class MapView {
     rs.top = `${S / 2 - r}px`;
 
     // sprites
-    const fade = f.R * 0.8;          // beyond this the sky has them
+    const fade = Math.min(f.R, S / 2 * f.s) * 0.8;   // beyond this the sky has them
+    // Pins and milbils shrink as you zoom out, or the map turns into a wall of them.
+    const zf = Math.max(0.55, Math.min(1.15, Math.pow(2, (this.zoom - ZOOM) * 0.8)));
     for (const sp of this.sprites.values()){
       const p = this._project(f, sp.lat, sp.lng);
       const off = p.far > fade || p.x < -80 || p.x > f.W + 80 || p.y < -40 || p.y > f.H + 160;
       if (off){ if (!sp.hidden){ sp.el.style.display = 'none'; sp.hidden = true; } continue; }
       if (sp.hidden){ sp.el.style.display = ''; sp.hidden = false; }
-      const k = Math.max(0.45, Math.min(1.25, p.k));
+      const k = Math.max(0.45, Math.min(1.25, p.k)) * zf;
       sp.el.style.transform = `translate3d(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px,0) scale(${k.toFixed(3)})`;
       sp.el.style.zIndex = String(Math.round(p.y));
       sp.el.style.opacity = p.far > fade * 0.75 ? String(Math.max(0, (fade - p.far) / (fade * 0.25))) : '';

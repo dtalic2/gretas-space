@@ -15,7 +15,7 @@ import { fmtNum } from './format.js';
 
 // Where you start if the game has never had a location: a big open field.
 const DEFAULT_POS = { lat: -33.8985, lng: 151.2341 };   // Centennial Park, Sydney
-const PAD_SPEED = 6;          // metres per second on the joystick — a brisk jog
+const PAD_SPEED = 4;          // metres per second on the joystick — a quick walk
 const STARTERS = ['sprouty', 'freckles', 'giggle'];
 const NAMES = ['Pib', 'Nuzz', 'Moby', 'Tuffet', 'Plum', 'Bobbin', 'Wix', 'Doodle', 'Crumb', 'Pocket',
                'Snug', 'Fen', 'Biscuit', 'Tam', 'Ollo', 'Peep', 'Sprig', 'Noodle', 'Tumble', 'Winkle'];
@@ -203,7 +203,7 @@ function tapThing(id){
 function ensureStarters(){
   if (state.starters !== null) return;
   state.starters = STARTERS.map((species, i) => {
-    const p = offset(pos, Math.sin((40 + i * 120) * Math.PI / 180) * 26, Math.cos((40 + i * 120) * Math.PI / 180) * 26);
+    const p = offset(pos, Math.sin((40 + i * 120) * Math.PI / 180) * 13, Math.cos((40 + i * 120) * Math.PI / 180) * 13);
     return { id: `starter-${species}`, species, lat: p.lat, lng: p.lng };
   });
   dirty = true;

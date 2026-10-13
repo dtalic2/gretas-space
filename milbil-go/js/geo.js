@@ -7,7 +7,7 @@
 //   * reloading never rerolls anything.
 
 import { SHOP_TYPES, KEEPERS, SPECIES, RARITY,
-         SHOP_CELL_M, SHOP_CHANCE, SPAWN_CELL_M, SPAWN_PERIOD_S, SPAWN_CHANCE } from './data.js';
+         SHOP_CELL_M, SPAWN_CELL_M, SPAWN_PERIOD_S, SPAWN_CHANCE } from './data.js';
 
 export const EARTH_R = 6371000;
 const M_PER_DEG_LAT = 111320;
@@ -102,18 +102,33 @@ const inCell = (c, u, v) => ({
 });
 
 // ------------------------------------------------------------------- shops ---
+// Shop lots come in blocks of 3x2 cells. Each block holds exactly one of every
+// kind of shop plus one empty lot, shuffled differently in every block. So
+// wherever you stand, all five kinds are a short walk away — never a long hike
+// because the dice put every Market somewhere else.
 
-const SHOP_ENTRIES = Object.entries(SHOP_TYPES).map(([k, t]) => [k, t.weight]);
+const BLOCK = [...Object.keys(SHOP_TYPES), null];
+const mod = (a, n) => ((a % n) + n) % n;
+
+function shopTypeAt(row, col){
+  const br = Math.floor(row / 2), bc = Math.floor(col / 3);
+  const order = BLOCK.slice();
+  for (let i = order.length - 1; i > 0; i--){
+    const j = hash(16, br, bc, i) % (i + 1);
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return order[mod(row, 2) * 3 + mod(col, 3)];
+}
 
 /** Every shop within radiusM of p, nearest first. */
 export function shopsNear(p, radiusM){
   const out = [];
   for (const c of cellsNear(p, radiusM, SHOP_CELL_M)){
-    if (roll(11, c.row, c.col) >= SHOP_CHANCE) continue;
+    const type = shopTypeAt(c.row, c.col);
+    if (!type) continue;
     const pos = inCell(c, roll(12, c.row, c.col), roll(13, c.row, c.col));
     const d = distance(p, pos);
     if (d > radiusM) continue;
-    const type = weighted(SHOP_ENTRIES, roll(14, c.row, c.col));
     const keeper = KEEPERS[hash(15, c.row, c.col) % KEEPERS.length];
     out.push({ id:`s${c.row}_${c.col}`, kind:'shop', type, keeper, ...pos, d,
                name:`${keeper}'s ${SHOP_TYPES[type].name}` });
