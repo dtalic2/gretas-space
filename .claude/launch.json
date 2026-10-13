@@ -27,6 +27,15 @@
         "8126"
       ],
       "port": 8126
+    },
+    {
+      "name": "milbil-go",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "milbil-go/serve.py",
+        "8127"
+      ],
+      "port": 8127
     }
   ]
 }

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#7cc7ff">
+  <title>Milbil GO</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="map"></div>
+
+  <header class="hud-top">
+    <button type="button" id="meBtn" class="me" aria-label="Your milbil">
+      <span class="me-pic" id="meAvatar"></span>
+      <span class="me-info"><b id="meName">You</b><small>Level <span id="lvl">1</span></small><i class="xp"><i id="xpbar"></i></i></span>
+    </button>
+    <div class="hud-right">
+      <div class="pill coins" title="Coins"><span>🪙</span><b id="coins">10</b></div>
+      <button type="button" id="settingsBtn" class="round" aria-label="Settings">⚙️</button>
+    </div>
+  </header>
+
+  <button type="button" id="gpsPill" class="gps-pill">📡 Finding you…</button>
+  <button type="button" id="compass" class="compass round" aria-label="Point north"><i>➤</i><b>N</b></button>
+
+  <div id="joystick" class="joystick" hidden><i></i></div>
+  <button type="button" id="nearbyBtn" class="nearby-btn">👀 Nearby</button>
+
+  <nav class="hud-bottom">
+    <button type="button" id="gardenBtn" class="big-btn"><span class="e">🌱</span><span>Garden</span><em id="gardenBadge"></em></button>
+    <button type="button" id="dexBtn" class="big-btn main"><span class="e">📖</span><span>Milbils</span><em id="dexCount"></em></button>
+    <button type="button" id="bagBtn" class="big-btn"><span class="e">🎒</span><span>Bag</span><em id="bagBadge"></em></button>
+  </nav>
+
+  <div id="sheet" class="sheet" hidden></div>
+  <div id="encounterHost"></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <div id="welcome" class="welcome" hidden>
+    <div class="welcome-card">
+      <h1><span>Milbil</span> GO</h1>
+      <div class="welcome-milbil" id="welcomeMilbil"></div>
+      <p class="lead">You're a <b>Common Milbil</b> — just a plain milbil, with every extra feature taken off.</p>
+      <p>Walk around for real to find other milbils on the map and catch them. Grow a 3x3 garden with seeds from the shops you walk to, and sell your harvest at the market.</p>
+      <label class="name-row">
+        <span>Your milbil's name</span>
+        <span class="name-input"><input id="nameInput" maxlength="14" autocomplete="off" spellcheck="false"><button type="button" id="nameDice" aria-label="Random name">🎲</button></span>
+      </label>
+      <button type="button" id="startGps" class="btn go big">📍 Play with GPS</button>
+      <button type="button" id="startPad" class="btn big">🕹️ Play with a joystick (no GPS)</button>
+      <button type="button" id="howBtn" class="link">How to play</button>
+      <p class="safety">🚸 Look up while you walk! Stay with a grown-up, watch out for roads, and never go somewhere you shouldn't to catch a milbil.</p>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
