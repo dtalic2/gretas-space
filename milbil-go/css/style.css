@@ -40,19 +40,14 @@ h1, h2, h3, p { margin: 0; }
 }
 .map-ground { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .map-plane {
-  position: absolute;
-  transform-origin: 50% 50%;
+  position: absolute; overflow: hidden;
   background-color: #c3e6a8;
-  background-image:
-    radial-gradient(circle at 20% 30%, #b3dc95 0 6%, transparent 7%),
-    radial-gradient(circle at 70% 75%, #b8de9b 0 5%, transparent 6%),
-    linear-gradient(#0000 calc(100% - 2px), #ffffff55 0),
-    linear-gradient(90deg, #0000 calc(100% - 2px), #ffffff55 0);
-  background-size: 512px 512px, 384px 384px, 128px 128px, 128px 128px;
-  -webkit-mask-image: radial-gradient(circle closest-side, #000 68%, transparent 100%);
-          mask-image: radial-gradient(circle closest-side, #000 68%, transparent 100%);
+  /* the far edge melts into the sky */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 22%);
+          mask-image: linear-gradient(to bottom, transparent 0, #000 22%);
 }
-.map-tiles { position: absolute; left: 0; top: 0; will-change: transform; }
+.map-turn { position: absolute; width: 0; height: 0; transform-origin: 0 0; }
+.map-tiles { position: absolute; left: 0; top: 0; }
 .tile {
   position: absolute; width: 257px; height: 257px;
   opacity: 0; transition: opacity .35s;

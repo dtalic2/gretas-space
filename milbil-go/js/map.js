@@ -2,25 +2,27 @@
 //
 // Two layers:
 //
-//   plane    the street map. A big square of map tiles centred on you, tilted
-//            back with a CSS 3D transform and faded out at the edges into the
-//            sky. It's only ever looked at, never touched.
+//   plane    the street map. A rectangle of ground just big enough to fill the
+//            screen, tilted back with a CSS 3D transform and faded into the sky
+//            at the far edge. The map tiles inside it turn when you turn the
+//            map. It's only ever looked at, never touched.
 //   sprites  you, the milbils and the shops. These are flat, upright pictures
 //            in an ordinary 2D layer. Their screen positions come from running
 //            each one's latitude/longitude through the same maths as the CSS
 //            transform, so they sit exactly on the tilted map — but they stay
 //            upright, shrink with distance, and are trivially tappable.
 //
-// The map is always centred on you. One finger turns it, two fingers zoom.
-// If the tile server can't be reached, the plane still shows a grassy field,
-// so the game is playable without a map.
+// The camera is set in metres, not map zoom levels: the screen shows a patch of
+// ground VIEW_W metres across at your feet and VIEW_L metres from the bottom of
+// the screen to the horizon. One finger turns the map, two fingers zoom out a
+// bit if you want to look around. If the tile server can't be reached, the
+// plane is plain grass, so the game is still playable without a map.
 
-import { toWorld, metersPerPixel } from './geo.js';
+import { toWorld } from './geo.js';
 
 const TILE = 256;
 const MAX_NATIVE = 19;
-const ZOOM = 19.1;        // where the map starts: close in, because the game world is park-sized
-const MIN_ZOOM = 18.4, MAX_ZOOM = 19.9;   // past 19 the tiles are just enlarged
+const MIN_OFFSET = -2, MAX_OFFSET = 0.6;   // how far pinching may zoom out / in (powers of 2)
 const TEXTURE_MAX = 4000; // device pixels: just under the 4096 many GPUs allow
 const D2R = Math.PI / 180;
 
@@ -36,11 +38,14 @@ const PROVIDERS = [
 ];
 
 export class MapView {
-  constructor(root, { onTap } = {}){
+  constructor(root, { onTap, viewW = 5, viewL = 15 } = {}){
     this.root = root;
     this.onTap = onTap || (() => {});
     this.center = { lat: 0, lng: 0 };
-    this.zoom = ZOOM;
+    this.viewW = viewW;    // metres across the screen, at your feet
+    this.viewL = viewL;    // metres from the bottom of the screen to the horizon
+    this.zoomOffset = 0;   // pinch: 0 is the set view, -1 shows twice as much
+    this.zoom = 0;         // the map zoom level that works out to, for the tiles
     this.bearing = 0;      // degrees; turns the map on screen
     this.tilt = 50;        // degrees the ground is tipped back
     this.reachM = 45;
@@ -53,12 +58,13 @@ export class MapView {
 
     root.classList.add('map');
     root.innerHTML = `
-      <div class="map-ground"><div class="map-plane"><div class="map-tiles"></div><div class="map-ring"></div></div></div>
+      <div class="map-ground"><div class="map-plane"><div class="map-turn"><div class="map-tiles"></div></div><div class="map-ring"></div></div></div>
       <div class="map-sky"></div>
       <div class="map-sprites"></div>
       <div class="map-attrib">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</div>`;
     this.ground = root.querySelector('.map-ground');
     this.plane = root.querySelector('.map-plane');
+    this.turn = root.querySelector('.map-turn');
     this.tileLayer = root.querySelector('.map-tiles');
     this.ring = root.querySelector('.map-ring');
     this.spriteLayer = root.querySelector('.map-sprites');
@@ -96,22 +102,41 @@ export class MapView {
   /** Everything the frame needs, worked out once. */
   _frame(){
     const W = this.root.clientWidth, H = this.root.clientHeight;
-    const zi = Math.max(2, Math.min(MAX_NATIVE, Math.round(this.zoom)));
-    const s = Math.pow(2, this.zoom - zi);
     const th = this.tilt * D2R, be = this.bearing * D2R;
+    const cth = Math.cos(th), sth = Math.sin(th);
     const P = Math.max(560, H * 1.05);
     const ax = W / 2, ay = H * 0.64;
 
-    // How far up the tipped plane do we need tiles before the sky takes over?
-    // Invert the projection at the corners of the screen just under the sky.
-    const reachUp = (sx, sy) => {
-      const den = P * Math.cos(th) - sy * Math.sin(th);
-      const d = den > 1 ? sy * P / den : 1e5;
-      return Math.hypot(sx * (P + d * Math.sin(th)) / P, d);
-    };
-    const R = Math.min(2300, Math.max(700, reachUp(W / 2, ay - H * 0.2), reachUp(W / 2, -(H - ay)) ));
-    return { W, H, zi, s, th, be, P, ax, ay, R, c: toWorld(this.center.lat, this.center.lng, zi),
-             cos: Math.cos(be), sin: Math.sin(be), cth: Math.cos(th), sth: Math.sin(th) };
+    // Screen pixels per metre at your feet, and the zoom level that gives it.
+    const ppm0 = W / this.viewW;
+    const ppm = ppm0 * Math.pow(2, this.zoomOffset);
+    const zoom = Math.log2(156543.03392 * Math.cos(this.center.lat * D2R) * ppm);
+    const zi = Math.max(2, Math.min(MAX_NATIVE, Math.round(zoom)));
+    const s = Math.pow(2, zoom - zi);
+    this.zoom = zoom;
+
+    // How much ground the screen shows, in screen px along the tipped plane:
+    // `behind` reaches the bottom edge of the screen, `ahead` the rest of the
+    // VIEW_L metres — but never so far that the horizon climbs over the top
+    // 18% of the screen, which is the sky's.
+    const below = H - ay;
+    const behind = below * P / (P * cth + below * sth);
+    const above = ay - H * 0.18;
+    const den = P * cth - above * sth;
+    let ahead = Math.max(100, this.viewL * ppm0 - behind);
+    if (den > 1) ahead = Math.min(ahead, above * P / den);
+
+    // The plane is drawn as one texture, and phones and graphics cards won't
+    // draw textures past about 4096 pixels — the overflow just goes missing.
+    // Keep its size times the screen's pixel density under that.
+    const most = TEXTURE_MAX / Math.max(1, window.devicePixelRatio || 1);
+    ahead = Math.min(ahead, most - behind - 30);
+    const PH = ahead + behind + 30;
+    const PW = Math.min(most, 2 * (W / 2 + 24) * (P + ahead * sth) / P);
+
+    return { W, H, zi, s, th, be, P, ax, ay, ppm, ahead, behind, PW, PH,
+             c: toWorld(this.center.lat, this.center.lng, zi),
+             cos: Math.cos(be), sin: Math.sin(be), cth, sth };
   }
 
   /** Screen position and size factor of a lat/lng under frame f. */
@@ -143,33 +168,33 @@ export class MapView {
     const f = this._frame();
     if (!f.W) return;
 
-    // ground
-    // The plane is drawn as one big texture, and phones and graphics cards
-    // refuse textures past about 4096 pixels: the overflow just isn't drawn.
-    // Cap it so its size times the screen's pixel density stays under that,
-    // and let the sky and the faded edge cover the rest.
-    const S = Math.min(Math.floor(TEXTURE_MAX / Math.max(1, window.devicePixelRatio || 1)),
-                       Math.ceil(2 * f.R / f.s / 2) * 2);
+    // ground: the plane's far edge is the horizon, its pivot is under your feet
     this.ground.style.perspective = `${f.P}px`;
     this.ground.style.perspectiveOrigin = `${f.ax}px ${f.ay}px`;
     const ps = this.plane.style;
-    ps.width = ps.height = `${S}px`;
-    ps.left = `${f.ax - S / 2}px`;
-    ps.top = `${f.ay - S / 2}px`;
-    ps.transform = `rotateX(${this.tilt}deg) rotateZ(${this.bearing}deg) scale(${f.s})`;
+    ps.width = `${f.PW}px`;
+    ps.height = `${f.PH}px`;
+    ps.left = `${f.ax - f.PW / 2}px`;
+    ps.top = `${f.ay - f.ahead}px`;
+    ps.transformOrigin = `${f.PW / 2}px ${f.ahead}px`;
+    ps.transform = `rotateX(${this.tilt}deg)`;
+    const ts = this.turn.style;
+    ts.left = `${f.PW / 2}px`;
+    ts.top = `${f.ahead}px`;
+    ts.transform = `rotateZ(${this.bearing}deg) scale(${f.s})`;
 
-    this._tiles(f, S);
+    this._tiles(f);
 
-    const r = this.reachM / metersPerPixel(this.center.lat, f.zi);
+    // Your reach, as a circle on the ground round your feet.
+    const r = this.reachM * f.ppm;
     const rs = this.ring.style;
     rs.width = rs.height = `${2 * r}px`;
-    rs.left = `${S / 2 - r}px`;
-    rs.top = `${S / 2 - r}px`;
+    rs.left = `${f.PW / 2 - r}px`;
+    rs.top = `${f.ahead - r}px`;
 
-    // sprites
-    const fade = Math.min(f.R, S / 2 * f.s) * 0.8;   // beyond this the sky has them
-    // Pins and milbils shrink as you zoom out, or the map turns into a wall of them.
-    const zf = Math.max(0.55, Math.min(1.15, Math.pow(2, (this.zoom - ZOOM) * 0.8)));
+    // sprites: gone past the horizon, and smaller when you've zoomed out
+    const fade = f.ahead;
+    const zf = Math.max(0.45, Math.min(1.2, Math.pow(2, this.zoomOffset * 0.8)));
     for (const sp of this.sprites.values()){
       const p = this._project(f, sp.lat, sp.lng);
       const off = p.far > fade || p.x < -80 || p.x > f.W + 80 || p.y < -40 || p.y > f.H + 160;
@@ -178,17 +203,20 @@ export class MapView {
       const k = Math.max(0.45, Math.min(1.25, p.k)) * zf;
       sp.el.style.transform = `translate3d(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px,0) scale(${k.toFixed(3)})`;
       sp.el.style.zIndex = String(Math.round(p.y));
-      sp.el.style.opacity = p.far > fade * 0.75 ? String(Math.max(0, (fade - p.far) / (fade * 0.25))) : '';
+      sp.el.style.opacity = p.far > fade * 0.8 ? String(Math.max(0, (fade - p.far) / (fade * 0.2))) : '';
     }
   }
 
-  _tiles(f, S){
+  _tiles(f){
     const ox = Math.floor(f.c.x / TILE), oy = Math.floor(f.c.y / TILE);
-    // Slide the whole tile layer so the centre point lands mid-plane.
+    // Slide the tile layer so the point under your feet sits on the pivot.
     this.tileLayer.style.transform =
-      `translate3d(${(ox * TILE - f.c.x + S / 2).toFixed(2)}px,${(oy * TILE - f.c.y + S / 2).toFixed(2)}px,0)`;
+      `translate(${(ox * TILE - f.c.x).toFixed(3)}px,${(oy * TILE - f.c.y).toFixed(3)}px)`;
 
-    const key = `${f.zi}/${ox}/${oy}/${S}`;
+    // Tiles to cover the plane however the map is turned: a disc round you.
+    const rz = Math.hypot(f.PW / 2, Math.max(f.ahead, f.behind + 30)) / f.s;
+    const half = rz / TILE + 0.5;
+    const key = `${f.zi}/${ox}/${oy}/${Math.ceil(half)}`;
     if (key === this.tileKey && this.tileOrigin) return;
     const zoomChanged = this.tileZ !== f.zi;
     this.tileKey = key;
@@ -203,12 +231,11 @@ export class MapView {
     }
     this.tileOrigin = { x: ox, y: oy };
 
-    const half = S / 2 / TILE + 0.5;
     const n = Math.pow(2, f.zi);
     const want = new Set();
     for (let dy = -Math.ceil(half); dy <= Math.ceil(half); dy++){
       for (let dx = -Math.ceil(half); dx <= Math.ceil(half); dx++){
-        if (Math.hypot(dx + 0.5, dy + 0.5) > half + 0.8) continue;   // a disc is all that shows
+        if (Math.hypot(dx + 0.5, dy + 0.5) > half + 0.8) continue;
         const x = ox + dx, y = oy + dy;
         if (y < 0 || y >= n) continue;
         const k = `${f.zi}/${x}/${y}`;
@@ -265,7 +292,7 @@ export class MapView {
         rot = { x: e.clientX, bearing: this.bearing, sign: above ? 1 : -1 };
       } else if (pts.size === 2){
         tap = null; rot = null;
-        pinch = { d: twoDist(), zoom: this.zoom };
+        pinch = { d: twoDist(), off: this.zoomOffset };
       }
     });
     el.addEventListener('pointermove', (e) => {
@@ -273,7 +300,7 @@ export class MapView {
       if (!p) return;
       p.x = e.clientX; p.y = e.clientY;
       if (pinch && pts.size >= 2){
-        this.zoom = clamp(pinch.zoom + Math.log2(twoDist() / pinch.d), MIN_ZOOM, MAX_ZOOM);
+        this.zoomOffset = clamp(pinch.off + Math.log2(twoDist() / pinch.d), MIN_OFFSET, MAX_OFFSET);
       } else if (rot){
         if (tap && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > 10) tap = null;
         if (!tap) this.bearing = (rot.bearing + (e.clientX - rot.x) * 0.3 * rot.sign + 360) % 360;
@@ -295,7 +322,7 @@ export class MapView {
     el.addEventListener('pointercancel', end);
     el.addEventListener('wheel', (e) => {
       e.preventDefault();
-      this.zoom = clamp(this.zoom - e.deltaY * 0.0025, MIN_ZOOM, MAX_ZOOM);
+      this.zoomOffset = clamp(this.zoomOffset - e.deltaY * 0.0025, MIN_OFFSET, MAX_OFFSET);
     }, { passive: false });
   }
 }

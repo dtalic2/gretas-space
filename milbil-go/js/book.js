@@ -3,7 +3,7 @@
 import { SPECIES, SPECIES_BY_ID, RARITY, RARITY_ORDER, CROPS, ANIMALS, CHARMS, TOOLS, DECOR,
          SHOP_TYPES, OWN_TREE } from './data.js';
 import { milbilHTML } from './milbil.js';
-import { fmtNum } from './format.js';
+import { fmtNum, fmtDist } from './format.js';
 import { esc, toast, card, sfx } from './ui.js';
 import { shopBadge } from './shops.js';
 
@@ -130,7 +130,7 @@ export function tickNearby(G){ if (G.sheet.is('nearby') && !G.sheet.pressing) G.
 function renderNearby(G, tab){
   const reach = G.M().reach;
   const arrow = (b) => `<span class="arrow" style="transform:rotate(${Math.round(b - G.mapBearing())}deg)">⬆</span>`;
-  const dist = (d) => d <= reach ? '<span class="in">In reach!</span>' : `${fmtNum(Math.round(d))} m`;
+  const dist = (d) => d <= reach ? '<span class="in">In reach!</span>' : fmtDist(d);
   if (tab === 'shops'){
     const list = G.nearShops().slice(0, 25);
     if (!list.length) return `<p class="note big">No shops nearby — try walking a little way.</p>`;

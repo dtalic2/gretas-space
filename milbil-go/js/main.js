@@ -1,6 +1,7 @@
 // ---------- Milbil GO — start-up, GPS, and the game loop ----------
 
-import { SPECIES_BY_ID, RARITY, SHOP_TYPES, SHOW_SHOPS_M, SHOW_MILBILS_M, XP_NEW_SPECIES } from './data.js';
+import { SPECIES_BY_ID, RARITY, SHOP_TYPES, SHOW_SHOPS_M, SHOW_MILBILS_M, XP_NEW_SPECIES,
+         VIEW_W_M, VIEW_L_M } from './data.js';
 import * as Store from './state.js';
 import { MapView } from './map.js';
 import { shopsNear, milbilsNear, distance, bearingTo, offset } from './geo.js';
@@ -11,11 +12,11 @@ import { Sheet, toast, clearToasts, card, sfx, setSound, setBuzz, buzz, $, esc }
 import { openGarden, tickGarden, restockTree, gardenNeeds } from './gardenview.js';
 import { openShop, tickShop } from './shops.js';
 import { openBook, openBag, openNearby, tickNearby, openSettings, howToPlay, foundCount } from './book.js';
-import { fmtNum } from './format.js';
+import { fmtNum, fmtDist } from './format.js';
 
 // Where you start if the game has never had a location: a big open field.
 const DEFAULT_POS = { lat: -33.8985, lng: 151.2341 };   // Centennial Park, Sydney
-const PAD_SPEED = 4;          // metres per second on the joystick — a quick walk
+const PAD_SPEED = 0.5;        // metres per second on the joystick — a stroll across a 5 m screen
 const STARTERS = ['sprouty', 'freckles', 'giggle'];
 const NAMES = ['Pib', 'Nuzz', 'Moby', 'Tuffet', 'Plum', 'Bobbin', 'Wix', 'Doodle', 'Crumb', 'Pocket',
                'Snug', 'Fen', 'Biscuit', 'Tam', 'Ollo', 'Peep', 'Sprig', 'Noodle', 'Tumble', 'Winkle'];
@@ -25,14 +26,14 @@ let M = Store.mods(state);
 let dirty = false;
 
 const sheet = new Sheet($('#sheet'));
-const map = new MapView($('#map'), { onTap: onMapTap });
+const map = new MapView($('#map'), { onTap: onMapTap, viewW: VIEW_W_M, viewL: VIEW_L_M });
 
 let pos = state.lastPos || DEFAULT_POS;   // where you really are
 let shown = { ...pos };                    // where your milbil is drawn, easing toward pos
 const gps = { status: 'off', acc: null, watch: null, fixes: 0, good: false };
 let walkFrom = null;
 let shops = [], wild = [];
-const inReachBefore = new Set();
+const spotted = new Set();       // milbils that have already buzzed you
 let inEncounter = false;
 let started = false;
 let wiping = false;
@@ -114,7 +115,7 @@ $('#gardenBtn').addEventListener('click', () => { sfx('tap'); openGarden(G); });
 $('#bagBtn').addEventListener('click', () => { sfx('tap'); openBag(G); });
 $('#nearbyBtn').addEventListener('click', () => { sfx('tap'); openNearby(G); });
 $('#settingsBtn').addEventListener('click', () => { sfx('tap'); openSettings(G); });
-$('#compass').addEventListener('click', () => { sfx('tap'); spinTo(0); });
+$('#compass').addEventListener('click', () => { sfx('tap'); spinTo(0); map.zoomOffset = 0; });
 
 function spinTo(target){
   const from = map.bearing;
@@ -169,12 +170,15 @@ function refreshWorld(){
     }
     const near = distance(shown, w) <= M.reach;
     map.sprites.get(w.id).el.classList.toggle('near', near);
-    if (near && !inReachBefore.has(w.id) && !inEncounter){
+    // Buzz once per milbil. With the whole game a few metres across, GPS wobble
+    // carries you in and out of reach constantly, and re-buzzing each time is noise.
+    if (near && !spotted.has(w.id) && !inEncounter){
+      spotted.add(w.id);
       sfx('spot');
       buzz(60);
     }
-    if (near) inReachBefore.add(w.id); else inReachBefore.delete(w.id);
   }
+  for (const id of spotted) if (!want.has(id)) spotted.delete(id);
   for (const id of [...map.sprites.keys()]) if (!want.has(id)) map.removeSprite(id);
 }
 
@@ -188,9 +192,9 @@ function tapThing(id){
   const w = wild.find(x => x.id === id);
   if (w){
     const d = distance(shown, w);
-    if (d <= M.reach) return startEncounter(w);
+    if (d <= M.reach * 1.3) return startEncounter(w);   // a little slack for GPS wobble
     sfx('nope');
-    toast(`🚶 That milbil is ${fmtNum(Math.round(d))} m away — walk ${fmtNum(Math.ceil(d - M.reach))} m closer!`);
+    toast(`🚶 That milbil is ${fmtDist(d)} away — walk ${fmtDist(d - M.reach)} closer!`);
     const el = map.sprites.get(id)?.el;
     if (el){ el.classList.remove('nudge'); void el.offsetWidth; el.classList.add('nudge'); }
     return;
@@ -203,7 +207,7 @@ function tapThing(id){
 function ensureStarters(){
   if (state.starters !== null) return;
   state.starters = STARTERS.map((species, i) => {
-    const p = offset(pos, Math.sin((40 + i * 120) * Math.PI / 180) * 13, Math.cos((40 + i * 120) * Math.PI / 180) * 13);
+    const p = offset(pos, Math.sin((40 + i * 120) * Math.PI / 180) * 0.75, Math.cos((40 + i * 120) * Math.PI / 180) * 0.75);
     return { id: `starter-${species}`, species, lat: p.lat, lng: p.lng };
   });
   dirty = true;
@@ -369,7 +373,9 @@ function frame(t){
   const gap = distance(shown, pos);
   if (gap > 400) shown = { ...pos };
   else {
-    const k = 1 - Math.exp(-dt / (state.mode === 'pad' ? 0.06 : 0.6));
+    // GPS jumps by metres even standing still, which is a third of the screen
+    // here, so ease toward each fix slowly.
+    const k = 1 - Math.exp(-dt / (state.mode === 'pad' ? 0.06 : 2.5));
     shown = { lat: shown.lat + (pos.lat - shown.lat) * k, lng: shown.lng + (pos.lng - shown.lng) * k };
   }
   // Walk animation and which way you face.

@@ -59,3 +59,10 @@ const trimZeros = (s) => s.includes('.') ? s.replace(/\.?0+$/, '') : s;
 
 /** Seconds as "45s" or "4m 20s". */
 export const fmtTime = (s) => s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`;
+
+/** Distances: "80 cm", "2.4 m", "15 m". */
+export function fmtDist(m){
+  if (m < 1) return `${Math.max(10, Math.round(m * 10) * 10)} cm`;
+  if (m < 10) return `${m.toFixed(1)} m`;
+  return `${fmtNum(Math.round(m))} m`;
+}

@@ -7,7 +7,7 @@
 
 import { CROPS, SEED_SHOP, MAGIC_SEEDS, CHARMS, ANIMALS, DECOR, TOOLS, OWN_TREE, SHOP_TYPES,
          PLOT_MAX, plotCost } from './data.js';
-import { fmtNum, fmtTime } from './format.js';
+import { fmtNum, fmtTime, fmtDist } from './format.js';
 import { esc, toast, floatText, sfx } from './ui.js';
 
 export const shopBadge = (type, cls = '') => {
@@ -46,7 +46,10 @@ export function openShop(G, shop){
 export function tickShop(G){
   const shop = G.sheet.cur?.shop;
   if (!shop) return;
-  const now = G.distTo(shop) <= G.M().reach;
+  // A little slack before you count as gone, or GPS wobble at the edge of
+  // reach would flick the shop open and shut.
+  const d = G.distTo(shop), reach = G.M().reach;
+  const now = here ? d <= reach * 1.6 : d <= reach;
   if (now !== here && !G.sheet.pressing){
     here = now;
     if (now){ sfx('door'); toast(`✅ You're at ${esc(shop.name)}!`, 'good'); }
@@ -56,8 +59,8 @@ export function tickShop(G){
 
 function banner(G, shop){
   const d = G.distTo(shop), reach = G.M().reach;
-  if (d <= reach) return `<div class="near">✅ You're here — ${shop.type === 'market' ? 'sell away!' : 'shop away!'}</div>`;
-  return `<div class="far">🚶 ${fmtNum(Math.round(d))} m away. Walk ${fmtNum(Math.ceil(d - reach))} m closer to ${shop.type === 'market' ? 'sell' : 'buy'}.</div>`;
+  if (here) return `<div class="near">✅ You're here — ${shop.type === 'market' ? 'sell away!' : 'shop away!'}</div>`;
+  return `<div class="far">🚶 ${fmtDist(d)} away. Walk ${fmtDist(d - reach)} closer to ${shop.type === 'market' ? 'sell' : 'buy'}.</div>`;
 }
 
 const btn = (G, act, id, cost, label = coin(cost), cls = '') =>

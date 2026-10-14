@@ -54,10 +54,19 @@ In 3x3 Garden, the Magic Tree and Animal Pen stock was almost never available.
 Here **nothing is ever out of stock**, and on the map Magic Trees and Animal
 Shops are exactly as common as Seed Shops.
 
-The world is **small on purpose**, so you can play it in a park, a playground or
-a big back garden. Every kind of shop is usually about 35 m away, and almost
-always within 60 m. You only need to be within 30 m of a shop or milbil to use
-it, and standing still, a dozen or more milbils an hour wander into reach.
+The whole game fits on **one screen of ground: 5 m across and 15 m deep**. The
+screen shows 5 m from side to side at your feet, and 15 m from the bottom edge
+to the horizon. Everything is sized to match. Every kind of shop is about 2 m
+away, and never more than 5 m. You need to be within 1.7 m of a shop or milbil
+to use it, and standing still, about 16 milbils an hour wander into reach.
+Pinch to zoom out if you want to look around; the compass button puts the view
+back to 5 × 15 m.
+
+Phone GPS is only accurate to a few metres, which at this size is a big part of
+the screen. Outdoors, your milbil drifts about even while you stand still. The
+game smooths it out, buzzes only once for each milbil, and gives shops and
+catches a little slack at the edge of reach. The joystick has none of this
+wobble.
 
 You start with 10 coins and 4 carrot seeds. Catching a milbil also pays coins,
 so you can't end up stuck with nothing.
@@ -94,11 +103,11 @@ Your level is just a badge, because nothing is locked behind it.
 Nothing about the map is stored or downloaded. It's all worked out from latitude,
 longitude and the clock (`js/geo.js`):
 
-- The world is a grid of 34 m cells, grouped in blocks of 3×2. Each block holds
+- The world is a grid of 1.9 m cells, grouped in blocks of 3×2. Each block holds
   exactly one of every kind of shop plus an empty lot, shuffled differently in
   every block. So a Market or a Magic Tree is never more than a short walk away,
   and each shop is always in the same spot for everyone.
-- Each 25 m cell may get one wild milbil every five minutes. It turns up a little
+- Each 1.4 m cell may get one wild milbil every five minutes. It turns up a little
   after its window opens and wanders off 2–4 minutes later. Every cell runs on its
   own phase, so they don't all change at once. A caught milbil is remembered until
   it would have left, so it can't come back.
@@ -106,7 +115,9 @@ longitude and the clock (`js/geo.js`):
   game is shut.
 
 The map is OpenStreetMap's own street tiles, falling back to OpenStreetMap
-France's. Neither needs an API key or an account. Both ask for light use and a
+France's. At 5 m across, the screen is far closer than street maps are drawn
+for, so the map shows as soft patches of colour (road, grass, building) rather
+than crisp streets. Neither needs an API key or an account. Both ask for light use and a
 credit on screen, which is fine for a family game. If lots of people ever play
 it, switch to a tile service with a key. The map is tipped back with a CSS 3D
 transform to give the angled look. You, the milbils and the shops are a flat layer on top, placed with
