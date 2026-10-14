@@ -331,3 +331,63 @@ export const FILLS = ['#ffffff', '#fff6fa', '#f6fbff', '#fffbea', '#f4fff3', '#f
 export const CUSTOMER_HATS = ['', '', '', 'cap', 'beanie', 'party', 'sprout', 'straw', 'flowers', 'crown'];
 export const CUSTOMER_EYES = ['', '', 'happy', 'sparkle', 'big', 'wink', 'sleepy'];
 export const CUSTOMER_EXTRAS = ['', '', '', 'glasses', 'freckles', 'scarf', 'bow'];
+
+// ----------------------------------------------------------------- sign ---
+// Your restaurant's sign: a name, a font, a colour and a background. The
+// fonts (apart from Rounded) are in fonts/, so they look the same on every
+// device and work offline. `size` evens out how big each one looks.
+
+export const SIGN_FONTS = [
+  { id: 'rounded', name: 'Rounded', family: '',                 css: 'var(--font)',                     size: 1 },
+  { id: 'blocky',  name: 'Blocky',  family: 'Bungee',           css: "'Bungee', var(--font)",            size: .82 },
+  { id: 'swirly',  name: 'Swirly',  family: 'Pacifico',         css: "'Pacifico', cursive",              size: .9 },
+  { id: 'diner',   name: 'Diner',   family: 'Lobster',          css: "'Lobster', cursive",               size: 1.05 },
+  { id: 'cartoon', name: 'Cartoon', family: 'Chewy',            css: "'Chewy', var(--font)",             size: 1.05 },
+  { id: 'marker',  name: 'Marker',  family: 'Permanent Marker', css: "'Permanent Marker', cursive",       size: .95 },
+  { id: 'pixel',   name: 'Pixel',   family: 'Press Start 2P',   css: "'Press Start 2P', monospace",      size: .6 },
+  { id: 'neon',    name: 'Neon',    family: 'Monoton',          css: "'Monoton', var(--font)",           size: .85 },
+  { id: 'fancy',   name: 'Fancy',   family: 'Abril Fatface',    css: "'Abril Fatface', Georgia, serif",  size: 1 },
+  { id: 'spooky',  name: 'Spooky',  family: 'Creepster',        css: "'Creepster', var(--font)",         size: 1.1 },
+];
+
+export const SIGN_COLORS = [
+  { id: 'white',   css: '#ffffff' },
+  { id: 'ink',     css: '#2f2640' },
+  { id: 'red',     css: '#e5484d' },
+  { id: 'orange',  css: '#ff8a3c' },
+  { id: 'yellow',  css: '#ffd23f' },
+  { id: 'green',   css: '#3fae4a' },
+  { id: 'mint',    css: '#7be0b5' },
+  { id: 'blue',    css: '#2f80ed' },
+  { id: 'sky',     css: '#8fd3ff' },
+  { id: 'purple',  css: '#9b5de5' },
+  { id: 'pink',    css: '#ff6fa5' },
+  { id: 'gold',    css: '#f5c542', grad: 'linear-gradient(#fff3b0, #f5c542 55%, #d99a16)' },
+  { id: 'rainbow', css: '#ff6fa5', grad: 'linear-gradient(90deg, #ff4d6d, #ffb000, #3fae4a, #2f80ed, #9b5de5)' },
+];
+
+// `css` null means the restaurant's own colour, which changes as you move up.
+export const SIGN_BGS = [
+  { id: 'accent',  name: 'Restaurant colour', css: null },
+  { id: 'white',   name: 'White',      css: '#ffffff' },
+  { id: 'pink',    name: 'Pink',       css: '#ffb3cf' },
+  { id: 'yellow',  name: 'Yellow',     css: '#ffe08a' },
+  { id: 'mint',    name: 'Mint',       css: '#b6ecd0' },
+  { id: 'sky',     name: 'Sky',        css: '#bfe3ff' },
+  { id: 'lilac',   name: 'Lilac',      css: '#d9c6ff' },
+  { id: 'red',     name: 'Red',        css: '#e5484d' },
+  { id: 'navy',    name: 'Navy',       css: '#24304f' },
+  { id: 'chalk',   name: 'Chalkboard', css: '#2f3d36' },
+  { id: 'wood',    name: 'Wood',       css: 'repeating-linear-gradient(0deg, #b9824f 0 7px, #c9925d 7px 15px)' },
+  { id: 'neon',    name: 'Neon',       css: '#1b1530' },
+  { id: 'stripes', name: 'Stripes',    css: 'repeating-linear-gradient(45deg, #ff6f61 0 9px, #ffffff 9px 18px)' },
+  { id: 'dots',    name: 'Dots',       css: 'radial-gradient(#ffffffaa 24%, transparent 26%) 0 0 / 12px 12px, #ff8fab' },
+  { id: 'gold',    name: 'Gold',       css: 'linear-gradient(#ffe9a0, #f5c542 60%, #e0a52a)' },
+  { id: 'rainbow', name: 'Rainbow',    css: 'linear-gradient(90deg, #ff8fa3, #ffd166, #8be08f, #8fd3ff, #c3a6ff)' },
+];
+
+export const SIGN_NAMES = [
+  "{chef}'s Kitchen", "{chef}'s Diner", 'The Hungry Milbil', 'Milbil Munch', 'The Happy Plate',
+  'Nom Nom Café', 'The Cosy Spoon', 'Tasty Town', 'The Golden Pancake', 'Snack Shack',
+  'The Yummy Box', "Chef {chef}'s", 'The Wobbly Jelly', 'Crumbs & Co', 'The Sunny Side',
+];

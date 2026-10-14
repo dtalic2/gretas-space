@@ -78,6 +78,28 @@
     </div>
   </div>
 
+  <div id="signMaker" class="maker" hidden>
+    <div class="maker-card">
+      <div class="maker-top">
+        <h2 id="makerTitle">🪧 Your sign</h2>
+        <div class="maker-wall" id="makerWall"></div>
+      </div>
+      <div class="maker-body">
+        <label class="name-row">
+          <span>Restaurant name</span>
+          <span class="name-input"><input id="signName" maxlength="24" autocomplete="off" spellcheck="false"><button type="button" id="signDice" aria-label="Random name">🎲</button></span>
+        </label>
+        <h3 class="maker-h">Font</h3>
+        <div class="font-grid" id="signFonts"></div>
+        <h3 class="maker-h">Colour</h3>
+        <div class="swatches left" id="signColors"></div>
+        <h3 class="maker-h">Background</h3>
+        <div class="bg-grid" id="signBgs"></div>
+      </div>
+      <button type="button" class="btn go big" id="signDone">✓ Done</button>
+    </div>
+  </div>
+
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

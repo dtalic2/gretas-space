@@ -11,6 +11,7 @@ import { Kitchen } from './kitchen.js';
 import { menuDishSVG, ingredientSVG } from './food.js';
 import { drawLook, chefLook, customerHTML } from './milbil.js';
 import { $, esc, toast, floatText, Sheet, card, sfx, setSound } from './ui.js';
+import { openSignMaker, setupSignMaker, signName } from './sign.js';
 
 load();
 setSound(S.sound);
@@ -93,6 +94,22 @@ const game = {
   },
 
   offerTable(){ offerTable(); },
+
+  /** The sign maker. Nobody new comes in while you're designing. */
+  openSign(first = false){
+    sfx('tap');
+    sheet.close();
+    this.room.paused = true;
+    openSignMaker({
+      first,
+      onChange: () => this.room.renderSign(),
+      onClose: () => {
+        this.room.paused = false;
+        this.room.renderSign();
+        if (first) this.room.nextSpawn = this.room.now + 1;
+      },
+    });
+  },
 };
 
 // ---------------------------------------------------------------- HUD ---
@@ -308,10 +325,11 @@ function openSettings(){
   sheet.show({
     key: 'settings', icon: '⚙️',
     title: 'Settings',
-    sub: () => `${esc(S.name)}'s ${tier().name}`,
+    sub: () => esc(signName()),
     render: () => `
       <div class="set-row"><span>🔊 Sound</span><button type="button" class="btn ${S.sound ? 'go' : ''}" data-act="sound">${S.sound ? 'On' : 'Off'}</button></div>
       <div class="set-row"><span>🎨 Your chef</span><button type="button" class="btn" data-act="chef">Change</button></div>
+      <div class="set-row"><span>🪧 Restaurant sign</span><button type="button" class="btn" data-act="sign">Change</button></div>
       <div class="set-row"><span>❓ How to play</span><button type="button" class="btn" data-act="how">Show me</button></div>
       <div class="stats">
         <div><b>${fmt(S.served)}</b><small>dishes served</small></div>
@@ -322,6 +340,7 @@ function openSettings(){
     onAct: async (act) => {
       if (act === 'sound'){ S.sound = !S.sound; setSound(S.sound); save(); sfx('tap'); sheet.render(); }
       if (act === 'chef'){ sheet.close(); showWelcome(true); }
+      if (act === 'sign') game.openSign();
       if (act === 'how'){ sheet.close(); howToPlay(); }
       if (act === 'wipe'){
         const yes = await card(`<h3>Start a brand new restaurant?</h3><p>You'll lose your coins, tables, machines and restaurant, and go back to a Little Café. Your chef stays.</p>`,
@@ -377,13 +396,14 @@ function showWelcome(editing = false){
     game.room.build();
     game.kitchen.drawChef();
     hud();
-    if (first) game.room.nextSpawn = game.room.now + 1;
+    if (first) game.openSign(true);
   };
   w.hidden = false;
 }
 
 // --------------------------------------------------------------- boot ---
 
+setupSignMaker();
 game.kitchen = new Kitchen(game);
 game.room = new Restaurant(game);
 game.kitchen.drawChef();

@@ -18,6 +18,26 @@ Tap **Add to Home Screen** on a phone and it opens full screen like an app.
 
 ---
 
+## Your sign
+
+When you first open your café you make its sign. **Type your restaurant's name**
+(🎲 suggests one, like *The Hungry Milbil* or *Greta's Kitchen*), then pick:
+
+- **A font:** Rounded, Blocky, Swirly, Diner, Cartoon, Marker, Pixel, Neon, Fancy or Spooky
+- **A colour** for the writing, including gold and rainbow
+- **A background:** the restaurant's own colour, eight plain colours, a chalkboard,
+  wood, glowing neon, candy stripes, polka dots, gold or rainbow
+
+The sign hangs over the dining room and changes as you choose. Long names
+shrink and wrap onto two lines to fit. Tap the sign (it has a ✏️) or use
+⚙️ Settings → **Restaurant sign** to change it any time. Leave the name empty and
+it says "Greta's Little Café", which moves up with the restaurant.
+
+The fonts are in `fonts/`, so they look the same on every phone and tablet and
+work offline. They're free fonts from Google Fonts (Bungee, Pacifico, Lobster,
+Chewy, Permanent Marker, Press Start 2P, Monoton, Abril Fatface and Creepster),
+with each one's licence beside it.
+
 ## How it plays
 
 1. **A customer comes in** and sits at a free table. A red **!** means they're
@@ -104,12 +124,13 @@ Greta draws them, with the same code as Milbil GO.
 
 | File | What's in it |
 | --- | --- |
-| `js/data.js` | Every number: ingredients, actions and their gestures, the 20 recipes, restaurants, table and machine prices |
+| `js/data.js` | Every number: ingredients, actions and their gestures, the 20 recipes, restaurants, table and machine prices, sign fonts, colours and backgrounds |
 | `js/food.js` | Ingredient icons, how cooked food looks on a dish, plates and bowls, stations (board, pan, pot, blender, toaster) and tools |
 | `js/kitchen.js` | Dragging from the shelf, swipe detection, cooking each step, and checking the dish when you serve it |
 | `js/restaurant.js` | The dining room: customers walking in, ordering, eating and paying; your chef carrying food out |
 | `js/milbil.js` | Draws a milbil as SVG, including your chef's hat and apron |
 | `js/main.js` | Start-up, the menu, orders, upgrades and settings, and the game loop |
+| `js/sign.js` | Your restaurant's sign, fitting it to the wall, and the sign maker |
 | `js/state.js` | Saving, and spending and earning coins |
 | `js/ui.js` | Sheets, pop-up cards, toasts and sounds |
 

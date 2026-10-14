@@ -20,6 +20,7 @@ const fresh = () => ({
   earned: 0,
   perfect: {},          // dish id -> how many you've served
   sound: true,
+  sign: { name: '', font: 'rounded', color: 'white', bg: 'accent' },
 });
 
 export const S = fresh();
@@ -33,6 +34,7 @@ export function load(){
   S.tables = Math.min(Math.max(START_TABLES, S.tables | 0), START_TABLES + TABLE_COSTS.length);
   S.machines = Math.min(Math.max(0, S.machines | 0), MACHINE_COSTS.length);
   S.coins = Math.max(0, Math.round(Number(S.coins) || 0));
+  S.sign = { ...fresh().sign, ...(S.sign && typeof S.sign === 'object' ? S.sign : {}) };
 }
 
 export function save(){
@@ -40,7 +42,7 @@ export function save(){
 }
 
 export function wipe(){
-  const keep = { name: S.name, color: S.color, sound: S.sound };
+  const keep = { name: S.name, color: S.color, sound: S.sound, sign: S.sign };
   Object.assign(S, fresh(), keep, { started: true });
   save();
 }

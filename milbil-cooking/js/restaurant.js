@@ -12,6 +12,7 @@ import { S, tier, menu, nextTableCost, fmt } from './state.js';
 import { customerHTML, randomLook, drawLook, chefLook } from './milbil.js';
 import { menuDishSVG, dishSVG } from './food.js';
 import { $, esc, sfx, floatText } from './ui.js';
+import { signHTML, fitSign } from './sign.js';
 
 const SPEED = 190;          // walking, in pixels a second
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -101,9 +102,7 @@ export class Restaurant {
     for (const [k, v] of Object.entries({ wall: T.wall, wall2: T.wall2, floor: T.floor, floor2: T.floor2, accent: T.accent })) R.style.setProperty(`--${k}`, v);
     R.dataset.tier = T.n;
     R.innerHTML = `
-      <div class="wall">${wallDecor(T)}
-        <div class="sign"><small>${esc(S.name || 'Milbil')}'s</small><b>${T.name}</b></div>
-      </div>
+      <div class="wall">${wallDecor(T)}${signHTML('', '<i class="sign-edit">✏️</i>')}</div>
       <div class="floor"></div>
       <div class="stage" id="stage"></div>
       <div class="counter" id="counter">
@@ -142,6 +141,7 @@ export class Restaurant {
     this.room.style.setProperty('--wallH', `${wallH}px`);
     this.room.style.setProperty('--counterH', `${counterH}px`);
     this.W = W; this.H = H; this.wallH = wallH; this.counterH = counterH;
+    this.fitSign();
 
     // Door and machines along the back wall, on the left.
     const doorW = clamp(W * 0.13, 44, 64), doorH = doorW * 1.66;
@@ -202,6 +202,21 @@ export class Restaurant {
       if (c.target != null){ const p = this.pos(c.target); c.x = p.x; c.y = p.y; }
       this.placeCust(c, animate && !!c.arrive);
     }
+  }
+
+  /** Redraw just the sign, after you've changed it. */
+  renderSign(){
+    $('.wall .sign', this.room)?.remove();
+    $('.wall', this.room).insertAdjacentHTML('beforeend', signHTML('', '<i class="sign-edit">✏️</i>'));
+    this.fitSign();
+  }
+
+  // Centred at 60% across the wall, clear of the door, above the windows.
+  fitSign(){
+    if (!this.W) return;
+    const doorRight = 10 + Math.max(44, Math.min(this.W * 0.13, 64));
+    const half = Math.min(this.W * 0.6 - doorRight - 10, this.W * 0.4 - 18);
+    fitSign($('.wall .sign', this.room), half * 2, this.wallH * 0.36, 24);
   }
 
   put(el, x, y, w, z){
@@ -397,6 +412,7 @@ export class Restaurant {
 
   tick(now){
     this.now = now;
+    if (this.paused) this.nextSpawn = Math.max(this.nextSpawn, now + 1);
     if (now >= this.nextSpawn){
       this.nextSpawn = now + (this.spawn() ? spawnGap(S.tables, S.machines) : 1);
     }
@@ -430,6 +446,7 @@ export class Restaurant {
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'kitchen') return this.game.openKitchen();
     if (act === 'buy-table') return this.game.offerTable();
+    if (e.target.closest('.sign')) return this.game.openSign();
     if (e.target.closest('.kiosk')) return this.game.openOrders();
     if (e.target.closest('.counter')) return this.game.openKitchen();
     const el = e.target.closest('.cust');
