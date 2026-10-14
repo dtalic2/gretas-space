@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#6b35c9">
+  <title>Milbil Café</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Titan+One&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app" class="app">
+    <header class="topbar">
+      <button type="button" id="menuBtn" class="tb-btn icon" aria-label="Settings">⚙️</button>
+      <div class="cash-pill" id="cashPill"><small>Cash</small><b id="cash">$0</b></div>
+      <button type="button" id="rankBtn" class="tb-btn rank" aria-label="Leaderboard"><span>🏆</span><b>1st</b></button>
+      <button type="button" id="shopBtn" class="tb-btn shop"><span>🛒</span><b>Shop</b></button>
+    </header>
+
+    <main id="scene" class="scene" data-lv="1">
+      <div class="wall">
+        <div class="window"><i></i></div>
+        <div class="sign"><span id="signName">Milbil Café</span></div>
+        <div class="door"><i></i></div>
+        <div class="lights"></div>
+      </div>
+      <div class="ground"></div>
+      <div class="decor plant l">🪴</div>
+      <div class="decor plant r">🪴</div>
+      <div id="floor" class="floor"></div>
+      <div id="happyBanner" class="happy-banner" hidden></div>
+      <div id="hint" class="hint" hidden></div>
+    </main>
+
+    <section class="counter">
+      <div id="tray" class="tray"></div>
+      <button type="button" id="restockBtn" class="restock"><span>🍽️ Restock Food</span><kbd>Space</kbd></button>
+    </section>
+  </div>
+
+  <div id="quiz" class="quiz" hidden></div>
+  <div id="sheet" class="sheet" hidden></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <div id="welcome" class="welcome">
+    <div class="welcome-card">
+      <h1 class="logo"><span>Milbil</span> Café</h1>
+      <div class="welcome-art" id="welcomeArt"></div>
+      <p class="lead">Hungry milbils are coming in for breakfast! <b>Tap a milbil</b> to serve it. Out of food? <b>Restock Food</b> by answering a question. Spend your cash in the <b>Shop</b> on new food and upgrades.</p>
+      <label class="name-row">
+        <span>Your name</span>
+        <input id="nameInput" maxlength="12" autocomplete="off" spellcheck="false" placeholder="Greta">
+      </label>
+      <div class="qpick" id="welcomeQ"></div>
+      <button type="button" id="playBtn" class="btn-play">Open the café!</button>
+      <p class="welcome-save" id="welcomeSave"></p>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

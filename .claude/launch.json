@@ -36,6 +36,15 @@
         "8127"
       ],
       "port": 8127
+    },
+    {
+      "name": "milbil-cafe",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "milbil-cafe/serve.py",
+        "8128"
+      ],
+      "port": 8128
     }
   ]
 }
