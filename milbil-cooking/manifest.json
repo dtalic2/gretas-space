@@ -1,0 +1,15 @@
+{
+  "name": "Milbil Cooking",
+  "short_name": "Milbil Cooking",
+  "description": "Cook for hungry milbils: follow the recipe, drag the ingredients down and swipe to chop, mash and stir. Grow from a little café to the Milbil Palace.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#fff4e8",
+  "theme_color": "#ffe7d1",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

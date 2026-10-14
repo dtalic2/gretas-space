@@ -45,6 +45,15 @@
         "8128"
       ],
       "port": 8128
+    },
+    {
+      "name": "milbil-cooking",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "milbil-cooking/serve.py",
+        "8129"
+      ],
+      "port": 8129
     }
   ]
 }

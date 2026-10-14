@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <clipPath id="r"><rect width="512" height="512" rx="112"/></clipPath>
+  <g clip-path="url(#r)">
+  <rect width="512" height="512" fill="#ffd9b8"/>
+  <rect y="352" width="512" height="160" fill="#ff8a5c"/>
+  <rect y="336" width="512" height="28" fill="#f6dcb6"/>
+  <g stroke="#ff6fa5" stroke-linecap="round" fill="none" stroke-width="16">
+    <path d="M186 250 L130 196 M130 196 l-24 -18 M130 196 l-6 -30"/>
+    <path d="M326 250 L382 196 M382 196 l24 -18 M382 196 l6 -30"/>
+  </g>
+  <g transform="translate(0 14)">
+  <g fill="#fff" stroke="#d9d4e4" stroke-width="6">
+    <circle cx="206" cy="78" r="44"/><circle cx="306" cy="78" r="44"/><circle cx="256" cy="56" r="56"/>
+    <rect x="194" y="78" width="124" height="54" rx="8"/>
+  </g>
+  <rect x="186" y="132" width="140" height="230" rx="16" fill="none" stroke="#ff6fa5" stroke-width="30" opacity=".3"/>
+  <rect x="186" y="132" width="140" height="230" rx="16" fill="#fff" stroke="#ff6fa5" stroke-width="12"/>
+  <path d="M186 250 H326" stroke="#ff6fa5" stroke-width="10"/>
+  <path d="M210 254 H302 V352 H210Z" fill="#ffd7e2"/>
+  <path d="M220 184 q12 -16 24 0 M268 184 q12 -16 24 0" stroke="#2b2233" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <circle cx="208" cy="214" r="11" fill="#ff8fab" opacity=".6"/><circle cx="304" cy="214" r="11" fill="#ff8fab" opacity=".6"/>
+  <path d="M236 208 Q256 236 276 208Z" fill="#2b2233"/>
+  </g>
+  <ellipse cx="256" cy="420" rx="150" ry="18" fill="#0000001f"/>
+  <path d="M120 330 Q124 430 256 432 Q388 430 392 330 Q386 356 256 360 Q126 356 120 330Z" fill="#fff"/>
+  <path d="M128 368 Q256 398 384 368 Q378 388 372 396 Q256 424 140 396 Q132 386 128 368Z" fill="#7fc4ff"/>
+  <path d="M170 336 L198 290 L226 336Z M222 330 L256 280 L290 330Z M280 336 L314 292 L344 336Z" fill="#f7c443"/>
+  <path d="M206 318 Q206 288 236 290 Q256 274 278 290 Q304 290 304 318 Q256 332 206 318Z" fill="#9ccc5a"/>
+  <g fill="#d39ad0"><rect x="226" y="296" width="14" height="14" rx="3"/><rect x="258" y="290" width="14" height="14" rx="3"/><rect x="280" y="304" width="12" height="12" rx="3"/></g>
+  </g>
+</svg>

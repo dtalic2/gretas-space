@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#ffe7d1">
+  <title>Milbil Cooking</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="hud-top">
+    <button type="button" id="meBtn" class="me" aria-label="Your chef">
+      <span class="me-pic" id="meAvatar"></span>
+      <span class="me-info"><b id="placeName">Little Café</b><small id="placeStars">★☆☆☆☆</small></span>
+    </button>
+    <div class="hud-right">
+      <div class="pill coins" id="coinPill" title="Coins"><span>🪙</span><b id="coins">0</b></div>
+      <button type="button" id="settingsBtn" class="round" aria-label="Settings">⚙️</button>
+    </div>
+  </header>
+
+  <main id="room" class="room"></main>
+
+  <nav class="hud-bottom">
+    <button type="button" id="menuBtn" class="big-btn"><span class="e">📖</span><span>Menu</span></button>
+    <button type="button" id="kitchenBtn" class="big-btn main"><span class="e">🍳</span><span>Kitchen</span><em id="kitchenBadge"></em></button>
+    <button type="button" id="ordersBtn" class="big-btn" hidden><span class="e">🧾</span><span>Orders</span><em id="ordersBadge"></em></button>
+    <button type="button" id="shopBtn" class="big-btn"><span class="e">🛠️</span><span>Upgrade</span><em id="shopBadge"></em></button>
+  </nav>
+
+  <section id="kitchen" class="kitchen" hidden>
+    <header class="k-top">
+      <button type="button" class="round" id="kBack" aria-label="Back to the restaurant">🏠</button>
+      <div class="k-order" id="kOrder"></div>
+      <button type="button" class="round k-orders" id="kOrders" aria-label="Orders" hidden>🧾<em></em></button>
+      <button type="button" class="round" id="kBin" aria-label="Start this dish again">🗑️</button>
+    </header>
+    <div class="k-recipe">
+      <div class="k-pic" id="kPic"></div>
+      <ol class="k-steps" id="kSteps"></ol>
+    </div>
+    <div class="k-shelf" id="kShelf"></div>
+    <div class="k-counter" id="kCounter">
+      <div class="k-chef" id="kChef"><span class="k-say" id="kSay"></span></div>
+      <div class="k-hint" id="kHint"><span></span><i class="k-bar"><i></i></i></div>
+      <div class="k-dish" id="kDish"></div>
+      <div class="k-station" id="kStation"></div>
+      <div class="k-tool" id="kTool" hidden></div>
+      <div class="k-drop">Let go! ⬇️</div>
+    </div>
+    <footer class="k-bottom">
+      <button type="button" class="btn serve" id="kServe">🍽️ Serve</button>
+    </footer>
+  </section>
+
+  <div id="sheet" class="sheet" hidden></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <div id="welcome" class="welcome" hidden>
+    <div class="welcome-card">
+      <h1><span>Milbil</span> Cooking</h1>
+      <div class="welcome-milbil" id="welcomeMilbil"></div>
+      <p class="lead" id="welcomeLead">You're a <b>milbil chef</b> with a little café.</p>
+      <p id="welcomeText">Hungry milbils come in and order food. Follow the recipe: drag ingredients down to the counter, then swipe to chop, mash and stir. Serve it right and they pay you! Save up for more tables, ordering machines and a bigger restaurant.</p>
+      <label class="name-row">
+        <span>Your chef's name</span>
+        <span class="name-input"><input id="nameInput" maxlength="14" autocomplete="off" spellcheck="false"><button type="button" id="nameDice" aria-label="Random name">🎲</button></span>
+      </label>
+      <div class="swatches" id="swatches" role="radiogroup" aria-label="Colour"></div>
+      <button type="button" id="startBtn" class="btn go big">🍳 Open my café!</button>
+      <button type="button" id="howBtn" class="link">How to play</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
