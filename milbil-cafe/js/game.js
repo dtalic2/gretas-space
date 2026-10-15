@@ -1,6 +1,6 @@
 // ---------- The running game: your save, timers, and a little event bus ----------
 
-import { FOODS, FOOD_BY_ID, CAFE_LEVELS, MAX_LEVEL } from './data.js';
+import { FOODS, FOOD_BY_ID, CAFE_LEVELS, MAX_LEVEL, cafePay } from './data.js';
 import { load, save, wipe, fresh } from './state.js';
 
 // G.s is the café you're playing right now. In free play that's your saved
@@ -31,10 +31,10 @@ export const menu = () => FOODS.filter(f => G.s.foods[f.id]);
 /** The next food you could unlock, if any. */
 export const nextLocked = () => FOODS.find(f => !G.s.foods[f.id]);
 
-/** One serving's price right now, café bonus included (but not Happy Customers). */
+/** One serving's price right now, café bonus and extra included (but not Happy Customers). */
 export function priceOf(id, level = G.s.foods[id]){
   if (!level) return 0;
-  return Math.round(FOOD_BY_ID[id].prices[level - 1] * cafeLevel().mult);
+  return Math.round(FOOD_BY_ID[id].prices[level - 1] * cafePay(cafeLevel()));
 }
 
 /** Money from serving milbils: counts toward your earning pace. */

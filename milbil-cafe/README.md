@@ -90,7 +90,8 @@ Escape goes back to the café.
 
 These are Blooket Café's foods, unlock costs, upgrade costs and prices. Each food
 has five levels and goes on a new colour of plate at each one: white, light
-blue, emerald, violet, then gold.
+blue, emerald, violet, then gold. The prices here are before your café level's
+bonus (see Café levels), which the shop already includes.
 
 | Food | Unlock | Lv 2 | Lv 3 | Lv 4 | Lv 5 | Sells for (Lv 1 → Lv 5) |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
@@ -112,15 +113,18 @@ own drawings (`js/food.js`), not Blooket's art.
 
 ## Café levels
 
-A café upgrade makes **everything** sell for more, and redecorates the café.
+A café upgrade makes **everything** sell for more, and redecorates the café. The
+multiplier is Blooket's. On top of it, milbils pay extra at a nicer café, from
+5% more at level 1 up to 50% more at level 5. Both are already counted in the
+"Sells for" prices in the shop.
 
-| Level | Cost | Everything sells for | Look |
-| --- | ---: | --- | --- |
-| 1 | — | ×1 | Cosy Corner (wooden floor) |
-| 2 | $2,500 | ×1.5 | Seaside Blue |
-| 3 | $250,000 | ×2 | Garden Green, with plants |
-| 4 | $2,500,000 | ×2.5 | Starlight, with fairy lights |
-| 5 | $25,000,000 | ×3 | Solid Gold |
+| Level | Cost | Everything sells for | Milbils pay | Altogether | Look |
+| --- | ---: | --- | --- | --- | --- |
+| 1 | — | ×1 | 5% more | ×1.05 | Cosy Corner (wooden floor) |
+| 2 | $2,500 | ×1.5 | 10% more | ×1.65 | Seaside Blue |
+| 3 | $250,000 | ×2 | 20% more | ×2.4 | Garden Green, with plants |
+| 4 | $2,500,000 | ×2.5 | 35% more | ×3.375 | Starlight, with fairy lights |
+| 5 | $25,000,000 | ×3 | 50% more | ×4.5 | Solid Gold |
 
 ## Abilities
 

@@ -7,7 +7,7 @@
 
 import { G, emit, spend, addCash, addStock, priceOf, cafeLevel, persist } from './game.js';
 import { FOODS, PLATES, CAFE_LEVELS, ABILITIES, ABILITY_BY_ID, MAX_LEVEL, UNLOCK_STOCK,
-         HAPPY_MS, TRASH_MS, INSPECT_MS, CRATE_STOCK, TAX_RATE, RIVALS, cafeOf } from './data.js';
+         HAPPY_MS, TRASH_MS, INSPECT_MS, CRATE_STOCK, TAX_RATE, RIVALS, cafeOf, extraText } from './data.js';
 import { foodSVG } from './food.js';
 import { money } from './format.js';
 import { sfx } from './audio.js';
@@ -53,9 +53,11 @@ function buyBtn(act, id, cost, label){
 }
 
 function foodTab(){
-  const lvlMult = cafeLevel().mult;
+  const c = cafeLevel();
   return `<p class="note">Each food sells for more at every level, and goes on a fancier plate.
-    ${lvlMult > 1 ? `Your café makes everything sell for <b>×${lvlMult}</b>.` : ''}</p>
+    ${c.mult > 1
+      ? `Your café makes everything sell for <b>×${c.mult}</b>, and milbils pay <b>${extraText(c)} more</b>.`
+      : `Milbils pay <b>${extraText(c)} more</b> at your café.`}</p>
     <div class="cards">${FOODS.map(f => {
       const lvl = G.s.foods[f.id] || 0;
       const plate = PLATES[Math.max(0, lvl - 1)];
@@ -84,7 +86,7 @@ function foodTab(){
 
 function cafeTab(){
   const cur = G.s.cafe;
-  return `<p class="note">A bigger café makes <b>everything</b> you sell worth more, and gives it a new look.</p>
+  return `<p class="note">A bigger café makes <b>everything</b> you sell worth more, makes milbils pay extra on top, and gives it a new look.</p>
     <div class="cards">${CAFE_LEVELS.map((c, i) => {
       const lvl = i + 1;
       let right;
@@ -95,7 +97,7 @@ function cafeTab(){
         <span class="swatch" data-lv="${lvl}"><i></i></span>
         <span class="card-mid">
           <b class="card-name">Level ${lvl}: ${c.look}</b>
-          <small>Everything sells for <b>×${c.mult}</b></small>
+          <small>Everything sells for <b>×${c.mult}</b>, and milbils pay <b>${extraText(c)} more</b></small>
         </span>
         ${right}
       </div>`;
@@ -139,7 +141,8 @@ function onAct(act, id){
     if (lvl !== G.s.cafe + 1 || !spend(CAFE_LEVELS[lvl - 1].cost)) return;
     G.s.cafe = lvl;
     sfx('power');
-    toast(`☕ Your café is now <b>${CAFE_LEVELS[lvl - 1].look}</b>! Everything sells for <b>×${CAFE_LEVELS[lvl - 1].mult}</b>`, 'good big');
+    const c = CAFE_LEVELS[lvl - 1];
+    toast(`☕ Your café is now <b>${c.look}</b>! Everything sells for <b>×${c.mult}</b>, and milbils pay <b>${extraText(c)} more</b>`, 'good big');
     emit('cafe');
     emit('menu');
   }

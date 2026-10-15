@@ -49,13 +49,19 @@ export const PLATES = [
 ];
 
 // Café levels multiply the price of everything you sell, and redecorate.
+// `mult` is Blooket's. On top of that, milbils pay `extra` more at a nicer
+// café: 5% more at level 1, up to 50% more at level 5.
 export const CAFE_LEVELS = [
-  { cost:0,        mult:1,   look:'Cosy Corner' },
-  { cost:2500,     mult:1.5, look:'Seaside Blue' },
-  { cost:250000,   mult:2,   look:'Garden Green' },
-  { cost:2500000,  mult:2.5, look:'Starlight' },
-  { cost:25000000, mult:3,   look:'Solid Gold' },
+  { cost:0,        mult:1,   extra:0.05, look:'Cosy Corner' },
+  { cost:2500,     mult:1.5, extra:0.10, look:'Seaside Blue' },
+  { cost:250000,   mult:2,   extra:0.20, look:'Garden Green' },
+  { cost:2500000,  mult:2.5, extra:0.35, look:'Starlight' },
+  { cost:25000000, mult:3,   extra:0.50, look:'Solid Gold' },
 ];
+/** Everything a café level does to prices: Blooket's multiplier, then the extra. */
+export const cafePay = (c) => c.mult * (1 + c.extra);
+/** "10%", for the extra. */
+export const extraText = (c) => `${Math.round(c.extra * 100)}%`;
 
 // One right answer puts this many servings of every food on your menu.
 export const RESTOCK = 5;

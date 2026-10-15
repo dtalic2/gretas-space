@@ -16,7 +16,7 @@
 
 import { G, cafeName } from './game.js';
 import { RIVALS, RIVAL_BY_ID, CHEF_LOOK, FOODS, CAFE_LEVELS, MAX_LEVEL,
-         RACE_Q, RACE_S, RACE_JITTER, cafeOf } from './data.js';
+         RACE_Q, RACE_S, RACE_JITTER, cafeOf, cafePay } from './data.js';
 import { drawLook, artHTML } from './milbil.js';
 import { money, ordinal } from './format.js';
 import { $, esc, toast } from './ui.js';
@@ -54,7 +54,7 @@ const sps = (n) => 5 * n / (RACE_Q + 5 * n / RACE_S);
 function income(r){
   let sum = 0, n = 0;
   FOODS.forEach((f, i) => { if (r.lv[i]){ sum += f.prices[r.lv[i] - 1]; n++; } });
-  return n ? sps(n) * r.skill * (sum / n) * CAFE_LEVELS[r.cafe - 1].mult : 0;
+  return n ? sps(n) * r.skill * (sum / n) * cafePay(CAFE_LEVELS[r.cafe - 1]) : 0;
 }
 
 // Every purchase a rival could make next: the next food, any upgrade, or the
