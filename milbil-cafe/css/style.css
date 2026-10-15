@@ -400,7 +400,6 @@ b, strong { font-weight: 900; }
 .card-mid small b { color: var(--ink); }
 .card-mid small b.up { color: var(--green-d); }
 .card.locked .plate .food { filter: grayscale(1); opacity: .45; }
-.card.used { opacity: .6; }
 .card.now { box-shadow: var(--edge-sm), inset 0 0 0 3px var(--purple); }
 .plate.big { width: 58px; flex: none; padding: 9px; }
 .pips { display: flex; gap: 4px; }

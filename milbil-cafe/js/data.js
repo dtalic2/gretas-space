@@ -74,7 +74,8 @@ export const ORDER_QTY = [0.55, 0.3, 0.15];    // chance of wanting 1, 2 or 3 of
 
 // Abilities, with Blooket's names and prices. In Blooket the last few are
 // aimed at other players; here they hit the other milbil cafés in town.
-// Each one can be used once, until you Run It Back.
+// Unlike Blooket, each one can be used as often as you like, so there's no
+// Run It Back.
 export const ABILITIES = [
   { id:'paycheck', name:'Paycheck Bonus',   cost:500,    icon:'💵',
     text:'25% gets added to your cash.' },
@@ -88,8 +89,6 @@ export const ABILITIES = [
     text:'Every other café pays you 25% of its cash.' },
   { id:'inspect',  name:'Health Inspection', cost:10000, icon:'🔍', target:true,
     text:'Pick a café. It is shut for an inspection for 30 seconds.' },
-  { id:'runback',  name:'Run It Back',      cost:150000, icon:'🔁',
-    text:'Every ability you have used can be bought again.' },
 ];
 export const ABILITY_BY_ID = Object.fromEntries(ABILITIES.map(a => [a.id, a]));
 export const HAPPY_MS = 30000;

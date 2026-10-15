@@ -86,9 +86,12 @@ A café upgrade makes **everything** sell for more, and redecorates the café.
 
 ## Abilities
 
-These have Blooket's names and prices. Each one works once, until you buy
-**Run It Back**. In Blooket some of them are aimed at other players. Here they hit
-the other cafés in town.
+These have Blooket's names and prices. Unlike Blooket, you can use each one as
+often as you like, at the same price every time. So there's no Run It Back,
+which in Blooket buys back abilities you've used. Using Happy Customers, Trash
+the Food or Health Inspection again while it's still going adds more time
+instead of starting over. In Blooket some of them are aimed at other players.
+Here they hit the other cafés in town.
 
 | Ability | Cost | What it does |
 | --- | ---: | --- |
@@ -98,7 +101,6 @@ the other cafés in town.
 | 🗑️ Trash the Food | $5,000 | A café you pick earns nothing for 20 seconds |
 | 🧾 TAXES!!! | $7,500 | Every other café pays you 25% of its cash |
 | 🔍 Health Inspection | $10,000 | A café you pick is shut for 30 seconds |
-| 🔁 Run It Back | $150,000 | Every ability you've used can be bought again |
 
 ## The leaderboard
 

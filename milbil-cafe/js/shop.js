@@ -102,19 +102,12 @@ function cafeTab(){
 }
 
 function powersTab(){
-  const anyUsed = ABILITIES.some(a => a.id !== 'runback' && G.s.used[a.id]);
-  return `<p class="note">Each ability works once. <b>Run It Back</b> lets you buy them all again.</p>
-    <div class="cards">${ABILITIES.map(a => {
-      const used = a.id === 'runback' ? !anyUsed : G.s.used[a.id];
-      const right = used
-        ? `<span class="maxed dim">${a.id === 'runback' ? 'Nothing to redo' : '✓ Used'}</span>`
-        : buyBtn('power', a.id, a.cost, a.target ? 'Pick a café' : 'Use');
-      return `<div class="card power-card ${used ? 'used' : ''}">
+  return `<p class="note">Use them as often as you like. Using one again while it's still going adds more time.</p>
+    <div class="cards">${ABILITIES.map(a => `<div class="card power-card">
         <span class="power-icon">${a.icon}</span>
         <span class="card-mid"><b class="card-name">${a.name}</b><small>${a.text}</small></span>
-        ${right}
-      </div>`;
-    }).join('')}</div>`;
+        ${buyBtn('power', a.id, a.cost, a.target ? 'Pick a café' : 'Use')}
+      </div>`).join('')}</div>`;
 }
 
 function aimTab(){
@@ -170,9 +163,12 @@ function onAct(act, id){
   sheet.render();
 }
 
+// Abilities can be used again and again. One that lasts a while gets longer
+// if you use it again before it runs out.
+function lastsUntil(until, ms){ return Math.max(performance.now(), until || 0) + ms; }
+const secsLeft = (until) => Math.ceil((until - performance.now()) / 1000);
+
 function usePower(a, rival){
-  const now = performance.now();
-  if (a.id !== 'runback') G.s.used[a.id] = true;
   sfx('power');
   switch (a.id){
     case 'paycheck': {
@@ -186,18 +182,22 @@ function usePower(a, rival){
       toast(`📦 Supply Crate! <b>+${CRATE_STOCK}</b> of every food`, 'good big');
       break;
     case 'happy':
-      G.happyUntil = now + HAPPY_MS;
-      toast('😊 Happy Customers! Everyone pays <b>double</b> for 30 seconds', 'good big');
+      G.happyUntil = lastsUntil(G.happyUntil, HAPPY_MS);
+      toast(`😊 Happy Customers! Everyone pays <b>double</b> for ${secsLeft(G.happyUntil)} seconds`, 'good big');
       emit('happy');
       break;
-    case 'trash':
-      G.rivalOff[rival.id] = { until: now + TRASH_MS, why: 'trash' };
-      toast(`🗑️ <b>${esc(rival.name)}</b> has no food for 20 seconds!`, 'good big');
+    case 'trash': {
+      const until = lastsUntil(G.rivalOff[rival.id]?.until, TRASH_MS);
+      G.rivalOff[rival.id] = { until, why: 'trash' };
+      toast(`🗑️ <b>${esc(rival.name)}</b> has no food for ${secsLeft(until)} seconds!`, 'good big');
       break;
-    case 'inspect':
-      G.rivalOff[rival.id] = { until: now + INSPECT_MS, why: 'inspect' };
-      toast(`🔍 <b>${esc(rival.name)}</b> is shut for an inspection!`, 'good big');
+    }
+    case 'inspect': {
+      const until = lastsUntil(G.rivalOff[rival.id]?.until, INSPECT_MS);
+      G.rivalOff[rival.id] = { until, why: 'inspect' };
+      toast(`🔍 <b>${esc(rival.name)}</b> is shut for an inspection for ${secsLeft(until)} seconds!`, 'good big');
       break;
+    }
     case 'taxes': {
       let got = 0;
       for (const r of RIVALS){
@@ -209,10 +209,6 @@ function usePower(a, rival){
       toast(`🧾 TAXES!!! The other cafés paid you <b>${money(got)}</b>`, 'good big');
       break;
     }
-    case 'runback':
-      G.s.used = {};
-      toast('🔁 Run It Back! Every ability is ready again', 'good big');
-      break;
   }
 }
 
