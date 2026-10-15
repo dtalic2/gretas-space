@@ -15,7 +15,7 @@
 // Rivals never use abilities on you.
 
 import { G, cafeName, boost } from './game.js';
-import { RIVALS, RIVAL_BY_ID, CHEF_LOOK, FOODS, CAFE_LEVELS, MAX_LEVEL,
+import { RIVALS, RIVAL_BY_ID, CHEF_LOOK, FOODS, CAFE_LEVELS, MAX_LEVEL, DISTRACTION_BY_ID,
          RACE_Q, RACE_S, RACE_JITTER, cafeOf, cafePay, SERVINGS_PER_MILBIL, CASH_MAX } from './data.js';
 import { drawLook, artHTML } from './milbil.js';
 import { money, moneyHTML, ordinal } from './format.js';
@@ -119,18 +119,24 @@ export function tickRivals(dt){
     if (off && now < off.until) continue;
     if (off) delete G.rivalOff[r.id];
 
+    // A distracted café serves much more slowly while its screen is silly.
+    let slow = 1;
+    const dz = G.rivalDizzy[r.id];
+    if (dz && now < dz.until) slow = DISTRACTION_BY_ID[dz.id].slow;
+    else if (dz) delete G.rivalDizzy[r.id];
+
     if (G.race){
       const rv = G.race.rivals[r.id];
       shop(rv, G.race.left);
-      rv.cash = Math.min(CASH_MAX, rv.cash + income(rv) * dt);
+      rv.cash = Math.min(CASH_MAX, rv.cash + income(rv) * slow * dt);
       // Their milbils get the same pay boost as yours.
-      rv.boostN += sps(menuSize(rv)) * rv.skill / SERVINGS_PER_MILBIL * dt;
+      rv.boostN += sps(menuSize(rv)) * rv.skill / SERVINGS_PER_MILBIL * slow * dt;
     } else {
       const cash = G.s.rivals[r.id] || 0;
       const ratio = cash / you;
       const band = ratio > 1.4 ? 0.5 : ratio < 0.6 ? 1.6 : 1;
       const wobble = 0.6 + Math.random() * 0.8;
-      G.s.rivals[r.id] = Math.min(CASH_MAX, cash + Math.max(BASE_RATE, G.rate) * r.pace * band * wobble * dt);
+      G.s.rivals[r.id] = Math.min(CASH_MAX, cash + Math.max(BASE_RATE, G.rate) * r.pace * band * wobble * slow * dt);
     }
   }
 
@@ -155,13 +161,20 @@ export function renderRankPill(){
 
 // ------------------------------------------------------- leaderboard ---
 
-/** Status line for a rival hit by an ability. */
+/** Status line for a rival hit by an ability or a distraction. */
 export function offText(id){
+  const now = performance.now();
+  const lines = [];
   const off = G.rivalOff[id];
-  if (!off) return '';
-  const s = Math.ceil((off.until - performance.now()) / 1000);
-  if (s <= 0) return '';
-  return off.why === 'trash' ? `🗑️ No food for ${s}s` : `🔍 Shut for inspection ${s}s`;
+  const s = off && Math.ceil((off.until - now) / 1000);
+  if (s > 0) lines.push(off.why === 'trash' ? `🗑️ No food for ${s}s` : `🔍 Shut for inspection ${s}s`);
+  const dz = G.rivalDizzy[id];
+  const d = dz && Math.ceil((dz.until - now) / 1000);
+  if (d > 0){
+    const t = DISTRACTION_BY_ID[dz.id];
+    lines.push(`${t.icon} ${t.name} ${d}s`);
+  }
+  return lines.join(' · ');
 }
 
 const MEDALS = ['🥇', '🥈', '🥉'];

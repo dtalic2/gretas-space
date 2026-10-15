@@ -170,6 +170,23 @@ Here they hit the other cafés in town.
 | 🧾 TAXES!!! | $7,500 | Every other café pays you 10% of its cash |
 | 🔍 Health Inspection | $10,000 | A café you pick is shut for 30 seconds |
 
+## Distractions
+
+The Shop's **🌀 Distract** tab has things to throw at the other cafés. Pick one,
+then pick a café. Its screen goes silly for a few seconds and it serves much
+more slowly. You can't see the other cafés' screens, so a **📺 spy cam** pops
+up for a few seconds to show it happening (tap it to close it). The leaderboard
+shows which cafés are distracted and for how long. Like abilities, you can use
+them as often as you like; the same one again on the same café adds more time.
+
+| Distraction | Cost | Their screen | How long | They serve |
+| --- | ---: | --- | --- | --- |
+| 🌀 Swirly Screen | $3,000 | Spins round and round and changes colour | 8 seconds | 80% slower |
+| 🙃 Upside Down | $2,000 | Flips upside down and wobbles | 10 seconds | 60% slower |
+| 🫧 Bubble Trouble | $1,500 | Bubbles float up all over it | 8 seconds | 50% slower |
+| 🌫️ Foggy Glasses | $1,000 | Goes blurry with fog drifting across | 6 seconds | 40% slower |
+| 🪩 Disco Party | $4,000 | Flashing colours and spinning lights | 5 seconds | 90% slower |
+
 ## The leaderboard
 
 In Blooket you race the rest of the class. Here you race ten other milbil cafés.
@@ -221,7 +238,8 @@ chef's hat and apron.
 | `js/cafe.js` | The café floor: customers walking in, orders, serving, Auto-serve, the plates |
 | `js/quiz.js` | Restock Food: questions one after another, Correct / Incorrect, and the Auto-serve switch |
 | `js/questions.js` | Makes questions and believable wrong answers |
-| `js/shop.js` | The shop and what each ability does |
+| `js/shop.js` | The shop, and what each ability and distraction does |
+| `js/distract.js` | The spy cam that shows a distracted café's silly screen |
 | `js/rivals.js` | The other cafés, how they earn and shop, and the leaderboard |
 | `js/race.js` | Time mode: the countdown, the clock, the podium and your review |
 | `js/game.js` | Your save while playing, money, the pay boost, stock, and a tiny event bus |

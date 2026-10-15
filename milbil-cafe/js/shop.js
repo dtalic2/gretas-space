@@ -1,4 +1,4 @@
-// ---------- The Shop: food, café upgrades and abilities ----------
+// ---------- The Shop: food, café upgrades, abilities and distractions ----------
 //
 // Open it any time, like a Blooket live game. Food is Blooket Café's menu:
 // unlock each food, then upgrade it four times to sell it for more. Each
@@ -7,16 +7,19 @@
 
 import { G, emit, spend, addCash, addStock, priceOf, cafeLevel, persist, boost } from './game.js';
 import { FOODS, PLATES, CAFE_LEVELS, ABILITIES, ABILITY_BY_ID, MAX_LEVEL, UNLOCK_STOCK,
-         HAPPY_MS, TRASH_MS, INSPECT_MS, CRATE_STOCK, TAX_RATE, RIVALS, cafeOf, extraText } from './data.js';
+         HAPPY_MS, TRASH_MS, INSPECT_MS, CRATE_STOCK, TAX_RATE, RIVALS, cafeOf, extraText,
+         DISTRACTIONS, DISTRACTION_BY_ID } from './data.js';
 import { foodSVG } from './food.js';
 import { money, times } from './format.js';
 import { sfx } from './audio.js';
 import { esc, toast } from './ui.js';
 import { targetHTML, rivalCash, setRivalCash } from './rivals.js';
 import { clockHTML } from './race.js';
+import { spyCam } from './distract.js';
 
 let sheet = null;
-let aiming = null;          // ability waiting for you to pick a café
+let aiming = null;          // ability id, or 'trick-<id>' for a distraction, waiting for you to pick a café
+const TRICK = 'trick-';
 
 export function initShop(s){ sheet = s; }
 
@@ -24,7 +27,8 @@ export function openShop(tab = 'food'){
   aiming = null;
   sheet.open({
     name: 'shop', icon: '🛒', title: 'Shop',
-    tabs: [{ id: 'food', label: '🍞 Food' }, { id: 'cafe', label: '☕ Café' }, { id: 'powers', label: '⚡ Abilities' }],
+    tabs: [{ id: 'food', label: '🍞 Food' }, { id: 'cafe', label: '☕ Café' },
+           { id: 'powers', label: '⚡ Abilities' }, { id: 'tricks', label: '🌀 Distract' }],
     extra: () => `${clockHTML()}<span class="cash-mini">${money(G.s.cash)}</span>`,
     render,
     onAct,
@@ -39,7 +43,8 @@ export function refreshShop(){ if (sheet?.is('shop')) sheet.render(); }
 
 function render(tab){
   if (tab === 'cafe') return cafeTab();
-  if (tab === 'powers') return aiming ? aimTab() : powersTab();
+  if (tab === 'powers') return aiming && !aiming.startsWith(TRICK) ? aimTab() : powersTab();
+  if (tab === 'tricks') return aiming?.startsWith(TRICK) ? aimTab() : tricksTab();
   return foodTab();
 }
 
@@ -114,10 +119,21 @@ function powersTab(){
       </div>`).join('')}</div>`;
 }
 
+function tricksTab(){
+  return `<p class="note">Pick a café and mess up its screen for a few seconds, so it serves much more
+    slowly. You'll see it on the spy cam. Use them as often as you like; the same one again adds more time.</p>
+    <div class="cards">${DISTRACTIONS.map(d => `<div class="card power-card">
+        <span class="power-icon">${d.icon}</span>
+        <span class="card-mid"><b class="card-name">${d.name}</b>
+          <small>${d.text} They serve <b>${Math.round((1 - d.slow) * 100)}% slower</b>.</small></span>
+        ${buyBtn('trick', d.id, d.cost, 'Pick a café')}
+      </div>`).join('')}</div>`;
+}
+
 function aimTab(){
-  const a = ABILITY_BY_ID[aiming];
+  const a = aiming.startsWith(TRICK) ? DISTRACTION_BY_ID[aiming.slice(TRICK.length)] : ABILITY_BY_ID[aiming];
   return `<p class="note"><b>${a.icon} ${a.name}</b> — which café?</p>
-    ${targetHTML(a.id)}
+    ${targetHTML(aiming)}
     <button type="button" class="link-btn" data-act="cancel">Never mind</button>`;
 }
 
@@ -154,12 +170,26 @@ function onAct(act, id){
     if (!spend(a.cost)) return;
     usePower(a);
   }
+  else if (act === 'trick'){
+    const d = DISTRACTION_BY_ID[id];
+    if (!d || G.s.cash < d.cost) return;
+    aiming = TRICK + id;
+  }
   else if (act === 'target'){
-    const [aid, rid] = id.split(':');
-    const a = ABILITY_BY_ID[aid];
-    if (!a || !spend(a.cost)) return;
-    aiming = null;
-    usePower(a, RIVALS.find(r => r.id === rid));
+    const [key, rid] = id.split(':');
+    const rival = RIVALS.find(r => r.id === rid);
+    if (!rival) return;
+    if (key.startsWith(TRICK)){
+      const d = DISTRACTION_BY_ID[key.slice(TRICK.length)];
+      if (!d || !spend(d.cost)) return;
+      aiming = null;
+      distract(d, rival);
+    } else {
+      const a = ABILITY_BY_ID[key];
+      if (!a || !spend(a.cost)) return;
+      aiming = null;
+      usePower(a, rival);
+    }
   }
   else if (act === 'cancel'){
     aiming = null;
@@ -172,6 +202,15 @@ function onAct(act, id){
 // if you use it again before it runs out.
 function lastsUntil(until, ms){ return Math.max(performance.now(), until || 0) + ms; }
 const secsLeft = (until) => Math.ceil((until - performance.now()) / 1000);
+
+// The same distraction again adds its time on; a different one takes over.
+function distract(d, rival){
+  const cur = G.rivalDizzy[rival.id];
+  const until = cur?.id === d.id ? lastsUntil(cur.until, d.secs * 1000) : performance.now() + d.secs * 1000;
+  G.rivalDizzy[rival.id] = { until, id: d.id };
+  sfx('swirl');
+  spyCam(rival, d);
+}
 
 function usePower(a, rival){
   sfx('power');

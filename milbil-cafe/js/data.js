@@ -111,6 +111,24 @@ export const ABILITIES = [
     text:'Pick a café. It is shut for an inspection for 30 seconds.' },
 ];
 export const ABILITY_BY_ID = Object.fromEntries(ABILITIES.map(a => [a.id, a]));
+
+// Distractions: buy one and pick a café. Its screen goes silly for a few
+// seconds and it serves much more slowly: `slow` is how much of its usual
+// money it still makes. You get to peek at it on the spy cam. Like abilities,
+// use them as often as you like; the same one again adds more time.
+export const DISTRACTIONS = [
+  { id:'swirl',   name:'Swirly Screen',  cost:3000, icon:'🌀', secs:8,  slow:0.2,
+    text:'Their screen goes swirly and spins round and round for 8 seconds.' },
+  { id:'flip',    name:'Upside Down',    cost:2000, icon:'🙃', secs:10, slow:0.4,
+    text:'Their whole screen flips upside down for 10 seconds.' },
+  { id:'bubbles', name:'Bubble Trouble', cost:1500, icon:'🫧', secs:8,  slow:0.5,
+    text:'Bubbles float all over their screen for 8 seconds.' },
+  { id:'fog',     name:'Foggy Glasses',  cost:1000, icon:'🌫️', secs:6,  slow:0.6,
+    text:'Their screen goes all foggy for 6 seconds.' },
+  { id:'disco',   name:'Disco Party',    cost:4000, icon:'🪩', secs:5,  slow:0.1,
+    text:'Flashing disco lights for 5 seconds. They can barely see a thing!' },
+];
+export const DISTRACTION_BY_ID = Object.fromEntries(DISTRACTIONS.map(d => [d.id, d]));
 export const HAPPY_MS = 30000;
 export const TRASH_MS = 20000;
 export const INSPECT_MS = 30000;

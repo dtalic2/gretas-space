@@ -13,6 +13,7 @@ export const G = {
   race: null,          // time mode: { minutes, left, live, over, rivals }
   happyUntil: 0,       // Happy Customers runs until this time (performance.now())
   rivalOff: {},        // rival id -> { until, why: 'trash' | 'inspect' }
+  rivalDizzy: {},      // rival id -> { until, id: distraction id }
   rate: 0,             // what you've been earning per second lately
   earnedThisSec: 0,
   wiped: false,
@@ -74,6 +75,7 @@ export function persist(){ if (!G.wiped) save(G.free); }
 function resetTimers(){
   G.happyUntil = 0;
   G.rivalOff = {};
+  G.rivalDizzy = {};
   G.rate = 0;
   G.earnedThisSec = 0;
 }
