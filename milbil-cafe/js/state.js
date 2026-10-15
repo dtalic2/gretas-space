@@ -1,6 +1,6 @@
 // ---------- Your save ----------
 
-import { FOODS, ABILITY_BY_ID, CAFE_LEVELS, RIVALS, START_STOCK, MAX_LEVEL, RACE_MINUTES, RACE_DEFAULT } from './data.js';
+import { FOODS, CAFE_LEVELS, RIVALS, START_STOCK, MAX_LEVEL, RACE_MINUTES, RACE_DEFAULT } from './data.js';
 import { TABLES } from './questions.js';
 
 const KEY = 'milbil-cafe-v1';
@@ -13,7 +13,6 @@ export function fresh(){
     foods: { toast: 1 },            // food id -> level; missing means still locked
     stock: { ...START_STOCK },      // servings on each plate
     cafe: 1,
-    used: {},                       // abilities used since the last Run It Back
     rivals: Object.fromEntries(RIVALS.map(r => [r.id, 0])),
     settings: { qmode: 'times', tables: [2, 5, 10], sound: true, mode: 'free', minutes: RACE_DEFAULT },
     stats: { served: 0, items: 0, earned: 0, right: 0, wrong: 0 },
@@ -44,7 +43,7 @@ export function load(){
   out.foods.toast ||= 1;
   out.stock = {};
   for (const id of Object.keys(out.foods)) out.stock[id] = Math.max(0, s.stock?.[id] | 0);
-  out.used = Object.fromEntries(Object.keys(s.used || {}).filter(id => ABILITY_BY_ID[id]).map(id => [id, true]));
+  delete out.used;                  // abilities used to be once-only
   for (const id of Object.keys(out.rivals)) out.rivals[id] = Math.max(0, Number(out.rivals[id]) || 0);
   const t = (out.settings.tables || []).filter(n => TABLES.includes(n));
   out.settings.tables = t.length ? t : [2, 5, 10];
