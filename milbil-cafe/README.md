@@ -236,5 +236,6 @@ the page ends it. In the browser console, `CAFE.cash(n)` adds money for
 testing, `CAFE.endRace()` runs a race's clock out, and `CAFE.wipe()` starts
 again.
 
-The lettering is Titan One and Nunito from Google Fonts. Offline, it falls back
-to a rounded system font.
+The game loads nothing from other websites. The lettering uses the fonts
+already on your device: on an iPhone, iPad or Mac that's SF Pro Rounded at its
+heaviest weight, and elsewhere the device's own font.
