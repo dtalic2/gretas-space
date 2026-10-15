@@ -14,7 +14,7 @@ export function fresh(){
     stock: { ...START_STOCK },      // servings on each plate
     cafe: 1,
     rivals: Object.fromEntries(RIVALS.map(r => [r.id, 0])),
-    settings: { qmode: 'times', tables: [2, 5, 10], sound: true, mode: 'free', minutes: RACE_DEFAULT },
+    settings: { qmode: 'times', tables: [2, 5, 10], sound: true, mode: 'free', minutes: RACE_DEFAULT, autoServe: false },
     stats: { served: 0, items: 0, earned: 0, right: 0, wrong: 0 },
     hints: {},
     records: {},                    // time mode: minutes -> your best { place, cash }

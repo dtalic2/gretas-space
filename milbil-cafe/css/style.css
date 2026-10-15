@@ -274,7 +274,9 @@ b, strong { font-weight: 900; }
 .plate.wiggle { animation: wiggle .35s; }
 @keyframes wiggle { 30% { rotate: -10deg; } 70% { rotate: 8deg; } }
 
+.counter-btns { display: flex; gap: 8px; }
 .restock {
+  flex: 1; min-width: 0;
   position: relative; height: 62px; border-radius: 14px;
   background: linear-gradient(var(--purple), #7a36dc); color: #fff;
   box-shadow: var(--edge), 0 3px 0 #0003;
@@ -286,6 +288,17 @@ b, strong { font-weight: 900; }
   background: #ffffff33; border-radius: 6px; padding: 3px 7px;
 }
 @media (hover: none) { .restock kbd { display: none; } }
+.auto-btn {
+  flex: none; width: 100px; height: 62px; border-radius: 14px; white-space: nowrap;
+  background: #fff; color: var(--ink); box-shadow: var(--edge), 0 3px 0 #0003;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05;
+}
+.auto-btn span { font-size: 20px; }
+.auto-btn b { font-family: var(--title); font-weight: 400; font-size: 12.5px; }
+.auto-btn small { font-size: 11px; font-weight: 900; color: var(--muted); }
+.auto-btn.on { background: var(--green); color: #fff; text-shadow: 0 1px 0 #0003; }
+.auto-btn.on small { color: #fff; }
+.auto-btn:active { transform: translateY(2px); box-shadow: var(--edge-sm); }
 
 /* ================================================================ quiz === */
 .quiz {
@@ -331,7 +344,20 @@ b, strong { font-weight: 900; }
 .ans b { font-weight: 400; }
 .ans.right { outline: 6px solid #fff; }
 .ans.wrong { outline: 6px solid #fff; filter: saturate(.6); }
-.q-skip { background: none; color: #ffffffcc; font-size: 15px; padding: 6px 12px; text-decoration: underline; }
+.q-cash {
+  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+  background: #fff; border-radius: 12px; padding: 4px 10px; font-size: 15px; box-shadow: var(--edge-sm);
+}
+.q-cash b { font-family: var(--title); font-weight: 400; font-size: 18px; color: var(--green-d); }
+.q-head { flex-wrap: wrap; justify-content: center; }
+.q-box.pop { animation: bubblePop .3s cubic-bezier(.3, 1.6, .5, 1); }
+.q-foot { position: relative; z-index: 3; width: 100%; max-width: 720px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.q-back, .q-auto {
+  height: 52px; border-radius: 14px; font-size: 15px; box-shadow: var(--edge), 0 3px 0 #0003;
+  background: #fff; color: var(--ink);
+}
+.q-auto b { font-family: var(--title); font-weight: 400; }
+.q-auto.on { background: var(--green); color: #fff; text-shadow: 0 1px 0 #0003; }
 
 .q-result {
   position: absolute; inset: 0; z-index: 2;
@@ -557,6 +583,7 @@ body.quizzing .toasts { display: none; }
   .topbar { height: 46px; }
   .cash-pill b { font-size: 21px; }
   .restock { height: 52px; font-size: 21px; }
+  .auto-btn { height: 52px; }
   .counter { gap: 8px; padding: 8px; }
 }
 

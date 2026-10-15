@@ -3,7 +3,7 @@
 import { G, on, persist, startOver, happy, nextLocked, totalStock, leaveRace } from './game.js';
 import { CHEF_LOOK, FOODS, RACE_MINUTES, RIVALS } from './data.js';
 import { initCafe, tickCafe, openDoors, anyoneStuck, waitingCount, renderScene, resetCafe } from './cafe.js';
-import { initQuiz, openQuiz, closeQuiz, quizOpen, quizKey } from './quiz.js';
+import { initQuiz, openQuiz, closeQuiz, quizOpen, quizKey, toggleAutoServe } from './quiz.js';
 import { initShop, openShop, refreshShop } from './shop.js';
 import { tickRivals, renderRankPill, resetRankCheer, boardHTML } from './rivals.js';
 import { initRace, startRace, tickRace, finishRace, clockHTML } from './race.js';
@@ -222,6 +222,14 @@ function renderHints(){
   $('#shopBtn').classList.toggle('pulse', !h.bought && !!next && G.s.cash >= next.costs[0]);
 }
 
+function renderAuto(){
+  const on = !!G.free.settings.autoServe;
+  const b = $('#autoBtn');
+  b.classList.toggle('on', on);
+  b.setAttribute('aria-pressed', on);
+  b.querySelector('small').textContent = on ? 'On' : 'Off';
+}
+
 function renderHappy(){
   const el = $('#happyBanner');
   const on = happy();
@@ -272,6 +280,9 @@ function boot(){
   renderRankPill();
 
   $('#restockBtn').addEventListener('click', openQuiz);
+  $('#autoBtn').addEventListener('click', toggleAutoServe);
+  on('auto', renderAuto);
+  renderAuto();
   $('#shopBtn').addEventListener('click', () => openShop('food'));
   $('#menuBtn').addEventListener('click', openSettings);
   $('#rankBtn').addEventListener('click', openBoard);
@@ -304,6 +315,7 @@ function boot(){
     if (sheet.isOpen){ if (e.key === 'Escape') sheet.close(); return; }
     if (e.key === ' ' || e.key === 'r' || e.key === 'R'){ e.preventDefault(); openQuiz(); }
     else if (e.key === 's' || e.key === 'S') openShop('food');
+    else if (e.key === 'a' || e.key === 'A') toggleAutoServe();
     else if (/^[1-3]$/.test(e.key)) $(`.cust[data-spot="${Number(e.key) - 1}"]`)?.click();
   });
 

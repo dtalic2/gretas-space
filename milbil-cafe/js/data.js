@@ -71,6 +71,8 @@ export const WALK_MS_PER_100 = 1700;           // walking the whole width
 export const ARRIVE_GAP_MS = [500, 1800];      // wait before the next one comes in
 export const ORDER_KINDS = [0.5, 0.35, 0.15];  // chance of ordering 1, 2 or 3 foods
 export const ORDER_QTY = [0.55, 0.3, 0.15];    // chance of wanting 1, 2 or 3 of each
+export const AUTO_SERVE_WAIT_MS = 400;         // Auto-serve waits this long after a milbil arrives
+export const AUTO_SERVE_GAP_MS = 450;          // and this long between servings
 
 // Abilities, with Blooket's names and prices. In Blooket the last few are
 // aimed at other players; here they hit the other milbil cafés in town.

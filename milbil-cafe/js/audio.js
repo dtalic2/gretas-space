@@ -44,6 +44,7 @@ export function sfx(name){
     case 'nope':    tone(c, 280, t, .14, 'square', .045, 190); break;
     case 'pop':     tone(c, 620, t, .08, 'sine', .1, 940); break;
     case 'bell':    tone(c, 1568, t, .45, 'sine', .05); tone(c, 2093, t + .02, .45, 'sine', .035); break;
+    case 'coin':    tone(c, 1568, t, .07, 'sine', .04); tone(c, 2093, t + .05, .1, 'sine', .035); break;
     case 'tick':    tone(c, 880, t, .09, 'square', .05); break;
     case 'go':      tone(c, 1320, t, .4, 'square', .06); tone(c, 1760, t, .4, 'triangle', .05); break;
     case 'whistle': tone(c, 2100, t, .5, 'sine', .08, 2300); tone(c, 1900, t + .55, .6, 'sine', .08, 1500); break;

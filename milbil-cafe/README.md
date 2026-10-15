@@ -58,8 +58,15 @@ the podium and your review.
 2. **Restock.** Each food sits on a plate with a number showing how many servings
    are left. When you run low, tap **Restock Food** (or press Space) and answer a
    question. A right answer adds **5 servings of every food on your menu**. A wrong
-   answer shows you the right one, and you can try another question straight away.
-3. **Shop.** Open it any time, like a Blooket live game. It has three tabs: Food,
+   answer shows you the right one. Either way **the next question comes up by
+   itself**, so you can keep restocking for as long as you like. Tap **Back to the
+   café** when you've got enough. Your cash shows at the top while you answer.
+3. **Auto-serve.** Tap **🤖 Auto-serve** next to Restock Food (or on the question
+   screen, or press A) and milbils get served without tapping them, even while
+   you're answering questions. It serves one milbil about every half a second,
+   only hands out food that was ordered, and serves milbils whose whole order is
+   ready first. Tap it again to turn it off. It stays on or off next time you play.
+4. **Shop.** Open it any time, like a Blooket live game. It has three tabs: Food,
    Café and Abilities.
 
 You start with **Toast** and 5 servings of it. On your first game, hints show you
@@ -76,7 +83,8 @@ On the start screen (and in ⚙️ Settings) you choose what the restock questio
 
 Every question has four answers: the right one and three wrong ones that look
 right, such as the next fact along, an answer one off, or the digits swapped.
-On a computer, keys 1 to 4 pick an answer.
+On a computer, keys 1 to 4 pick an answer, Space skips to the next question, and
+Escape goes back to the café.
 
 ## The menu
 
@@ -176,8 +184,8 @@ chef's hat and apron.
 | `js/data.js` | Every number: the menu, plates, café levels, abilities, rivals, customers |
 | `js/food.js` | The nine foods, drawn as SVG |
 | `js/milbil.js` | Draws a milbil as SVG (from Milbil GO, plus a chef's hat and apron) |
-| `js/cafe.js` | The café floor: customers walking in, orders, serving, the plates |
-| `js/quiz.js` | Restock Food: the question screen and Correct / Incorrect |
+| `js/cafe.js` | The café floor: customers walking in, orders, serving, Auto-serve, the plates |
+| `js/quiz.js` | Restock Food: questions one after another, Correct / Incorrect, and the Auto-serve switch |
 | `js/questions.js` | Makes questions and believable wrong answers |
 | `js/shop.js` | The shop and what each ability does |
 | `js/rivals.js` | The other cafés, how they earn and shop, and the leaderboard |

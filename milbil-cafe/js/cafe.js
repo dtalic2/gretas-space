@@ -6,7 +6,7 @@
 // says thanks and leaves.
 
 import { G, on, emit, menu, nextLocked, priceOf, earn, happy, cafeName } from './game.js';
-import { SPOTS, SPOT_X, DOOR_X, WALK_MS_PER_100, ARRIVE_GAP_MS,
+import { SPOTS, SPOT_X, DOOR_X, WALK_MS_PER_100, ARRIVE_GAP_MS, AUTO_SERVE_WAIT_MS, AUTO_SERVE_GAP_MS,
          ORDER_KINDS, ORDER_QTY, CUSTOMERS, PLATES } from './data.js';
 import { foodSVG } from './food.js';
 import { customerHTML } from './milbil.js';
@@ -15,6 +15,11 @@ import { sfx } from './audio.js';
 import { $, floatText, bump } from './ui.js';
 
 const spots = [];
+let nextAutoAt = 0;
+
+// While the question screen is up, servings happen out of sight: no flying
+// food or floating money over the question, and only a soft coin sound.
+const quiet = () => document.body.classList.contains('quizzing');
 let floor, tray, scene;
 let onShop = () => {}, onRestock = () => {};
 
@@ -124,10 +129,11 @@ function spawn(i){
   setTimeout(() => {
     if (c.state !== 'in') return;
     c.state = 'wait';
+    c.readyAt = performance.now();
     el.classList.remove('walking');
     renderBubble(c);
     bump(el.querySelector('.bubble'), 'pop');
-    sfx('bell');
+    if (!quiet()) sfx('bell');
     emit('arrived');
   }, ms + 30);
 }
@@ -143,8 +149,8 @@ function renderBubble(c){
   }).join('');
 }
 
-/** Serve one milbil everything you can. */
-export function serve(i){
+/** Serve one milbil everything you can (by a tap, or by Auto-serve). */
+export function serve(i, auto = false){
   const c = spots[i]?.cust;
   if (!c || c.state !== 'wait') return;
   const mult = happy() ? 2 : 1;
@@ -158,10 +164,11 @@ export function serve(i){
     it.need -= n;
     pay += priceOf(it.food) * n * mult;
     G.s.stats.items += n;
-    flyFood(it.food, c.el);
+    if (!quiet()) flyFood(it.food, c.el);
   }
 
   if (!pay){
+    if (auto) return;
     bump(c.el, 'nope');
     sfx('nope');
     emit('short');
@@ -169,8 +176,8 @@ export function serve(i){
   }
 
   earn(pay);
-  floatText(c.el.querySelector('.bubble'), `+${money(pay)}`, mult > 1 ? 'happy' : '');
-  sfx('serve');
+  if (!quiet()) floatText(c.el.querySelector('.bubble'), `+${money(pay)}`, mult > 1 ? 'happy' : '');
+  sfx(auto ? 'coin' : 'serve');
   G.s.hints.served = true;
   emit('stock');
 
@@ -183,7 +190,7 @@ function leave(c){
   G.s.stats.served++;
   renderBubble(c);
   bump(c.el, 'happy-hop');
-  setTimeout(() => sfx('thanks'), 120);
+  if (!quiet()) setTimeout(() => sfx('thanks'), 120);
   const sp = spots[c.spot];
   const ms = walkTime(SPOT_X[c.spot], DOOR_X);
   setTimeout(() => {
@@ -225,12 +232,28 @@ function flyFood(id, toEl){
   setTimeout(() => f.remove(), 900);
 }
 
-/** Every frame: bring in new milbils when a spot is free. */
+/** Every frame: bring in new milbils when a spot is free, and Auto-serve. */
 export function tickCafe(now){
   for (let i = 0; i < spots.length; i++){
     const sp = spots[i];
     if (!sp.cust && now >= sp.nextAt) spawn(i);
   }
+  if (G.s.settings.autoServe && now >= nextAutoAt) autoServe(now);
+}
+
+// Auto-serve serves one milbil at a time, a moment after it reaches the
+// counter. It only hands out food that's been ordered and is on a plate, and
+// it serves milbils whose whole order is ready first, so they leave and make
+// room for the next one.
+function autoServe(now){
+  const ready = spots.map(sp => sp.cust).filter(c =>
+    c?.state === 'wait' && now - c.readyAt >= AUTO_SERVE_WAIT_MS &&
+    c.order.some(it => it.need && (G.s.stock[it.food] || 0) > 0));
+  if (!ready.length) return;
+  const whole = (c) => c.order.every(it => it.need <= (G.s.stock[it.food] || 0));
+  const c = ready.find(whole) || ready[0];
+  serve(c.spot, true);
+  nextAutoAt = now + AUTO_SERVE_GAP_MS;
 }
 
 /** Is anybody waiting for food you don't have? */
