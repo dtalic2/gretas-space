@@ -241,6 +241,17 @@ export function anyoneStuck(){
 
 export const waitingCount = () => spots.filter(sp => sp.cust?.state === 'wait').length;
 
+/** Empty the café, for switching between free play and a race. */
+export function resetCafe(){
+  for (const sp of spots){
+    if (sp.cust) sp.cust.state = 'gone';
+    sp.cust = null;
+  }
+  floor.querySelectorAll('.cust').forEach(el => el.remove());
+  renderScene();
+  renderTray();
+}
+
 /** The first milbils come in a moment after the café opens. */
 export function openDoors(){
   const now = performance.now();

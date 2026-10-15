@@ -1,20 +1,21 @@
-// ---------- Start-up, the top bar, settings, hints and the game loop ----------
+// ---------- Start-up, the start screen, settings, hints and the game loop ----------
 
-import { G, on, persist, startOver, happy, nextLocked, totalStock } from './game.js';
-import { CHEF_LOOK, FOODS } from './data.js';
-import { initCafe, tickCafe, openDoors, anyoneStuck, waitingCount, renderScene } from './cafe.js';
-import { initQuiz, openQuiz, quizOpen, quizKey } from './quiz.js';
+import { G, on, persist, startOver, happy, nextLocked, totalStock, leaveRace } from './game.js';
+import { CHEF_LOOK, FOODS, RACE_MINUTES, RIVALS } from './data.js';
+import { initCafe, tickCafe, openDoors, anyoneStuck, waitingCount, renderScene, resetCafe } from './cafe.js';
+import { initQuiz, openQuiz, closeQuiz, quizOpen, quizKey } from './quiz.js';
 import { initShop, openShop, refreshShop } from './shop.js';
-import { tickRivals, renderRankPill, boardHTML } from './rivals.js';
+import { tickRivals, renderRankPill, resetRankCheer, boardHTML } from './rivals.js';
+import { initRace, startRace, tickRace, finishRace, clockHTML } from './race.js';
 import { MODES, TABLES } from './questions.js';
 import { drawLook } from './milbil.js';
 import { foodSVG } from './food.js';
-import { money } from './format.js';
+import { money, ordinal } from './format.js';
 import { sfx, unlockAudio } from './audio.js';
 import { $, Sheet, bump } from './ui.js';
 
 const sheet = new Sheet($('#sheet'));
-let running = false;
+let running = false;        // customers coming in, clocks ticking
 
 // ------------------------------------------------------------- top bar ---
 
@@ -31,11 +32,22 @@ on('cash', (n) => {
   refreshShop();
 });
 
+// Swapping between your saved café and a race.
+on('switch', () => {
+  resetCafe();
+  resetRankCheer();
+  renderCash();
+  renderRankPill();
+  renderHappy();
+  $('#timer').hidden = !G.race;
+  $('#hint').hidden = true;
+});
+
 // ------------------------------------------------------ question picker ---
-// The same picker sits on the welcome card and in Settings.
+// The same picker sits on the start screen and in Settings.
 
 function qpickHTML(){
-  const st = G.s.settings;
+  const st = G.free.settings;
   const showTables = st.qmode === 'times' || st.qmode === 'mix';
   return `<div class="qpick-label">Restock questions</div>
     <div class="qmodes">${MODES.map(m =>
@@ -49,7 +61,7 @@ function wireQpick(el, rerender){
   el.addEventListener('click', (e) => {
     const m = e.target.closest('[data-qmode]');
     const t = e.target.closest('[data-table]');
-    const st = G.s.settings;
+    const st = G.free.settings;
     if (m) st.qmode = m.dataset.qmode;
     else if (t){
       const n = Number(t.dataset.table);
@@ -62,86 +74,139 @@ function wireQpick(el, rerender){
   });
 }
 
-// ------------------------------------------------------------- welcome ---
+// --------------------------------------------------------- start screen ---
 
-function showWelcome(){
-  const w = $('#welcome');
-  $('#welcomeArt').innerHTML = `<span class="chef">${drawLook(CHEF_LOOK, { title: 'You, the chef' })}</span>
-    <span class="welcome-foods">${FOODS.map(f => foodSVG(f.id)).join('')}</span>`;
-  $('#nameInput').value = G.s.name;
-  const q = $('#welcomeQ');
-  const draw = () => { q.innerHTML = qpickHTML(); };
-  draw();
-  wireQpick(q, draw);
-  const played = G.s.stats.served > 0;
-  $('#playBtn').textContent = played ? 'Back to the café!' : 'Open the café!';
-  $('#welcomeSave').innerHTML = played
-    ? `Welcome back! You've served <b>${G.s.stats.served.toLocaleString('en-US')}</b> milbils and have <b>${money(G.s.cash)}</b>.`
-    : '';
-  $('#playBtn').addEventListener('click', () => {
-    unlockAudio();
-    G.s.name = $('#nameInput').value.trim().slice(0, 12);
-    persist();
-    renderScene();
-    w.hidden = true;
-    start();
-  }, { once: true });
+function modeHTML(){
+  const st = G.free.settings;
+  const time = st.mode === 'time';
+  return `<div class="qpick-label">How do you want to play?</div>
+    <div class="modes">
+      <button type="button" data-mode="free" class="mode-btn ${time ? '' : 'on'}">
+        <span class="e">🌈</span><b>Free play</b><small>No clock. Your café is saved.</small></button>
+      <button type="button" data-mode="time" class="mode-btn ${time ? 'on' : ''}">
+        <span class="e">⏱️</span><b>Time mode</b><small>Race ${RIVALS.length} milbils. Most cash wins!</small></button>
+    </div>
+    ${time ? `<div class="qpick-label small">How long?</div>
+      <div class="minutes">${RACE_MINUTES.map(m =>
+        `<button type="button" data-min="${m}" class="${st.minutes === m ? 'on' : ''}"><b>${m}</b> min</button>`).join('')}</div>` : ''}`;
 }
 
-function start(){
-  running = true;
-  openDoors();
-  sfx('bell');
+function renderWelcome(){
+  const st = G.free.settings;
+  $('#welcomeMode').innerHTML = modeHTML();
+  $('#welcomeQ').innerHTML = qpickHTML();
+  const played = G.free.stats.served > 0;
+  let note = '';
+  if (st.mode === 'time'){
+    $('#playBtn').textContent = '⏱️ Start the race!';
+    const rec = G.free.records[st.minutes];
+    note = rec
+      ? `Your best in ${st.minutes} minutes: <b>${ordinal(rec.place)}</b> place with <b>${money(rec.cash)}</b>.`
+      : `Everyone starts with just Toast and $0. Whoever has the most cash after ${st.minutes} minutes wins.`;
+  } else {
+    $('#playBtn').textContent = played ? 'Back to the café!' : 'Open the café!';
+    if (played) note = `Welcome back! You've served <b>${G.free.stats.served.toLocaleString('en-US')}</b> milbils and have <b>${money(G.free.cash)}</b>.`;
+  }
+  $('#welcomeSave').innerHTML = note;
+}
+
+function showWelcome(){
+  $('#welcomeArt').innerHTML = `<span class="chef">${drawLook(CHEF_LOOK, { title: 'You, the chef' })}</span>
+    <span class="welcome-foods">${FOODS.map(f => foodSVG(f.id)).join('')}</span>`;
+  $('#nameInput').value = G.free.name;
+  renderWelcome();
+  $('#welcome').hidden = false;
+  $('#welcome').scrollTop = 0;
+}
+
+function play(){
+  unlockAudio();
+  G.free.name = $('#nameInput').value.trim().slice(0, 12);
+  persist();
+  $('#welcome').hidden = true;
+  if (G.free.settings.mode === 'time'){
+    startRace(G.free.settings.minutes);
+  } else {
+    if (G.race) leaveRace();
+    renderScene();
+    running = true;
+    openDoors();
+    sfx('bell');
+  }
+}
+
+/** Stop everything (for the start screen, or the end of a race). */
+function stopPlay(){
+  running = false;
+  closeQuiz();
+  sheet.close();
+  $('#hint').hidden = true;
+  $('#restockBtn').classList.remove('pulse');
+  $('#shopBtn').classList.remove('pulse');
+}
+
+function goHome(){
+  stopPlay();
+  $('#results').hidden = true;
+  if (G.race) leaveRace();
+  showWelcome();
 }
 
 // ------------------------------------------------------------ settings ---
 
 function openSettings(){
-  let confirmWipe = false;
+  let confirm = false;
   sheet.open({
     name: 'settings', icon: '⚙️', title: 'Settings',
-    render: () => `
+    extra: clockHTML,
+    render: () => {
+      const st = G.s.stats;
+      const race = !!G.race;
+      return `
       <div class="qpick in-sheet">${qpickHTML()}</div>
       <div class="set-row">
         <span>Sound</span>
-        <button type="button" class="toggle ${G.s.settings.sound ? 'on' : ''}" data-act="sound">${G.s.settings.sound ? '🔊 On' : '🔇 Off'}</button>
+        <button type="button" class="toggle ${G.free.settings.sound ? 'on' : ''}" data-act="sound">${G.free.settings.sound ? '🔊 On' : '🔇 Off'}</button>
       </div>
       <div class="stats">
-        <div><b>${G.s.stats.served.toLocaleString('en-US')}</b><small>milbils served</small></div>
-        <div><b>${G.s.stats.items.toLocaleString('en-US')}</b><small>servings</small></div>
-        <div><b>${G.s.stats.right.toLocaleString('en-US')}</b><small>answers right</small></div>
-        <div><b>${money(G.s.stats.earned)}</b><small>earned in all</small></div>
+        <div><b>${st.served.toLocaleString('en-US')}</b><small>milbils served${race ? ' this race' : ''}</small></div>
+        <div><b>${st.items.toLocaleString('en-US')}</b><small>servings</small></div>
+        <div><b>${st.right.toLocaleString('en-US')}</b><small>answers right</small></div>
+        <div><b>${money(st.earned)}</b><small>earned ${race ? 'this race' : 'in all'}</small></div>
       </div>
-      <button type="button" class="danger" data-act="wipe">${confirmWipe ? 'Tap again to start a brand new café' : '🧹 Start a new café'}</button>`,
+      ${race
+        ? `<button type="button" class="danger" data-act="finish">${confirm ? 'Tap again to finish the race now' : '🏁 Finish the race now'}</button>`
+        : `<button type="button" class="home-btn" data-act="home">🏠 Start screen (pick Time mode)</button>
+           <button type="button" class="danger" data-act="wipe">${confirm ? 'Tap again to start a brand new café' : '🧹 Start a new café'}</button>`}`;
+    },
     onAct: (act) => {
-      if (act === 'sound'){ G.s.settings.sound = !G.s.settings.sound; persist(); sfx('pop'); }
-      if (act === 'wipe'){
-        if (!confirmWipe){ confirmWipe = true; }
+      if (act === 'sound'){ G.free.settings.sound = !G.free.settings.sound; persist(); sfx('pop'); }
+      if (act === 'home'){ persist(); goHome(); return; }
+      if (act === 'finish' || act === 'wipe'){
+        if (!confirm){ confirm = true; }
+        else if (act === 'finish'){ sheet.close(); finishRace(true); return; }
         else { running = false; startOver(); return; }
       }
       sheet.render();
     },
   });
-  wireQpickOnce(sheet.body);
-}
-
-let qpickWired = false;
-function wireQpickOnce(body){
-  if (qpickWired) return;
-  qpickWired = true;
-  wireQpick(body, () => { if (sheet.is('settings')) sheet.render(); });
 }
 
 // --------------------------------------------------------- leaderboard ---
 
 function openBoard(){
-  sheet.open({ name: 'board', icon: '🏆', title: 'Leaderboard', render: boardHTML });
+  sheet.open({
+    name: 'board', icon: '🏆', title: 'Leaderboard',
+    extra: clockHTML,
+    render: boardHTML,
+  });
 }
 
 // --------------------------------------------------------------- hints ---
 // A few nudges for a first game, each shown until you've done the thing.
 
 function renderHints(){
+  if (!running) return;
   const h = G.s.hints;
   const next = nextLocked();
   const stuck = totalStock() === 0 || anyoneStuck();
@@ -150,11 +215,11 @@ function renderHints(){
   else if (!h.restocked && stuck) text = '🍽️ Need more food? Tap <b>Restock Food</b> and answer a question.';
   else if (!h.bought && next && G.s.cash >= next.costs[0]) text = `🛒 You can buy <b>${next.name}</b> in the Shop!`;
   const el = $('#hint');
-  el.hidden = !text || !running;
+  el.hidden = !text;
   if (text && el.dataset.text !== text){ el.innerHTML = text; el.dataset.text = text; bump(el, 'pop'); }
 
-  $('#restockBtn').classList.toggle('pulse', running && stuck && waitingCount() > 0);
-  $('#shopBtn').classList.toggle('pulse', running && !h.bought && !!next && G.s.cash >= next.costs[0]);
+  $('#restockBtn').classList.toggle('pulse', stuck && waitingCount() > 0);
+  $('#shopBtn').classList.toggle('pulse', !h.bought && !!next && G.s.cash >= next.costs[0]);
 }
 
 function renderHappy(){
@@ -167,23 +232,27 @@ function renderHappy(){
 
 // ----------------------------------------------------------------- loop ---
 
-let lastSec = performance.now(), lastSave = performance.now();
+let lastFrame = performance.now(), lastSec = lastFrame, lastSave = lastFrame;
 
 function frame(now){
+  // Hidden tabs get no frames, so a race clock pauses while you're away.
+  const dt = Math.min(0.25, (now - lastFrame) / 1000);
+  lastFrame = now;
   if (running){
     tickCafe(now);
-    if (now - lastSec >= 1000){
-      const dt = Math.min(3, (now - lastSec) / 1000);
-      lastSec = now;
-      tickRivals(dt);
-      renderHints();
-      renderHappy();
-      if (sheet.is('board')) sheet.render();
-    }
-    if (now - lastSave > 5000){ lastSave = now; persist(); }
-  } else {
+    if (G.race) tickRace(dt);
+  }
+  if (running && now - lastSec >= 1000){
+    const sec = Math.min(3, (now - lastSec) / 1000);
+    lastSec = now;
+    tickRivals(sec);
+    renderHints();
+    renderHappy();
+    if (sheet.is('board')) sheet.render();
+  } else if (!running){
     lastSec = now;
   }
+  if (now - lastSave > 5000){ lastSave = now; persist(); }
   requestAnimationFrame(frame);
 }
 
@@ -193,6 +262,12 @@ function boot(){
   initShop(sheet);
   initQuiz();
   initCafe({ onShop: () => openShop('food'), onRestock: openQuiz });
+  initRace({
+    onGo: () => { running = true; openDoors(); },
+    onStop: stopPlay,
+    onHome: goHome,
+    onAgain: (minutes) => startRace(minutes),
+  });
   renderCash();
   renderRankPill();
 
@@ -200,6 +275,22 @@ function boot(){
   $('#shopBtn').addEventListener('click', () => openShop('food'));
   $('#menuBtn').addEventListener('click', openSettings);
   $('#rankBtn').addEventListener('click', openBoard);
+  $('#playBtn').addEventListener('click', play);
+
+  // Start screen: free play or time mode, and how long.
+  $('#welcomeMode').addEventListener('click', (e) => {
+    const m = e.target.closest('[data-mode]');
+    const t = e.target.closest('[data-min]');
+    const st = G.free.settings;
+    if (m) st.mode = m.dataset.mode;
+    else if (t) st.minutes = Number(t.dataset.min);
+    else return;
+    sfx('pop');
+    persist();
+    renderWelcome();
+  });
+  wireQpick($('#welcomeQ'), renderWelcome);
+  wireQpick(sheet.body, () => { if (sheet.is('settings')) sheet.render(); });
 
   on('short', renderHints);
   on('served', renderHints);
@@ -223,6 +314,8 @@ function boot(){
   window.CAFE = {
     cash(n){ G.s.cash += n; renderCash(); refreshShop(); },
     state: () => G.s,
+    race: () => G.race,
+    endRace: () => { if (G.race) G.race.left = 0.01; },
     wipe: startOver,
   };
 

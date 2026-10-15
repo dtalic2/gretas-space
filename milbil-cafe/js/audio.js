@@ -44,6 +44,12 @@ export function sfx(name){
     case 'nope':    tone(c, 280, t, .14, 'square', .045, 190); break;
     case 'pop':     tone(c, 620, t, .08, 'sine', .1, 940); break;
     case 'bell':    tone(c, 1568, t, .45, 'sine', .05); tone(c, 2093, t + .02, .45, 'sine', .035); break;
+    case 'tick':    tone(c, 880, t, .09, 'square', .05); break;
+    case 'go':      tone(c, 1320, t, .4, 'square', .06); tone(c, 1760, t, .4, 'triangle', .05); break;
+    case 'whistle': tone(c, 2100, t, .5, 'sine', .08, 2300); tone(c, 1900, t + .55, .6, 'sine', .08, 1500); break;
+    case 'win':     [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => tone(c, f, t + i * .12, .22, 'square', .05)); break;
+    case 'cheer':   [523, 659, 784, 1047].forEach((f, i) => tone(c, f, t + i * .11, .2, 'triangle', .1)); break;
+    case 'done':    [392, 523, 659].forEach((f, i) => tone(c, f, t + i * .12, .2, 'triangle', .09)); break;
     case 'power':   [392, 523, 659, 784, 1047, 1319].forEach((f, i) => tone(c, f, t + i * .05, .14, 'square', .04)); break;
   }
 }

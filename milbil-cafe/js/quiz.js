@@ -10,6 +10,7 @@ import { makeQuestion } from './questions.js';
 import { foodSVG } from './food.js';
 import { sfx } from './audio.js';
 import { $, esc } from './ui.js';
+import { clockHTML } from './race.js';
 
 let box = null;
 let q = null;
@@ -38,7 +39,7 @@ export function openQuiz(){
   document.body.classList.add('quizzing');
   box.innerHTML = `
     <div class="q-top">
-      <div class="q-label">🍽️ Restock Food</div>
+      <div class="q-head"><span class="q-label">🍽️ Restock Food</span>${clockHTML()}</div>
       <div class="q-box"><span>${esc(q.text)}</span></div>
     </div>
     <div class="q-answers">
@@ -79,6 +80,8 @@ function answer(i){
   clearTimeout(closeTimer);
   closeTimer = setTimeout(close, ok ? 1300 : 2600);
 }
+
+export function closeQuiz(){ close(); }
 
 function close(){
   if (phase === 'closed') return;

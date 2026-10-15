@@ -18,6 +18,36 @@ Tap **Add to Home Screen** and it opens full screen like an app.
 
 ---
 
+## Two ways to play
+
+On the start screen you pick:
+
+- **🌈 Free play.** No clock. Your café is saved, so you can keep building it up
+  over days. This is how the game played before time mode.
+- **⏱️ Time mode.** Pick **2, 3, 5, 7, 10 or 15 minutes** and race ten other milbil
+  cafés. Everyone starts from nothing: just Toast and $0. After **3, 2, 1, Go!**
+  the clock counts down in the corner of the café. It also shows on the question
+  screen and in the shop, and ticks through the last 10 seconds. When it hits
+  zero, **whoever has the most cash wins**. Spending is how your café grows, but
+  money you've spent doesn't count at the end, so stop shopping near the finish.
+
+A race is a separate café. It never touches your free-play save.
+
+### The end of a race
+
+When the time's up you get:
+
+- **The podium:** 1st, 2nd and 3rd, with each café's milbil and cash.
+- **Your review**, every time, wherever you came: your place out of 11, your
+  cash, how far you were from the place above (or "You won!"), and how the game
+  went: milbils served, questions right, foods on your menu and café level.
+- **Your best** for that length of race, saved, with 🏅 when you beat it.
+- **See all 11 places** for the full leaderboard, then **🔁 Play again** or
+  **🏠 Start screen**.
+
+⚙️ Settings has **🏁 Finish the race now**, which ends it early and still shows
+the podium and your review.
+
 ## How it plays
 
 1. **Serve.** Up to three milbils wait in the café at a time, each with a speech
@@ -96,21 +126,38 @@ the other cafés in town.
 | 📦 Supply Crate | $1,000 | 20 more servings of every food on your menu |
 | 😊 Happy Customers | $2,500 | Every milbil pays double for 30 seconds |
 | 🗑️ Trash the Food | $5,000 | A café you pick earns nothing for 20 seconds |
-| 🧾 TAXES!!! | $7,500 | Every other café pays you 25% of its cash |
+| 🧾 TAXES!!! | $7,500 | Every other café pays you 10% of its cash |
 | 🔍 Health Inspection | $10,000 | A café you pick is shut for 30 seconds |
 | 🔁 Run It Back | $150,000 | Every ability you've used can be bought again |
 
 ## The leaderboard
 
-In Blooket you race the rest of the class. Here you race three other cafés, run
-by Greta's own drawings: **Chomp's Café**, **Hattie's Café** and **Scoop's Café**.
-🏆 in the top bar shows your place, and tapping it shows everyone's cash.
+In Blooket you race the rest of the class. Here you race ten other milbil cafés.
+Five are run by Greta's own drawings (**Chomp**, **Hattie**, **Scoop**, **Petal**
+and **Sunny**) and five by drawn milbils (**Royal**, **Wizzle**, **Starry**,
+**Sporty** and **Cosy**). 🏆 in the top bar shows your place, and tapping it
+shows everyone's cash. Like Blooket, the leaderboard counts the cash you're
+holding, so a big shopping trip can drop you down a few places for a while.
+The other cafés never use abilities on you.
 
-The other cafés earn at about your pace, a little slower when they're well ahead
-and a little faster when they're well behind, so it stays a race however far
-you've got. Like Blooket, the leaderboard counts the cash you're holding, so a
-big shopping trip can drop you down a place for a while. They never use
-abilities on you.
+**In free play** the other cafés earn at about your pace, a little slower when
+they're well ahead and a little faster when they're well behind, so it stays a
+race however far you've got.
+
+**In time mode** every other café really plays. It starts with Toast and $0,
+earns from the foods it has, and buys whichever upgrade pays best, as long as
+there's time left for it to pay for itself. Each milbil has its own speed, so
+they don't speed up when you do. Play well and you'll beat them. Chomp and
+Hattie are the quickest, and Cosy is the slowest. Scoop, Sunny, Wizzle and
+Sporty keep shopping too close to the end and finish with less cash than they
+could have. Each race, every café is up to 12% quicker or slower than usual,
+so no two races are the same.
+
+The speeds were set by playtesting with a robot that answers every question
+right in 3 seconds and taps a milbil about twice a second. In a 2-minute race,
+with no shopping in the last 30 seconds, it came 1st with $27,047, ahead of
+Chomp's $15,158, and the slowest café had $3,955. A slower player, or one who
+keeps spending until the end, will usually land somewhere in the middle.
 
 ## The milbils
 
@@ -131,14 +178,18 @@ chef's hat and apron.
 | `js/quiz.js` | Restock Food: the question screen and Correct / Incorrect |
 | `js/questions.js` | Makes questions and believable wrong answers |
 | `js/shop.js` | The shop and what each ability does |
-| `js/rivals.js` | The other cafés and the leaderboard |
+| `js/rivals.js` | The other cafés, how they earn and shop, and the leaderboard |
+| `js/race.js` | Time mode: the countdown, the clock, the podium and your review |
 | `js/game.js` | Your save while playing, money, stock, and a tiny event bus |
 | `js/state.js` | Loading and saving |
 | `js/audio.js` | Little sounds, made on the spot |
-| `js/main.js` | Start-up, the top bar, settings, hints and the game loop |
+| `js/main.js` | Start-up, the start screen, settings, hints and the game loop |
 
-The game saves to `localStorage` every few seconds. In the browser console,
-`CAFE.cash(n)` adds money for testing, and `CAFE.wipe()` starts again.
+The game saves your free-play café, settings and best race results to
+`localStorage` every few seconds. A race in progress isn't saved, so reloading
+the page ends it. In the browser console, `CAFE.cash(n)` adds money for
+testing, `CAFE.endRace()` runs a race's clock out, and `CAFE.wipe()` starts
+again.
 
 The lettering is Titan One and Nunito from Google Fonts. Offline, it falls back
 to a rounded system font.

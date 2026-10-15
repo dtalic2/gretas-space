@@ -1,6 +1,6 @@
 // ---------- Your save ----------
 
-import { FOODS, ABILITY_BY_ID, CAFE_LEVELS, RIVALS, START_STOCK, MAX_LEVEL } from './data.js';
+import { FOODS, ABILITY_BY_ID, CAFE_LEVELS, RIVALS, START_STOCK, MAX_LEVEL, RACE_MINUTES, RACE_DEFAULT } from './data.js';
 import { TABLES } from './questions.js';
 
 const KEY = 'milbil-cafe-v1';
@@ -15,9 +15,10 @@ export function fresh(){
     cafe: 1,
     used: {},                       // abilities used since the last Run It Back
     rivals: Object.fromEntries(RIVALS.map(r => [r.id, 0])),
-    settings: { qmode: 'times', tables: [2, 5, 10], sound: true },
+    settings: { qmode: 'times', tables: [2, 5, 10], sound: true, mode: 'free', minutes: RACE_DEFAULT },
     stats: { served: 0, items: 0, earned: 0, right: 0, wrong: 0 },
     hints: {},
+    records: {},                    // time mode: minutes -> your best { place, cash }
     savedAt: Date.now(),
   };
 }
@@ -47,6 +48,13 @@ export function load(){
   for (const id of Object.keys(out.rivals)) out.rivals[id] = Math.max(0, Number(out.rivals[id]) || 0);
   const t = (out.settings.tables || []).filter(n => TABLES.includes(n));
   out.settings.tables = t.length ? t : [2, 5, 10];
+  if (out.settings.mode !== 'time') out.settings.mode = 'free';
+  if (!RACE_MINUTES.includes(out.settings.minutes)) out.settings.minutes = RACE_DEFAULT;
+  out.records = {};
+  for (const m of RACE_MINUTES){
+    const r = s.records?.[m];
+    if (r && r.place > 0) out.records[m] = { place: r.place | 0, cash: Math.max(0, Number(r.cash) || 0), of: r.of | 0 };
+  }
   return out;
 }
 

@@ -85,7 +85,7 @@ export const ABILITIES = [
   { id:'trash',    name:'Trash the Food',   cost:5000,   icon:'🗑️', target:true,
     text:'Pick a café. Its food goes in the bin, so it earns nothing for 20 seconds.' },
   { id:'taxes',    name:'TAXES!!!',         cost:7500,   icon:'🧾',
-    text:'Every other café pays you 25% of its cash.' },
+    text:'Every other café pays you 10% of its cash.' },
   { id:'inspect',  name:'Health Inspection', cost:10000, icon:'🔍', target:true,
     text:'Pick a café. It is shut for an inspection for 30 seconds.' },
   { id:'runback',  name:'Run It Back',      cost:150000, icon:'🔁',
@@ -96,14 +96,37 @@ export const HAPPY_MS = 30000;
 export const TRASH_MS = 20000;
 export const INSPECT_MS = 30000;
 export const CRATE_STOCK = 20;
+export const TAX_RATE = 0.10;
 
-// The other cafés in town, run by Greta's own milbils. `pace` is how hard
-// they keep up with you.
+// The other cafés in town: ten milbils, five of them Greta's own drawings.
+//   pace   how hard they keep up with you in free play
+//   skill  how fast they serve in time mode (about 0.6 is a quick child who
+//          answers in 3 seconds and taps twice a second)
+//   greed  how late in a race they keep spending (above 1 they overspend and
+//          finish with less cash)
 export const RIVALS = [
-  { id:'chomp',  name:"Chomp's Café",  art:'art/chomp.png',  pace:0.55 },
-  { id:'hattie', name:"Hattie's Café", art:'art/hattie.png', pace:0.45 },
-  { id:'scoop',  name:"Scoop's Café",  art:'art/scoop.png',  pace:0.35 },
+  { id:'chomp',  name:'Chomp',  art:'art/chomp.png',  pace:0.60, skill:0.56, greed:0.9 },
+  { id:'hattie', name:'Hattie', art:'art/hattie.png', pace:0.55, skill:0.52, greed:0.8 },
+  { id:'scoop',  name:'Scoop',  art:'art/scoop.png',  pace:0.50, skill:0.49, greed:1.4 },
+  { id:'petal',  name:'Petal',  art:'art/petal.png',  pace:0.45, skill:0.46, greed:0.8 },
+  { id:'sunny',  name:'Sunny',  art:'art/sunny.png',  pace:0.40, skill:0.43, greed:2.0 },
+  { id:'royal',  name:'Royal',  look:{ line:'#e0b000', hat:'crown', extra:'cape' },  pace:0.36, skill:0.40, greed:0.9 },
+  { id:'wizzle', name:'Wizzle', look:{ line:'#6a5cff', hat:'wizard' },               pace:0.32, skill:0.37, greed:1.2 },
+  { id:'starry', name:'Starry', look:{ line:'#ffc93c', eyes:'sparkle', badge:'star' }, pace:0.28, skill:0.34, greed:0.8 },
+  { id:'sporty', name:'Sporty', look:{ line:'#e05252', hat:'cap' },                  pace:0.24, skill:0.31, greed:2.5 },
+  { id:'cosy',   name:'Cosy',   look:{ line:'#3f7fe0', hat:'beanie', extra:'scarf' }, pace:0.20, skill:0.28, greed:1.0 },
 ];
+export const RIVAL_BY_ID = Object.fromEntries(RIVALS.map(r => [r.id, r]));
+export const cafeOf = (r) => `${r.name}'s Café`;
+
+// Time mode
+export const RACE_MINUTES = [2, 3, 5, 7, 10, 15];
+export const RACE_DEFAULT = 5;
+// How a rival's serving speed is worked out: a right answer every RACE_Q
+// seconds, and up to RACE_S servings a second in between.
+export const RACE_Q = 5;
+export const RACE_S = 3;
+export const RACE_JITTER = 0.12;      // each race, every rival is up to 12% better or worse
 
 // The milbils who come in for breakfast. Drawn ones are a Common Milbil plus
 // a feature or two; the rest are Greta's own drawings and turn up now and then.

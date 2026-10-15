@@ -1,10 +1,16 @@
 // ---------- The running game: your save, timers, and a little event bus ----------
 
 import { FOODS, FOOD_BY_ID, CAFE_LEVELS, MAX_LEVEL } from './data.js';
-import { load, save, wipe } from './state.js';
+import { load, save, wipe, fresh } from './state.js';
 
+// G.s is the café you're playing right now. In free play that's your saved
+// café (G.free). A time-mode race is a brand-new café that is never saved,
+// though it shares your name, settings and hints with the saved one.
+const saved = load();
 export const G = {
-  s: load(),
+  s: saved,
+  free: saved,
+  race: null,          // time mode: { minutes, left, live, over, rivals }
   happyUntil: 0,       // Happy Customers runs until this time (performance.now())
   rivalOff: {},        // rival id -> { until, why: 'trash' | 'inspect' }
   rate: 0,             // what you've been earning per second lately
@@ -58,7 +64,34 @@ export const totalStock = () => menu().reduce((t, f) => t + (G.s.stock[f.id] || 
 
 export const canUpgrade = (id) => (G.s.foods[id] || 0) < MAX_LEVEL;
 
-export function persist(){ if (!G.wiped) save(G.s); }
+export function persist(){ if (!G.wiped) save(G.free); }
+
+function resetTimers(){
+  G.happyUntil = 0;
+  G.rivalOff = {};
+  G.rate = 0;
+  G.earnedThisSec = 0;
+}
+
+/** Swap to a fresh café for a race. */
+export function enterRace(race){
+  const run = fresh();
+  run.name = G.free.name;
+  run.settings = G.free.settings;
+  run.hints = G.free.hints;
+  G.s = run;
+  G.race = race;
+  resetTimers();
+  emit('switch');
+}
+
+/** Back to your saved café. */
+export function leaveRace(){
+  G.s = G.free;
+  G.race = null;
+  resetTimers();
+  emit('switch');
+}
 
 /** Throw the save away and start again (the reload must not save it back). */
 export function startOver(){

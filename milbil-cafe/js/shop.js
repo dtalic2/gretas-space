@@ -7,12 +7,13 @@
 
 import { G, emit, spend, addCash, addStock, priceOf, cafeLevel, persist } from './game.js';
 import { FOODS, PLATES, CAFE_LEVELS, ABILITIES, ABILITY_BY_ID, MAX_LEVEL, UNLOCK_STOCK,
-         HAPPY_MS, TRASH_MS, INSPECT_MS, CRATE_STOCK, RIVALS } from './data.js';
+         HAPPY_MS, TRASH_MS, INSPECT_MS, CRATE_STOCK, TAX_RATE, RIVALS, cafeOf } from './data.js';
 import { foodSVG } from './food.js';
 import { money } from './format.js';
 import { sfx } from './audio.js';
 import { esc, toast } from './ui.js';
-import { targetHTML } from './rivals.js';
+import { targetHTML, rivalCash, setRivalCash } from './rivals.js';
+import { clockHTML } from './race.js';
 
 let sheet = null;
 let aiming = null;          // ability waiting for you to pick a café
@@ -24,7 +25,7 @@ export function openShop(tab = 'food'){
   sheet.open({
     name: 'shop', icon: '🛒', title: 'Shop',
     tabs: [{ id: 'food', label: '🍞 Food' }, { id: 'cafe', label: '☕ Café' }, { id: 'powers', label: '⚡ Abilities' }],
-    extra: () => `<span class="cash-mini">${money(G.s.cash)}</span>`,
+    extra: () => `${clockHTML()}<span class="cash-mini">${money(G.s.cash)}</span>`,
     render,
     onAct,
     onClose: () => { aiming = null; },
@@ -192,17 +193,17 @@ function usePower(a, rival){
       break;
     case 'trash':
       G.rivalOff[rival.id] = { until: now + TRASH_MS, why: 'trash' };
-      toast(`🗑️ <b>${esc(rival.name)}</b> has no food for 20 seconds!`, 'good big');
+      toast(`🗑️ <b>${esc(cafeOf(rival))}</b> has no food for 20 seconds!`, 'good big');
       break;
     case 'inspect':
       G.rivalOff[rival.id] = { until: now + INSPECT_MS, why: 'inspect' };
-      toast(`🔍 <b>${esc(rival.name)}</b> is shut for an inspection!`, 'good big');
+      toast(`🔍 <b>${esc(cafeOf(rival))}</b> is shut for an inspection!`, 'good big');
       break;
     case 'taxes': {
       let got = 0;
       for (const r of RIVALS){
-        const take = Math.round((G.s.rivals[r.id] || 0) * 0.25);
-        G.s.rivals[r.id] -= take;
+        const take = Math.round(rivalCash(r.id) * TAX_RATE);
+        setRivalCash(r.id, rivalCash(r.id) - take);
         got += take;
       }
       addCash(got);
