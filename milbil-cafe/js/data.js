@@ -63,6 +63,18 @@ export const cafePay = (c) => c.mult * (1 + c.extra);
 /** "10%", for the extra. */
 export const extraText = (c) => `${Math.round(c.extra * 100)}%`;
 
+// Pay boost: every milbil you serve makes every milbil after it pay 10% more,
+// so pay grows exponentially: about x2.6 after 10 milbils, x117 after 50,
+// x13,781 after 100 and x190 million after 200. It never resets in free play.
+// The caps keep money below the biggest number JavaScript can hold (about
+// 1.8 with 308 zeros), past which it would turn into "Infinity".
+export const BOOST_RATE = 1.10;
+export const BOOST_MAX = 1e280;
+export const CASH_MAX = 1e300;
+// About how many servings one milbil orders, for working out how many
+// milbils a rival café has served in time mode.
+export const SERVINGS_PER_MILBIL = 2.5;
+
 // One right answer puts this many servings of every food on your menu.
 export const RESTOCK = 5;
 // A newly unlocked food comes with one restock's worth, ready to serve.

@@ -69,6 +69,32 @@ the podium and your review.
 4. **Shop.** Open it any time, like a Blooket live game. It has three tabs: Food,
    Café and Abilities.
 
+### 💸 Pay boost
+
+Every milbil you serve (once its whole order is done) makes every milbil after
+it pay **10% more**, so the money grows exponentially:
+
+| Milbils served | Every milbil pays |
+| ---: | --- |
+| 10 | ×2.6 |
+| 50 | ×117 |
+| 100 | ×13,781 |
+| 200 | ×190 Million |
+| 300 | ×2.6 Trillion |
+| 500 | ×497 Quintillion |
+| 1,000 | ×247 Duodecillion |
+
+The **💸 meter** in the top corner of the café shows the boost right now. The
+shop's "Sells for" prices include it. In free play it never resets. A race
+starts it again from ×1, and the rival cafés get the same boost for the
+milbils they serve.
+
+Past $999,999,999 money is shown as a number and a name, like **$1.23 Billion**
+or **$45.6 Quattuordecillion**, and at the top of the screen the name goes on a
+small line under the number. The names go all the way up to Centillion (a 1
+with 303 zeros). Cash stops at a 1 with 300 zeros, which is about as big as the
+game can count before the number breaks.
+
 You start with **Toast** and 5 servings of it. On your first game, hints show you
 what to do next: serve, restock, then buy Cereal.
 
@@ -165,13 +191,17 @@ they don't speed up when you do. Play well and you'll beat them. Chomp and
 Hattie are the quickest, and Cosy is the slowest. Scoop, Sunny, Wizzle and
 Sporty keep shopping too close to the end and finish with less cash than they
 could have. Each race, every café is up to 12% quicker or slower than usual,
-so no two races are the same.
+so no two races are the same. Every café's milbils get the same 💸 pay boost as
+yours, counted from how many milbils it has served, so whoever serves the most
+milbils pulls ahead fast.
 
 The speeds were set by playtesting with a robot that answers every question
 right in 3 seconds and taps a milbil about twice a second. In a 2-minute race,
 with no shopping in the last 30 seconds, it came 1st with $27,047, ahead of
 Chomp's $15,158, and the slowest café had $3,955. A slower player, or one who
-keeps spending until the end, will usually land somewhere in the middle.
+keeps spending until the end, will usually land somewhere in the middle. (That
+playtest was before Auto-serve, questions that keep coming and the pay boost,
+which all make races easier for you.)
 
 ## The milbils
 
@@ -194,7 +224,8 @@ chef's hat and apron.
 | `js/shop.js` | The shop and what each ability does |
 | `js/rivals.js` | The other cafés, how they earn and shop, and the leaderboard |
 | `js/race.js` | Time mode: the countdown, the clock, the podium and your review |
-| `js/game.js` | Your save while playing, money, stock, and a tiny event bus |
+| `js/game.js` | Your save while playing, money, the pay boost, stock, and a tiny event bus |
+| `js/format.js` | Money and multipliers as text, with names from Billion to Centillion |
 | `js/state.js` | Loading and saving |
 | `js/audio.js` | Little sounds, made on the spot |
 | `js/main.js` | Start-up, the start screen, settings, hints and the game loop |

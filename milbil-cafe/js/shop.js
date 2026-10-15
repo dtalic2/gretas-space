@@ -5,11 +5,11 @@
 // level puts it on a new colour of plate. Café upgrades make everything sell
 // for more, and redecorate.
 
-import { G, emit, spend, addCash, addStock, priceOf, cafeLevel, persist } from './game.js';
+import { G, emit, spend, addCash, addStock, priceOf, cafeLevel, persist, boost } from './game.js';
 import { FOODS, PLATES, CAFE_LEVELS, ABILITIES, ABILITY_BY_ID, MAX_LEVEL, UNLOCK_STOCK,
          HAPPY_MS, TRASH_MS, INSPECT_MS, CRATE_STOCK, TAX_RATE, RIVALS, cafeOf, extraText } from './data.js';
 import { foodSVG } from './food.js';
-import { money } from './format.js';
+import { money, times } from './format.js';
 import { sfx } from './audio.js';
 import { esc, toast } from './ui.js';
 import { targetHTML, rivalCash, setRivalCash } from './rivals.js';
@@ -57,7 +57,8 @@ function foodTab(){
   return `<p class="note">Each food sells for more at every level, and goes on a fancier plate.
     ${c.mult > 1
       ? `Your café makes everything sell for <b>×${c.mult}</b>, and milbils pay <b>${extraText(c)} more</b>.`
-      : `Milbils pay <b>${extraText(c)} more</b> at your café.`}</p>
+      : `Milbils pay <b>${extraText(c)} more</b> at your café.`}
+    Every milbil you serve makes the next one pay 10% more: right now <b>${times(boost())}</b>, and it's in these prices.</p>
     <div class="cards">${FOODS.map(f => {
       const lvl = G.s.foods[f.id] || 0;
       const plate = PLATES[Math.max(0, lvl - 1)];

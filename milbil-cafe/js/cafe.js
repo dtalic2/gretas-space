@@ -188,6 +188,8 @@ export function serve(i, auto = false){
 function leave(c){
   c.state = 'out';
   G.s.stats.served++;
+  G.s.boostN = (G.s.boostN || 0) + 1;      // the next milbil pays 10% more
+  emit('boost');
   renderBubble(c);
   bump(c.el, 'happy-hop');
   if (!quiet()) setTimeout(() => sfx('thanks'), 120);

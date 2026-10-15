@@ -14,11 +14,11 @@
 //
 // Rivals never use abilities on you.
 
-import { G, cafeName } from './game.js';
+import { G, cafeName, boost } from './game.js';
 import { RIVALS, RIVAL_BY_ID, CHEF_LOOK, FOODS, CAFE_LEVELS, MAX_LEVEL,
-         RACE_Q, RACE_S, RACE_JITTER, cafeOf, cafePay } from './data.js';
+         RACE_Q, RACE_S, RACE_JITTER, cafeOf, cafePay, SERVINGS_PER_MILBIL, CASH_MAX } from './data.js';
 import { drawLook, artHTML } from './milbil.js';
-import { money, ordinal } from './format.js';
+import { money, moneyHTML, ordinal } from './format.js';
 import { $, esc, toast } from './ui.js';
 
 const BASE_RATE = 0.6;      // free play: $ per second they make even when you're not earning
@@ -51,10 +51,12 @@ export function faceHTML(row){
 
 const sps = (n) => 5 * n / (RACE_Q + 5 * n / RACE_S);
 
+const menuSize = (r) => r.lv.filter(Boolean).length;
+
 function income(r){
   let sum = 0, n = 0;
   FOODS.forEach((f, i) => { if (r.lv[i]){ sum += f.prices[r.lv[i] - 1]; n++; } });
-  return n ? sps(n) * r.skill * (sum / n) * cafePay(CAFE_LEVELS[r.cafe - 1]) : 0;
+  return n ? sps(n) * r.skill * (sum / n) * cafePay(CAFE_LEVELS[r.cafe - 1]) * boost(r.boostN) : 0;
 }
 
 // Every purchase a rival could make next: the next food, any upgrade, or the
@@ -77,7 +79,7 @@ function shop(r, timeLeft){
     const now = income(r);
     let best = null;
     for (const c of choices(r)){
-      const after = { lv: r.lv.slice(), cafe: r.cafe, skill: r.skill };
+      const after = { lv: r.lv.slice(), cafe: r.cafe, skill: r.skill, boostN: r.boostN };
       c.apply(after);
       const gain = income(after) - now;
       if (gain <= 0 || gain * timeLeft * r.greed < c.cost) continue;
@@ -93,7 +95,7 @@ function shop(r, timeLeft){
 /** Fresh rival cafés for a race, each a little better or worse than usual. */
 export function raceRivals(){
   return Object.fromEntries(RIVALS.map(r => [r.id, {
-    cash: 0, lv: FOODS.map((f, i) => i === 0 ? 1 : 0), cafe: 1,
+    cash: 0, lv: FOODS.map((f, i) => i === 0 ? 1 : 0), cafe: 1, boostN: 0,
     skill: r.skill * (1 + (Math.random() * 2 - 1) * RACE_JITTER),
     greed: r.greed,
   }]));
@@ -120,14 +122,15 @@ export function tickRivals(dt){
     if (G.race){
       const rv = G.race.rivals[r.id];
       shop(rv, G.race.left);
-      const made = income(rv) * dt;
-      rv.cash += made;
+      rv.cash = Math.min(CASH_MAX, rv.cash + income(rv) * dt);
+      // Their milbils get the same pay boost as yours.
+      rv.boostN += sps(menuSize(rv)) * rv.skill / SERVINGS_PER_MILBIL * dt;
     } else {
       const cash = G.s.rivals[r.id] || 0;
       const ratio = cash / you;
       const band = ratio > 1.4 ? 0.5 : ratio < 0.6 ? 1.6 : 1;
       const wobble = 0.6 + Math.random() * 0.8;
-      G.s.rivals[r.id] = cash + Math.max(BASE_RATE, G.rate) * r.pace * band * wobble * dt;
+      G.s.rivals[r.id] = Math.min(CASH_MAX, cash + Math.max(BASE_RATE, G.rate) * r.pace * band * wobble * dt);
     }
   }
 
@@ -170,7 +173,7 @@ export function rowsHTML(rows){
       <span class="medal">${medal(i)}</span>
       <span class="board-pic">${faceHTML(r)}</span>
       <span class="board-name"><b>${esc(r.me ? cafeName() : r.cafe)}</b><small>${r.me ? 'You!' : offText(r.id)}</small></span>
-      <span class="board-cash">${money(r.cash)}</span>
+      <span class="board-cash">${moneyHTML(r.cash)}</span>
     </div>`).join('')}</div>`;
 }
 

@@ -726,3 +726,26 @@ body.quizzing .toasts { display: none; }
 .race-clock.beat { animation: beat .35s ease-out; }
 .sheet-extra { display: flex; align-items: center; gap: 6px; }
 .bigmsg.long { font-size: clamp(52px, 16vw, 130px); text-align: center; }
+
+/* ============================================================ pay boost === */
+.boost-pill {
+  position: absolute; left: 8px; top: 8px; z-index: 6;
+  background: #fff; border-radius: 12px; padding: 4px 9px 4px 7px;
+  box-shadow: var(--edge-sm), 0 3px 8px #0003;
+  display: flex; align-items: center; gap: 4px; white-space: nowrap;
+}
+.boost-pill .e { font-size: 18px; }
+.boost-pill .v { display: flex; flex-direction: column; line-height: 1; }
+.boost-pill b { font-family: var(--title); font-weight: 400; font-size: 17px; color: #e0408a; }
+.boost-pill small { font-size: 10px; font-weight: 900; color: var(--muted); }
+.boost-pill.beat { animation: beat .35s ease-out; }
+
+/* big cash: "$1.23" with "Quadrillion" on a small line underneath */
+.big-money { display: inline-flex; flex-direction: column; align-items: flex-end; line-height: 1; }
+.big-money small { font-family: var(--font); font-weight: 900; font-size: .55em; color: inherit; opacity: .85; margin-top: 1px; }
+.podium-cash .big-money, .review-cash .big-money { align-items: center; }
+.cash-pill.big small { order: 2; text-transform: none; letter-spacing: 0; font-size: 11px; color: var(--green-d);
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 4px; }
+.stats div.wide { grid-column: 1 / -1; }
+.review-boost { font-size: 14px; }
+.review-boost b { font-family: var(--title); font-weight: 400; color: #e0408a; }

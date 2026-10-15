@@ -1,6 +1,6 @@
 // ---------- Start-up, the start screen, settings, hints and the game loop ----------
 
-import { G, on, persist, startOver, happy, nextLocked, totalStock, leaveRace } from './game.js';
+import { G, on, persist, startOver, happy, nextLocked, totalStock, leaveRace, boost, addCash } from './game.js';
 import { CHEF_LOOK, FOODS, RACE_MINUTES, RIVALS } from './data.js';
 import { initCafe, tickCafe, openDoors, anyoneStuck, waitingCount, renderScene, resetCafe } from './cafe.js';
 import { initQuiz, openQuiz, closeQuiz, quizOpen, quizKey, toggleAutoServe } from './quiz.js';
@@ -10,7 +10,7 @@ import { initRace, startRace, tickRace, finishRace, clockHTML } from './race.js'
 import { MODES, TABLES } from './questions.js';
 import { drawLook } from './milbil.js';
 import { foodSVG } from './food.js';
-import { money, ordinal } from './format.js';
+import { money, bigParts, times, ordinal } from './format.js';
 import { sfx, unlockAudio } from './audio.js';
 import { $, Sheet, bump } from './ui.js';
 
@@ -19,11 +19,33 @@ let running = false;        // customers coming in, clocks ticking
 
 // ------------------------------------------------------------- top bar ---
 
-// Shrink the number as it grows so it always fits.
+// Shrink the number as it grows so it always fits. Past a billion the name
+// ("Quadrillion") moves to the small line under the number.
 function renderCash(){
-  const el = $('#cash'), t = money(G.s.cash);
+  const el = $('#cash'), label = $('#cashPill small'), pill = $('#cashPill');
+  const big = G.s.cash >= 1e9;
+  pill.classList.toggle('big', big);
+  if (big){
+    const p = bigParts(G.s.cash);
+    el.textContent = '$' + p.num;
+    label.textContent = p.name;
+    el.style.fontSize = '';
+    return;
+  }
+  const t = money(G.s.cash);
   el.textContent = t;
+  label.textContent = 'Cash';
   el.style.fontSize = t.length <= 6 ? '' : t.length <= 8 ? '21px' : t.length <= 10 ? '18px' : t.length <= 12 ? '15px' : '13px';
+}
+
+// The pay boost meter: how much more every milbil pays now.
+function renderBoost(grew){
+  const pill = $('#boostPill');
+  const n = boost();
+  const p = n >= 1e6 ? bigParts(n) : null;
+  pill.querySelector('b').textContent = p ? `×${p.num}` : times(n);
+  pill.querySelector('small').textContent = p ? p.name : 'pay boost';
+  if (grew) bump(pill, 'beat');
 }
 
 on('cash', (n) => {
@@ -37,6 +59,7 @@ on('switch', () => {
   resetCafe();
   resetRankCheer();
   renderCash();
+  renderBoost();
   renderRankPill();
   renderHappy();
   $('#timer').hidden = !G.race;
@@ -173,6 +196,7 @@ function openSettings(){
         <div><b>${st.items.toLocaleString('en-US')}</b><small>servings</small></div>
         <div><b>${st.right.toLocaleString('en-US')}</b><small>answers right</small></div>
         <div><b>${money(st.earned)}</b><small>earned ${race ? 'this race' : 'in all'}</small></div>
+        <div class="wide"><b>💸 ${times(boost())}</b><small>pay boost: every milbil you serve makes the next one pay 10% more</small></div>
       </div>
       ${race
         ? `<button type="button" class="danger" data-act="finish">${confirm ? 'Tap again to finish the race now' : '🏁 Finish the race now'}</button>`
@@ -277,7 +301,9 @@ function boot(){
     onAgain: (minutes) => startRace(minutes),
   });
   renderCash();
+  renderBoost();
   renderRankPill();
+  on('boost', () => renderBoost(true));
 
   $('#restockBtn').addEventListener('click', openQuiz);
   $('#autoBtn').addEventListener('click', toggleAutoServe);
@@ -324,7 +350,7 @@ function boot(){
 
   // For testing from the browser console.
   window.CAFE = {
-    cash(n){ G.s.cash += n; renderCash(); refreshShop(); },
+    cash: addCash,
     state: () => G.s,
     race: () => G.race,
     endRace: () => { if (G.race) G.race.left = 0.01; },

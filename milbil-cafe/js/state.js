@@ -16,6 +16,7 @@ export function fresh(){
     rivals: Object.fromEntries(RIVALS.map(r => [r.id, 0])),
     settings: { qmode: 'times', tables: [2, 5, 10], sound: true, mode: 'free', minutes: RACE_DEFAULT, autoServe: false },
     stats: { served: 0, items: 0, earned: 0, right: 0, wrong: 0 },
+    boostN: 0,                      // milbils served since the pay boost began
     hints: {},
     records: {},                    // time mode: minutes -> your best { place, cash }
     savedAt: Date.now(),
@@ -34,6 +35,7 @@ export function load(){
     rivals: { ...base.rivals, ...(s.rivals || {}) } };
 
   out.cash = Math.max(0, Number(out.cash) || 0);
+  out.boostN = Math.max(0, Number(s.boostN) || 0);
   out.cafe = Math.min(CAFE_LEVELS.length, Math.max(1, out.cafe | 0));
   out.foods = {};
   for (const f of FOODS){

@@ -20,9 +20,12 @@ export function floatText(fromEl, text, cls = ''){
   const f = document.createElement('div');
   f.className = `floater ${cls}`;
   f.textContent = text;
-  f.style.left = `${r.left + r.width / 2}px`;
   f.style.top = `${r.top + r.height * 0.35}px`;
   document.body.appendChild(f);
+  // Keep long amounts ("+$49.5 Trillion") on screen at the edges.
+  const half = f.offsetWidth * 0.6 + 6;      // it grows a little as it pops
+  const x = Math.min(window.innerWidth - half, Math.max(half, r.left + r.width / 2));
+  f.style.left = `${x}px`;
   setTimeout(() => f.remove(), 1100);
 }
 

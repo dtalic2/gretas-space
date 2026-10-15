@@ -1,6 +1,6 @@
 // ---------- The running game: your save, timers, and a little event bus ----------
 
-import { FOODS, FOOD_BY_ID, CAFE_LEVELS, MAX_LEVEL, cafePay } from './data.js';
+import { FOODS, FOOD_BY_ID, CAFE_LEVELS, MAX_LEVEL, cafePay, BOOST_RATE, BOOST_MAX, CASH_MAX } from './data.js';
 import { load, save, wipe, fresh } from './state.js';
 
 // G.s is the café you're playing right now. In free play that's your saved
@@ -31,22 +31,27 @@ export const menu = () => FOODS.filter(f => G.s.foods[f.id]);
 /** The next food you could unlock, if any. */
 export const nextLocked = () => FOODS.find(f => !G.s.foods[f.id]);
 
-/** One serving's price right now, café bonus and extra included (but not Happy Customers). */
+/** How much more every milbil pays now: 10% more for each milbil served. */
+export const boost = (n = G.s.boostN) => Math.min(BOOST_MAX, Math.pow(BOOST_RATE, n || 0));
+
+/** One serving's price right now: café bonus, extra and pay boost included (not Happy Customers). */
 export function priceOf(id, level = G.s.foods[id]){
   if (!level) return 0;
-  return Math.round(FOOD_BY_ID[id].prices[level - 1] * cafePay(cafeLevel()));
+  return Math.round(FOOD_BY_ID[id].prices[level - 1] * cafePay(cafeLevel()) * boost());
 }
+
+const capped = (n) => Math.min(CASH_MAX, n);
 
 /** Money from serving milbils: counts toward your earning pace. */
 export function earn(n){
-  G.s.cash += n;
-  G.s.stats.earned += n;
+  G.s.cash = capped(G.s.cash + n);
+  G.s.stats.earned = capped(G.s.stats.earned + n);
   G.earnedThisSec += n;
   emit('cash', n);
 }
 /** Money from anywhere else (abilities). */
 export function addCash(n){
-  G.s.cash += n;
+  G.s.cash = capped(G.s.cash + n);
   emit('cash', n);
 }
 export function spend(n){

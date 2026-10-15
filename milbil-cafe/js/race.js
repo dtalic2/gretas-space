@@ -5,10 +5,10 @@
 // cash wins. Then the podium (1st, 2nd and 3rd), and your own review: where
 // you came, how much cash you had, and how your game went.
 
-import { G, enterRace, persist, menu } from './game.js';
+import { G, enterRace, persist, menu, boost } from './game.js';
 import { CAFE_LEVELS, FOODS } from './data.js';
 import { raceRivals, standings, faceHTML, rowsHTML, medal, resetRankCheer, renderRankPill } from './rivals.js';
-import { money, ordinal } from './format.js';
+import { money, moneyHTML, times, ordinal } from './format.js';
 import { sfx } from './audio.js';
 import { $, esc, bump } from './ui.js';
 
@@ -142,7 +142,7 @@ function showResults(){
     return `<div class="podium-spot p${i + 1} ${x.me ? 'me' : ''}">
       <div class="podium-pic">${faceHTML(x)}</div>
       <b class="podium-name">${esc(x.me ? (G.s.name || 'You') : x.name)}</b>
-      <span class="podium-cash">${money(x.cash)}</span>
+      <span class="podium-cash">${moneyHTML(x.cash)}</span>
       <div class="podium-block"><span>${i + 1}</span></div>
     </div>`;
   };
@@ -158,7 +158,7 @@ function showResults(){
       <div class="review ${place <= 3 ? 'top' : ''}">
         <div class="review-head">Your review</div>
         <div class="review-place">${medal(place - 1)} You came <b>${ordinal(place)}</b> out of ${of}</div>
-        <div class="review-cash"><small>Your cash</small><b>${money(me.cash)}</b></div>
+        <div class="review-cash"><small>Your cash</small><b>${moneyHTML(me.cash)}</b></div>
         <p class="review-msg">${msg}</p>
         <div class="stats">
           <div><b>${G.s.stats.served.toLocaleString('en-US')}</b><small>milbils served</small></div>
@@ -166,6 +166,7 @@ function showResults(){
           <div><b>${menu().length} of ${FOODS.length}</b><small>foods on your menu</small></div>
           <div><b>Level ${G.s.cafe}</b><small>${CAFE_LEVELS[G.s.cafe - 1].look} café</small></div>
         </div>
+        <p class="review-boost">💸 By the end, every milbil was paying <b>${times(boost())}</b></p>
         <p class="review-best">${isBest
           ? `🏅 New best for ${r.minutes} minutes!`
           : `Your best for ${r.minutes} minutes: <b>${ordinal(rec.place)}</b> with <b>${money(rec.cash)}</b>`}</p>
