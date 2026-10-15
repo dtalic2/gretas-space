@@ -10,7 +10,7 @@
 // first time and it goes out to the customer; otherwise it's binned and you
 // try again.
 
-import { ACTS, ING, KINDS, DISH } from './data.js';
+import { ACTS, ING, KINDS, DISH, DISHES } from './data.js';
 import { S, menu, fmt } from './state.js';
 import { ingredientSVG, dishSVG, stationSVG, toolSVG, TOOLS, menuDishSVG } from './food.js';
 import { drawLook, chefLook, customerHTML } from './milbil.js';
@@ -99,7 +99,12 @@ export class Kitchen {
   setup(cust){
     const dish = DISH[cust.dish];
     const need = [...new Set(dish.steps.map(s => s.ing))];
-    const others = shuffle([...new Set(menu().flatMap(d => d.steps.map(s => s.ing)))].filter(i => !need.includes(i)));
+    // Things that don't belong: from your other dishes first, then from the
+    // cheapest dishes you haven't bought yet, so a short menu still has a full shelf.
+    const ings = (list) => [...new Set(list.flatMap(d => d.steps.map(s => s.ing)))].filter(i => !need.includes(i));
+    const mine = shuffle(ings(menu()));
+    const more = ings(DISHES.filter(d => !menu().includes(d))).filter(i => !mine.includes(i)).slice(0, SHELF_SIZE);
+    const others = [...mine, ...shuffle(more)];
     this.cook = {
       cust, dish,
       shelf: shuffle([...need, ...others.slice(0, Math.max(0, SHELF_SIZE - need.length))]),

@@ -342,6 +342,15 @@ const ICONS = {
   currysauce: () => jar('#e3a21a', '#7a3e1d', `<path d="M-6 2 Q0 -8 6 2 Q0 6 -6 2Z" fill="#e3a21a"/><circle cx="0" cy="0" r="1.4" fill="#c9860f"/>`),
 
   honey: () => jar('#f4b41a', '#c97a12', `<path d="M0 -6 L5 -3 V3 L0 6 L-5 3 V-3 Z" fill="#f4b41a"/>`, true),
+
+  yogurt: () => `${SHADOW}
+    <rect x="35" y="3" width="5" height="22" rx="2.5" fill="#ffb3cf" transform="rotate(22 37 14)"/>
+    <path d="M13 22 H51 L47 55 Q46.5 57 44.5 57 H19.5 Q17.5 57 17 55 Z" fill="#f7f9ff"/>
+    <path d="M14.4 33 H49.6 L48.4 44 H15.6 Z" fill="#7fb7ff"/>
+    <circle cx="32" cy="38.5" r="3.6" fill="#fff"/><circle cx="32" cy="38.5" r="2" fill="#ef4b5f"/>
+    <ellipse cx="32" cy="22" rx="19" ry="5" fill="#e3e8f2"/>
+    <ellipse cx="32" cy="21.5" rx="16.5" ry="3.8" fill="#fffaf0"/>
+    ${shine(20, 30, 1.6, 5, 0)}`,
 };
 
 /** Markup for an ingredient on its own (no card). */

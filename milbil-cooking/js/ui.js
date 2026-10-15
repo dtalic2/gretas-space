@@ -237,6 +237,7 @@ const SOUNDS = {
   level:   () => [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, { at: i * 0.08, dur: 0.2, type: 'square', vol: 0.05 })),
   door:    () => { tone(1175, { dur: 0.12, vol: 0.06 }); tone(1480, { at: 0.1, dur: 0.18, vol: 0.06 }); },
   order:   () => { tone(880, { dur: 0.07, vol: 0.05 }); tone(1175, { at: 0.08, dur: 0.1, vol: 0.05 }); },
+  honk:    () => { tone(392, { dur: 0.11, type: 'square', vol: 0.035 }); tone(494, { dur: 0.11, type: 'square', vol: 0.03 }); tone(392, { at: 0.16, dur: 0.14, type: 'square', vol: 0.035 }); tone(494, { at: 0.16, dur: 0.14, type: 'square', vol: 0.03 }); },
 };
 export const sfx = (name) => { try { SOUNDS[name]?.(); } catch {} };
 

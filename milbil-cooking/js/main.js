@@ -4,9 +4,9 @@
 // paying and buying, and the game loop. The dining room is restaurant.js and
 // the cooking is kitchen.js.
 
-import { DISHES, DISH, TIERS, COLORS, NAMES, MACHINE_COSTS, tipShare } from './data.js';
-import { S, load, save, wipe, tier, nextTier, nextTableCost, nextMachineCost, spend, earn, fmt } from './state.js';
-import { Restaurant } from './restaurant.js';
+import { DISHES, DISH, PLACES, PLACE, MAX_STARS, COLORS, NAMES, MACHINE_COSTS, tipFor } from './data.js';
+import { S, load, save, wipe, place, owns, hasDish, menu, nextTableCost, nextMachineCost, tablesHere, spend, earn, fmt } from './state.js';
+import { Restaurant, pickDish } from './restaurant.js';
 import { Kitchen } from './kitchen.js';
 import { menuDishSVG, ingredientSVG } from './food.js';
 import { drawLook, chefLook, customerHTML } from './milbil.js';
@@ -17,7 +17,10 @@ load();
 setSound(S.sound);
 const sheet = new Sheet($('#sheet'));
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
-const stars = (n) => '★'.repeat(n) + '☆'.repeat(TIERS.length - n);
+const stars = (n) => '★'.repeat(n) + '☆'.repeat(MAX_STARS - n);
+// At the Drive-Through everyone orders at the speaker, just like a machine.
+const ordersList = () => S.machines > 0 || !!place().drive;
+const toBuy = () => DISHES.filter(d => !hasDish(d.id));
 
 // --------------------------------------------------------------- game ---
 
@@ -27,13 +30,13 @@ const game = {
 
   ordersChanged(){
     const n = this.room.orders.length;
-    $('#ordersBtn').hidden = S.machines === 0;
+    $('#ordersBtn').hidden = !ordersList();
     $('#ordersBadge').textContent = n || '';
     const kOrders = $('#kOrders');
-    kOrders.hidden = S.machines === 0;
+    kOrders.hidden = !ordersList();
     $('em', kOrders).textContent = n || '';
     const cooking = this.kitchen.cook && this.kitchen.cook.cust.state === 'wait';
-    $('#kitchenBadge').textContent = cooking ? '…' : (S.machines === 0 && n ? n : '');
+    $('#kitchenBadge').textContent = cooking ? '…' : (!ordersList() && n ? n : '');
     if (sheet.is('orders') && !sheet.pressing) sheet.render();
     for (const c of this.room.customers) this.room.renderCust(c);
   },
@@ -42,7 +45,7 @@ const game = {
     sfx('tap');
     const k = this.kitchen;
     if (k.cook && k.cook.cust.state === 'wait') return k.open(k.cook.cust);
-    if (S.machines > 0) return openOrders();
+    if (ordersList()) return openOrders();
     const waiting = this.room.orders;
     if (waiting.length === 1) return k.open(waiting[0]);
     toast(this.room.customers.some(c => c.state === 'order' || c.state === 'wait')
@@ -75,16 +78,19 @@ const game = {
     else if (c.state === 'walk' || c.state === 'machine') toast(`${esc(c.name)} is just coming in!`);
   },
 
-  /** A perfect dish: the chef takes it out, and they pay. */
+  /**
+   * A perfect dish. They pay straight away, so nothing's lost if you move
+   * restaurants; the coins pop up when the food reaches them.
+   */
   served(c, layers){
     const d = DISH[c.dish];
     const base = d.price * (c.vip ? 2 : 1);
-    const tip = Math.round(d.price * tipShare(this.room.now - c.orderedAt));
+    const tip = tipFor(d.price, this.room.now - c.orderedAt);
+    earn(base + tip);
+    S.served++;
+    S.perfect[d.id] = (S.perfect[d.id] || 0) + 1;
+    save();
     this.room.serve(c, layers, (el) => {
-      earn(base + tip);
-      S.served++;
-      S.perfect[d.id] = (S.perfect[d.id] || 0) + 1;
-      save();
       sfx('coin');
       floatText(el, `+${fmt(base + tip)} 🪙`);
       if (tip) toast(`⭐ Speedy service! ${esc(c.name)} gave you a tip of <b>🪙 ${fmt(tip)}</b>`, 'good');
@@ -116,13 +122,15 @@ const game = {
 
 function hud(bump = false){
   $('#coins').textContent = fmt(S.coins);
-  $('#placeName').textContent = tier().name;
-  $('#placeStars').textContent = stars(S.tier);
+  $('#placeName').textContent = place().name;
+  $('#placeStars').textContent = stars(place().stars);
   $('#meAvatar').innerHTML = drawLook(chefLook(S.color), { title: S.name });
   if (bump){ const p = $('#coinPill'); p.classList.remove('bump'); void p.offsetWidth; p.classList.add('bump'); }
-  // A dot on Upgrade when there's something you can afford.
-  const can = [nextTableCost(), nextMachineCost(), nextTier()?.cost].some(c => c != null && c <= S.coins);
-  $('#shopBadge').textContent = can ? '!' : '';
+  // A "!" when there's something you can afford.
+  const food = toBuy().some(d => d.cost <= S.coins);
+  const more = [nextTableCost(), nextMachineCost(), ...PLACES.filter(p => !owns(p.id)).map(p => p.cost)].some(c => c != null && c <= S.coins);
+  $('#menuBadge').textContent = food ? '!' : '';
+  $('#shopBadge').textContent = food || more ? '!' : '';
 }
 
 // --------------------------------------------------------------- menu ---
@@ -133,24 +141,33 @@ function openMenu(){
   sheet.show({
     key: 'menu', icon: '📖', cls: 'tall',
     title: 'Menu',
-    sub: 'What milbils can order, and what they pay you',
-    render: () => TIERS.map(T => {
-      const open = T.n <= S.tier;
-      const dishes = DISHES.filter(d => d.tier === T.n);
-      return `<h3 class="menu-head ${open ? '' : 'locked'}">${open ? '' : '🔒 '}${T.name}${open ? '' : ` <small>opens when you get the ${T.name}</small>`}</h3>
-        <div class="menu-grid">${dishes.map((d, i) => `
-          <button type="button" class="menu-card ${open ? '' : 'locked'} ${openDish === d.id ? 'open' : ''}" data-act="dish" data-id="${d.id}">
-            ${menuDishSVG(d.id)}
-            <b>${esc(d.name)}</b>
-            <span class="price">🪙 ${fmt(d.price)}</span>
-            ${S.perfect[d.id] ? `<small class="made">Made ${S.perfect[d.id]}×</small>` : ''}
-          </button>
-          ${i % 2 ? [dishes[i - 1], d].filter(x => x.id === openDish).map(recipeHTML).join('') : ''}`).join('')}</div>`;
-    }).join('') + '<p class="menu-foot">⭐ VIPs pay double. Serve fast for a tip!</p>',
+    sub: () => `You have 🪙 ${fmt(S.coins)}. Milbils mostly order the dearest food you sell.`,
+    render: () => {
+      const mine = menu(), more = toBuy();
+      return `<h3 class="menu-head">🍽️ On your menu</h3>${menuGrid(mine)}
+        ${more.length ? `<h3 class="menu-head">🛒 New food to buy</h3>${menuGrid(more)}` : '<p class="menu-foot">You sell every dish there is! 👑</p>'}
+        <p class="menu-foot">⭐ VIPs pay double. Serve fast for a tip!</p>`;
+    },
     onAct: (act, id) => {
       if (act === 'dish'){ sfx('tap'); openDish = openDish === id ? null : id; sheet.render(); }
+      if (act === 'buy-dish') buyDish(id);
     },
   });
+}
+
+/** Dish cards, two to a row. A dish's recipe opens under its row. */
+function menuGrid(dishes){
+  return `<div class="menu-grid">${dishes.map((d, i) => {
+    const mine = hasDish(d.id);
+    return `<div class="menu-card ${mine ? '' : 'shop'} ${openDish === d.id ? 'open' : ''}" data-act="dish" data-id="${d.id}" role="button" tabindex="0">
+        ${menuDishSVG(d.id)}
+        <b>${esc(d.name)}</b>
+        <span class="price">${mine ? '' : '<small>sells for</small> '}🪙 ${fmt(d.price)}</span>
+        ${mine && S.perfect[d.id] ? `<small class="made">Made ${S.perfect[d.id]}×</small>` : ''}
+        ${mine ? '' : `<button type="button" class="btn buy ${S.coins < d.cost ? 'dim' : ''}" data-act="buy-dish" data-id="${d.id}">Buy 🪙${fmt(d.cost)}</button>`}
+      </div>
+      ${i % 2 || i === dishes.length - 1 ? dishes.slice(i - (i % 2), i + 1).filter(x => x.id === openDish).map(recipeHTML).join('') : ''}`;
+  }).join('')}</div>`;
 }
 
 function recipeHTML(d){
@@ -167,10 +184,10 @@ function openOrders(){
   sheet.show({
     key: 'orders', icon: '🧾',
     title: 'Orders',
-    sub: () => `From your ordering machine${S.machines > 1 ? 's' : ''}. Tap one to cook it.`,
+    sub: () => `${place().drive ? 'From the Drive-Through speaker' : `From your ordering machine${S.machines > 1 ? 's' : ''}`}. Tap one to cook it.`,
     render: () => {
       const list = game.room.orders;
-      if (!list.length) return `<div class="empty"><div class="empty-ico">🧾</div><p>No orders yet.</p><p class="muted">Customers order on the machine as they walk in.</p></div>`;
+      if (!list.length) return `<div class="empty"><div class="empty-ico">🧾</div><p>No orders yet.</p><p class="muted">${place().drive ? 'Milbils order at the speaker as they drive up.' : 'Customers order on the machine as they walk in.'}</p></div>`;
       return list.map(c => {
         const d = DISH[c.dish];
         const waited = Math.floor(game.room.now - c.orderedAt);
@@ -195,43 +212,118 @@ function openOrders(){
 
 // ----------------------------------------------------------- upgrades ---
 
-function openShop(){
+let shopTab = 'food';
+function openShop(tab){
   sfx('tap');
+  if (tab) shopTab = tab;
   sheet.show({
     key: 'shop', icon: '🛠️', cls: 'tall',
     title: 'Upgrade',
     sub: () => `You have 🪙 ${fmt(S.coins)}`,
-    render: () => {
-      const T = tier(), N = nextTier(), tc = nextTableCost(), mc = nextMachineCost();
-      const newDishes = N ? DISHES.filter(d => d.tier === N.n) : [];
-      return `
-        <h3 class="shop-head">🏠 Bigger restaurant</h3>
-        ${N ? `<div class="up-card big">
-          <div class="up-top"><div><b>${N.name}</b><small>${stars(N.n)}</small></div>
-            <button type="button" class="btn buy" data-act="tier" ${S.coins < N.cost ? 'disabled' : ''}>🪙 ${fmt(N.cost)}</button></div>
-          <p>Room for <b>${N.maxTables} tables</b> and ${newDishes.length} new dishes that pay more:</p>
-          <div class="up-dishes">${newDishes.map(d => `<span>${menuDishSVG(d.id)}<small>🪙${d.price}</small></span>`).join('')}</div>
-        </div>` : `<div class="up-card"><b>You own the Milbil Palace! 👑</b><p>It's the biggest restaurant there is.</p></div>`}
-
-        <h3 class="shop-head">🪑 Tables <small>${S.tables} of ${T.maxTables}</small></h3>
-        <div class="up-card">
-          <div class="up-top"><p>More tables, more customers at once.</p>
-            ${tc != null ? `<button type="button" class="btn buy" data-act="table" ${S.coins < tc ? 'disabled' : ''}>🪙 ${fmt(tc)}</button>`
-              : `<span class="full">${N ? 'Full! Get a bigger restaurant for more room.' : 'Full!'}</span>`}</div>
-        </div>
-
-        <h3 class="shop-head">🧾 Ordering machines <small>${S.machines} of ${MACHINE_COSTS.length}</small></h3>
-        <div class="up-card">
-          <div class="up-top"><p>${S.machines ? 'Each extra machine brings customers in faster.' : 'Customers order on it as they walk in, so you don\'t have to take their order. Every order shows up in the 🧾 Orders list: tap one and start cooking.'}</p>
-            ${mc != null ? `<button type="button" class="btn buy" data-act="machine" ${S.coins < mc ? 'disabled' : ''}>🪙 ${fmt(mc)}</button>` : '<span class="full">All built!</span>'}</div>
-        </div>`;
-    },
-    onAct: (act) => {
-      if (act === 'tier') buyTier();
+    tabs: [{ id: 'food', label: '🍽️ Food' }, { id: 'places', label: '🏠 Restaurants' }, { id: 'more', label: '🪑 Tables & machines' }],
+    tab: shopTab,
+    render: (t) => { shopTab = t; return t === 'places' ? placesHTML() : t === 'more' ? moreHTML() : foodHTML(); },
+    onAct: (act, id) => {
+      if (act === 'buy-dish') buyDish(id);
+      if (act === 'menu') openMenu();
+      if (act === 'buy-place') buyPlace(id);
+      if (act === 'move') moveTo(id);
       if (act === 'table') buyTable();
       if (act === 'machine') buyMachine();
     },
   });
+}
+
+const buyBtn = (act, id, cost, label = '') =>
+  `<button type="button" class="btn buy ${S.coins < cost ? 'dim' : ''}" data-act="${act}" data-id="${id}">${label}🪙 ${fmt(cost)}</button>`;
+
+function foodHTML(){
+  const next = toBuy().slice(0, 4);
+  if (!next.length) return `<div class="up-card"><b>You sell every dish there is! 👑</b></div>`;
+  return `<p class="note">Each new dish sells for more than the last, and milbils mostly order the dearest food you sell.</p>
+    ${next.map(d => `<div class="up-row">
+      <span class="up-pic">${menuDishSVG(d.id)}</span>
+      <span class="up-what"><b>${esc(d.name)}</b><small>sells for <i>🪙 ${fmt(d.price)}</i></small></span>
+      ${buyBtn('buy-dish', d.id, d.cost)}
+    </div>`).join('')}
+    <button type="button" class="btn wide" data-act="menu">📖 See the whole menu</button>`;
+}
+
+function placesHTML(){
+  return `<p class="note">Buy any restaurant you have the coins for, and move between the ones you own. Your tables and machines come with you.</p>
+    ${PLACES.map(P => {
+      const here = S.place === P.id, mine = owns(P.id);
+      return `<div class="place-card ${here ? 'here' : ''}">
+        <span class="place-pic" style="--wall:${P.wall};--wall2:${P.wall2};--floor:${P.floor};--floor2:${P.floor2};--accent:${P.accent}">${P.drive ? '<i class="pp-car"></i>' : '<i class="pp-table"></i>'}</span>
+        <span class="up-what"><b>${P.name}</b><small class="stars">${stars(P.stars)}</small>
+          <small>${P.drive ? `${P.cars} cars queue up outside` : `Room for ${P.maxTables} tables`}</small></span>
+        ${here ? '<span class="here-tag">You\'re here</span>'
+          : mine ? `<button type="button" class="btn go" data-act="move" data-id="${P.id}">Move here</button>`
+          : buyBtn('buy-place', P.id, P.cost)}
+      </div>`;
+    }).join('')}`;
+}
+
+function moreHTML(){
+  const P = place(), tc = nextTableCost(), mc = nextMachineCost();
+  return `
+    <h3 class="shop-head">🪑 Tables ${P.drive ? '' : `<small>${tablesHere()} of ${P.maxTables} here</small>`}</h3>
+    <div class="up-card">
+      <div class="up-top">${P.drive
+        ? `<p>The Drive-Through has no tables: up to ${P.cars} cars queue up outside. Buy tables in a sit-down restaurant.</p>`
+        : `<p>More tables, more customers at once. You own ${S.tables}.</p>
+          ${tc != null ? buyBtn('table', '', tc) : `<span class="full">Full! A bigger restaurant has more room.</span>`}`}</div>
+    </div>
+    <h3 class="shop-head">🧾 Ordering machines <small>${S.machines} of ${MACHINE_COSTS.length}</small></h3>
+    <div class="up-card">
+      <div class="up-top"><p>${S.machines ? 'Each extra machine brings customers in faster.' : 'Customers order on it as they walk in, so you don\'t have to take their order. Every order shows up in the 🧾 Orders list: tap one and start cooking.'}
+        ${P.drive ? ' (At the Drive-Through, everyone orders at the speaker anyway.)' : ''}</p>
+        ${mc != null ? buyBtn('machine', '', mc) : '<span class="full">All built!</span>'}</div>
+    </div>`;
+}
+
+async function buyDish(id){
+  const d = DISH[id];
+  if (!d || hasDish(id)) return;
+  if (!spend(d.cost)) return cantAfford(d.cost);
+  S.dishes.push(id);
+  save();
+  sfx('level');
+  afterBuy();
+  if (sheet.is('menu')) sheet.render();
+  await card(`<h3 class="big-title">🎉 New on your menu!</h3>
+    <div class="card-pic">${menuDishSVG(d.id)}</div>
+    <p><b>${esc(d.name)}</b> sells for <b>🪙 ${fmt(d.price)}</b>.</p>
+    <p class="muted">Milbils will start ordering it straight away.</p>`, [{ label: 'Yum!', cls: 'go' }]);
+}
+
+async function buyPlace(id){
+  const P = PLACE[id];
+  if (!P || owns(id)) return;
+  if (!spend(P.cost)) return cantAfford(P.cost);
+  S.places.push(id);
+  moveTo(id, true);
+  sfx('level');
+  confetti();
+  await card(`<h3 class="big-title">🎉 Welcome to your<br>${P.name}!</h3>
+    <p>${P.drive
+      ? `Milbils drive up in cars and order at the speaker. Cook their food, and it goes out of the window in a bag. Up to <b>${P.cars} cars</b> can queue.`
+      : `Room for <b>${P.maxTables} tables</b>. You own ${S.tables}${S.tables < P.maxTables ? ', and you can buy more' : ''}.`}</p>
+    <p class="muted">You can move back to your other restaurants from Upgrade → Restaurants.</p>`,
+    [{ label: 'Let\'s cook!', cls: 'go' }]);
+}
+
+/** Move restaurants. Anyone still waiting goes home, and the doors open again. */
+function moveTo(id, bought = false){
+  if (!owns(id)) return;
+  S.place = id;
+  save();
+  if (game.kitchen.cook){ game.kitchen.cook = null; if (game.kitchen.isOpen) game.kitchen.close(); }
+  game.room.clear();
+  game.room.build();
+  sheet.close();
+  afterBuy();
+  if (!bought){ sfx('door'); toast(`Welcome back to your ${place().name}!`, 'good'); }
 }
 
 function cantAfford(cost){
@@ -278,28 +370,10 @@ async function buyMachine(){
   } else toast(`🧾 Machine ${S.machines} is up and running!`, 'good');
 }
 
-async function buyTier(){
-  const N = nextTier();
-  if (!N) return;
-  if (!spend(N.cost)) return cantAfford(N.cost);
-  S.tier = N.n;
-  save();
-  sfx('level');
-  game.room.build();
-  afterBuy();
-  sheet.close();
-  confetti();
-  const fresh = DISHES.filter(d => d.tier === N.n);
-  await card(`<h3 class="big-title">🎉 Welcome to your<br>${N.name}!</h3>
-    <p>Room for <b>${N.maxTables} tables</b>, and new dishes on the menu:</p>
-    <div class="up-dishes">${fresh.map(d => `<span>${menuDishSVG(d.id)}<small>${esc(d.name)}</small></span>`).join('')}</div>`,
-    [{ label: 'Let\'s cook!', cls: 'go' }]);
-}
-
 function afterBuy(){
   hud();
   game.ordersChanged();
-  if (sheet.is('shop')) sheet.render();
+  if (sheet.is('shop') || sheet.is('menu')) sheet.render();
 }
 
 function confetti(){
@@ -359,7 +433,8 @@ function howToPlay(){
       <li><span>⬇️</span>Drag each ingredient <b>down</b> from the shelf onto the counter.</li>
       <li><span>🔪</span>Then swipe to do the step: down to chop, up and down to mash, round and round to stir.</li>
       <li><span>🍽️</span>Tap <b>Serve</b>. Got it all right? They pay you! Got it wrong? Try again.</li>
-      <li><span>🛠️</span>Spend coins on tables, ordering machines and a bigger restaurant.</li>
+      <li><span>🛒</span>Buy new food from the menu. Each one sells for more than the last.</li>
+      <li><span>🛠️</span>Spend coins on tables, ordering machines and new restaurants, like the Drive-Through.</li>
     </ol>`, [{ label: 'Got it!', cls: 'go' }]);
 }
 
@@ -411,7 +486,7 @@ game.kitchen.drawChef();
 $('#menuBtn').addEventListener('click', openMenu);
 $('#kitchenBtn').addEventListener('click', () => game.openKitchen());
 $('#ordersBtn').addEventListener('click', openOrders);
-$('#shopBtn').addEventListener('click', openShop);
+$('#shopBtn').addEventListener('click', () => openShop());
 $('#settingsBtn').addEventListener('click', openSettings);
 $('#meBtn').addEventListener('click', () => { sfx('tap'); showWelcome(true); });
 
@@ -440,6 +515,6 @@ requestAnimationFrame(loop);
 // For testing in the browser console.
 window.COOK = {
   coins(n = 1000){ earn(n); hud(); },
-  game, S,
+  game, S, pickDish,
   wipe(){ localStorage.removeItem('milbil-cooking-v1'); location.reload(); },
 };

@@ -116,6 +116,7 @@ export const INGREDIENTS = [
   I('chicken',     'Chicken',       'meat',   'fry',     { form: 'pieces',  c: ['#e8b36a', '#d39545'] }),
   I('currysauce',  'Curry sauce',   'sauce',  'pour',    { form: 'blob',    c: ['#e3a21a', '#c9860f'] }),
   I('honey',       'Honey',         'sauce',  'pour',    { form: 'drizzle', c: ['#f4b41a'] }),
+  I('yogurt',      'Yogurt',        'dairy',  'pour',    { form: 'liquid',  c: ['#fffaf0'] }),
 ];
 export const ING = Object.fromEntries(INGREDIENTS.map(i => [i.id, i]));
 
@@ -130,171 +131,184 @@ export function lookFor(ingId, act){
 }
 
 // -------------------------------------------------------------- dishes ---
-// Steps are [ingredient, action, what the recipe card says].
+// You start with Toast and buy the rest. Each dish sells for more than the
+// one before, in round steps (3, 5, 10, 20, 50, 100, 200, 500, 1,000 …), and
+// costs the next step up to buy. Steps are [ingredient, action, what the
+// recipe card says]. The list is in price order.
 
-const D = (id, tier, name, dish, price, steps, serve = 'Serve it!') =>
-  ({ id, tier, name, dish, price, serve, steps: steps.map(([ing, act, text]) => ({ ing, act, text })) });
+const D = (id, name, dish, price, cost, steps, serve = 'Serve it!') =>
+  ({ id, name, dish, price, cost, serve, steps: steps.map(([ing, act, text]) => ({ ing, act, text })) });
 
 export const DISHES = [
-  // Little Café
-  D('nachos', 1, 'Nachos with Guacamole', 'bowl', 14, [
-    ['nachos', 'pour', 'Pour the nachos into the bowl'],
-    ['avocado', 'mash', 'Mash the avocado'],
-    ['onion', 'chop', 'Chop the onion'],
-  ], 'Serve together!'),
-  D('jamtoast', 1, 'Jam Toast', 'plate', 10, [
+  D('toast', 'Toast', 'plate', 3, 0, [
     ['bread', 'toast', 'Toast the bread'],
     ['butter', 'spread', 'Spread the butter'],
-    ['jam', 'spread', 'Spread the jam'],
   ], 'Serve it warm!'),
-  D('fruitsalad', 1, 'Fruit Salad', 'bowl', 12, [
+  D('fruitsalad', 'Fruit Salad', 'bowl', 5, 10, [
     ['strawberry', 'chop', 'Chop the strawberries'],
     ['banana', 'chop', 'Chop the banana'],
     ['blueberries', 'add', 'Add the blueberries'],
   ]),
-  D('smoothie', 1, 'Berry Smoothie', 'glass', 11, [
+  D('nachos', 'Nachos with Guacamole', 'bowl', 10, 20, [
+    ['nachos', 'pour', 'Pour the nachos into the bowl'],
+    ['avocado', 'mash', 'Mash the avocado'],
+    ['onion', 'chop', 'Chop the onion'],
+  ], 'Serve together!'),
+  D('jamtoast', 'Jam Toast', 'plate', 20, 50, [
+    ['bread', 'toast', 'Toast the bread'],
+    ['butter', 'spread', 'Spread the butter'],
+    ['jam', 'spread', 'Spread the jam'],
+  ], 'Serve it warm!'),
+  D('yogurt', 'Yogurt', 'bowl', 50, 100, [
+    ['yogurt', 'pour', 'Pour the yogurt into the bowl'],
+    ['blueberries', 'add', 'Add the blueberries'],
+    ['honey', 'pour', 'Drizzle on the honey'],
+  ]),
+  D('smoothie', 'Berry Smoothie', 'glass', 100, 200, [
     ['milk', 'pour', 'Pour the milk into the glass'],
     ['banana', 'blend', 'Blend the banana'],
     ['strawberry', 'blend', 'Blend the strawberries'],
   ], 'Serve it cold!'),
-
-  // Corner Bistro
-  D('pancakes', 2, 'Pancakes', 'plate', 20, [
-    ['batter', 'cook', 'Cook the pancakes'],
-    ['strawberry', 'chop', 'Chop the strawberries'],
-    ['syrup', 'pour', 'Pour on the syrup'],
-  ]),
-  D('hotchoc', 2, 'Hot Chocolate', 'mug', 18, [
+  D('hotchoc', 'Hot Chocolate', 'mug', 200, 500, [
     ['milk', 'pour', 'Pour the milk into the mug'],
     ['cocoa', 'stir', 'Stir in the cocoa'],
     ['marshmallow', 'add', 'Add the marshmallows'],
   ], 'Serve it hot!'),
-  D('salad', 2, 'Garden Salad', 'bowl', 22, [
+  D('pancakes', 'Pancakes', 'plate', 500, 1000, [
+    ['batter', 'cook', 'Cook the pancakes'],
+    ['strawberry', 'chop', 'Chop the strawberries'],
+    ['syrup', 'pour', 'Pour on the syrup'],
+  ]),
+  D('salad', 'Garden Salad', 'bowl', 1000, 2000, [
     ['lettuce', 'chop', 'Chop the lettuce'],
     ['tomato', 'chop', 'Chop the tomato'],
     ['cucumber', 'chop', 'Slice the cucumber'],
     ['dressing', 'shake', 'Shake on the dressing'],
   ]),
-  D('hotdog', 2, 'Hot Dog', 'plate', 24, [
+  D('hotdog', 'Hot Dog', 'plate', 2000, 5000, [
     ['hotdogbun', 'add', 'Put the bun on the plate'],
     ['sausage', 'cook', 'Cook the sausage'],
     ['ketchup', 'squeeze', 'Squeeze on the ketchup'],
     ['mustard', 'squeeze', 'Squeeze on the mustard'],
   ]),
-
-  // Family Restaurant
-  D('burger', 3, 'Cheeseburger', 'plate', 34, [
-    ['bun', 'add', 'Put the bun on the plate'],
-    ['patty', 'cook', 'Cook the burger'],
-    ['cheese', 'add', 'Add a slice of cheese'],
-    ['lettuce', 'chop', 'Chop the lettuce'],
-    ['ketchup', 'squeeze', 'Squeeze on the ketchup'],
-  ]),
-  D('spaghetti', 3, 'Spaghetti', 'bowl', 32, [
-    ['spaghetti', 'boil', 'Boil the spaghetti'],
-    ['tomsauce', 'pour', 'Pour on the tomato sauce'],
-    ['cheese', 'grate', 'Grate the cheese'],
-    ['herbs', 'add', 'Add the basil'],
-  ]),
-  D('tacos', 3, 'Tacos', 'plate', 30, [
-    ['tacoshell', 'add', 'Put the taco shell on the plate'],
-    ['mince', 'fry', 'Fry the mince'],
-    ['lettuce', 'chop', 'Chop the lettuce'],
-    ['cheese', 'grate', 'Grate the cheese'],
-  ]),
-  D('sundae', 3, 'Ice Cream Sundae', 'coupe', 28, [
+  D('sundae', 'Ice Cream Sundae', 'coupe', 5000, 10000, [
     ['icecream', 'add', 'Scoop in the ice cream'],
     ['banana', 'chop', 'Slice the banana'],
     ['chocsauce', 'pour', 'Pour on the chocolate sauce'],
     ['sprinkles', 'shake', 'Shake on the sprinkles'],
     ['cherry', 'add', 'Pop a cherry on top'],
   ]),
-
-  // Grand Diner
-  D('pizza', 4, 'Pepperoni Pizza', 'plate', 50, [
-    ['dough', 'roll', 'Roll out the dough'],
-    ['tomsauce', 'spread', 'Spread the tomato sauce'],
+  D('tacos', 'Tacos', 'plate', 10000, 20000, [
+    ['tacoshell', 'add', 'Put the taco shell on the plate'],
+    ['mince', 'fry', 'Fry the mince'],
+    ['lettuce', 'chop', 'Chop the lettuce'],
     ['cheese', 'grate', 'Grate the cheese'],
-    ['pepperoni', 'add', 'Add the pepperoni'],
   ]),
-  D('friedrice', 4, 'Fried Rice', 'bowl', 46, [
-    ['rice', 'fry', 'Fry the rice'],
-    ['egg', 'cook', 'Cook the egg'],
-    ['peas', 'add', 'Add the peas'],
-    ['carrot', 'chop', 'Chop the carrot'],
-    ['soysauce', 'squeeze', 'Squeeze on the soy sauce'],
+  D('spaghetti', 'Spaghetti', 'bowl', 20000, 50000, [
+    ['spaghetti', 'boil', 'Boil the spaghetti'],
+    ['tomsauce', 'pour', 'Pour on the tomato sauce'],
+    ['cheese', 'grate', 'Grate the cheese'],
+    ['herbs', 'add', 'Add the basil'],
   ]),
-  D('milkshake', 4, 'Strawberry Milkshake', 'glass', 44, [
+  D('burger', 'Cheeseburger', 'plate', 50000, 100000, [
+    ['bun', 'add', 'Put the bun on the plate'],
+    ['patty', 'cook', 'Cook the burger'],
+    ['cheese', 'add', 'Add a slice of cheese'],
+    ['lettuce', 'chop', 'Chop the lettuce'],
+    ['ketchup', 'squeeze', 'Squeeze on the ketchup'],
+  ]),
+  D('waffles', 'Waffles', 'plate', 100000, 200000, [
+    ['waffle', 'toast', 'Toast the waffle'],
+    ['icecream', 'add', 'Add a scoop of ice cream'],
+    ['strawberry', 'chop', 'Chop the strawberries'],
+    ['chocsauce', 'pour', 'Pour on the chocolate sauce'],
+  ]),
+  D('milkshake', 'Strawberry Milkshake', 'glass', 200000, 500000, [
     ['milk', 'pour', 'Pour the milk into the glass'],
     ['strawberry', 'blend', 'Blend the strawberries'],
     ['icecream', 'add', 'Add a scoop of ice cream'],
     ['cream', 'squeeze', 'Squirt on the cream'],
     ['cherry', 'add', 'Pop a cherry on top'],
   ], 'Serve it with a smile!'),
-  D('waffles', 4, 'Waffles', 'plate', 48, [
-    ['waffle', 'toast', 'Toast the waffle'],
-    ['icecream', 'add', 'Add a scoop of ice cream'],
-    ['strawberry', 'chop', 'Chop the strawberries'],
-    ['chocsauce', 'pour', 'Pour on the chocolate sauce'],
-  ]),
-
-  // Milbil Palace
-  D('cake', 5, 'Birthday Cake', 'plate', 90, [
-    ['cake', 'add', 'Put the cake on the plate'],
-    ['icing', 'spread', 'Spread the icing'],
-    ['strawberry', 'chop', 'Chop the strawberries'],
-    ['sprinkles', 'shake', 'Shake on the sprinkles'],
-    ['candle', 'add', 'Add a candle'],
-  ], 'Serve it and sing!'),
-  D('ramen', 5, 'Ramen', 'bowl', 80, [
-    ['broth', 'pour', 'Pour the broth into the bowl'],
-    ['noodles', 'boil', 'Boil the noodles'],
+  D('friedrice', 'Fried Rice', 'bowl', 500000, 1000000, [
+    ['rice', 'fry', 'Fry the rice'],
     ['egg', 'cook', 'Cook the egg'],
-    ['springonion', 'chop', 'Chop the spring onion'],
-    ['seaweed', 'add', 'Add the seaweed'],
-  ]),
-  D('curry', 5, 'Chicken Curry', 'bowl', 85, [
-    ['rice', 'add', 'Scoop the rice into the bowl'],
-    ['chicken', 'fry', 'Fry the chicken'],
+    ['peas', 'add', 'Add the peas'],
     ['carrot', 'chop', 'Chop the carrot'],
-    ['currysauce', 'pour', 'Pour on the curry sauce'],
-    ['herbs', 'add', 'Add the herbs'],
+    ['soysauce', 'squeeze', 'Squeeze on the soy sauce'],
   ]),
-  D('tart', 5, 'Fruit Tart', 'plate', 75, [
+  D('pizza', 'Pepperoni Pizza', 'plate', 1000000, 2000000, [
+    ['dough', 'roll', 'Roll out the dough'],
+    ['tomsauce', 'spread', 'Spread the tomato sauce'],
+    ['cheese', 'grate', 'Grate the cheese'],
+    ['pepperoni', 'add', 'Add the pepperoni'],
+  ]),
+  D('tart', 'Fruit Tart', 'plate', 2000000, 5000000, [
     ['dough', 'roll', 'Roll out the pastry'],
     ['cream', 'spread', 'Spread the cream'],
     ['strawberry', 'chop', 'Chop the strawberries'],
     ['blueberries', 'add', 'Add the blueberries'],
     ['honey', 'pour', 'Drizzle on the honey'],
   ]),
+  D('curry', 'Chicken Curry', 'bowl', 5000000, 10000000, [
+    ['rice', 'add', 'Scoop the rice into the bowl'],
+    ['chicken', 'fry', 'Fry the chicken'],
+    ['carrot', 'chop', 'Chop the carrot'],
+    ['currysauce', 'pour', 'Pour on the curry sauce'],
+    ['herbs', 'add', 'Add the herbs'],
+  ]),
+  D('ramen', 'Ramen', 'bowl', 10000000, 20000000, [
+    ['broth', 'pour', 'Pour the broth into the bowl'],
+    ['noodles', 'boil', 'Boil the noodles'],
+    ['egg', 'cook', 'Cook the egg'],
+    ['springonion', 'chop', 'Chop the spring onion'],
+    ['seaweed', 'add', 'Add the seaweed'],
+  ]),
+  D('cake', 'Birthday Cake', 'plate', 20000000, 50000000, [
+    ['cake', 'add', 'Put the cake on the plate'],
+    ['icing', 'spread', 'Spread the icing'],
+    ['strawberry', 'chop', 'Chop the strawberries'],
+    ['sprinkles', 'shake', 'Shake on the sprinkles'],
+    ['candle', 'add', 'Add a candle'],
+  ], 'Serve it and sing!'),
 ];
 export const DISH = Object.fromEntries(DISHES.map(d => [d.id, d]));
+export const START_DISHES = ['toast'];
 
 // ---------------------------------------------------------- restaurants ---
-// Moving up keeps your tables and machines. `cols` is how the tables are laid
-// out on the floor.
+// Buy any one you have the coins for, in any order, and move between the
+// ones you own. Tables and machines are yours wherever you go; a restaurant
+// shows as many tables as it has room for. `stars` is how fancy it is, which
+// also decides the decorations. `cols` is how the tables are laid out.
+//
+// The Drive-Through has no tables: milbils queue up in cars, order at the
+// speaker as they pull in, and you hand their food out of the window.
 
-export const TIERS = [
-  { n: 1, name: 'Little Café',       cost: 0,    maxTables: 3,  cols: 2, windows: 1,
+export const PLACES = [
+  { id: 'cafe',   name: 'Little Café',       cost: 0,       stars: 1, maxTables: 3,  cols: 2, windows: 1,
     wall: '#ffe7d1', wall2: '#ffd9b8', floor: '#f2dcbf', floor2: '#ead0ae', accent: '#ff8a5c', cloth: '#ffffff' },
-  { n: 2, name: 'Corner Bistro',     cost: 200,  maxTables: 5,  cols: 2, windows: 2,
+  { id: 'bistro', name: 'Corner Bistro',     cost: 500,     stars: 2, maxTables: 5,  cols: 2, windows: 2,
     wall: '#dff1e4', wall2: '#c9e7d2', floor: '#e9dcc8', floor2: '#ddcdb4', accent: '#3fae6a', cloth: '#fff6e8' },
-  { n: 3, name: 'Family Restaurant', cost: 700,  maxTables: 7,  cols: 3, windows: 2,
+  { id: 'drive',  name: 'Drive-Through',     cost: 2000,    stars: 2, maxTables: 0,  cars: 6, drive: true, windows: 1,
+    wall: '#fff3d6', wall2: '#ffe2a0', floor: '#bfe3a0', floor2: '#b3dc93', accent: '#e5484d', cloth: '#ffffff' },
+  { id: 'family', name: 'Family Restaurant', cost: 10000,   stars: 3, maxTables: 7,  cols: 3, windows: 2,
     wall: '#e1ecff', wall2: '#cddcfa', floor: '#f0e2cc', floor2: '#e4d3b8', accent: '#4c7df0', cloth: '#ffffff' },
-  { n: 4, name: 'Grand Diner',       cost: 1800, maxTables: 9,  cols: 3, windows: 3,
+  { id: 'diner',  name: 'Grand Diner',       cost: 100000,  stars: 4, maxTables: 9,  cols: 3, windows: 3,
     wall: '#ffe3ec', wall2: '#ffcfdd', floor: '#f7f4fb', floor2: '#ddd5ea', accent: '#ef476f', cloth: '#ffffff' },
-  { n: 5, name: 'Milbil Palace',     cost: 4500, maxTables: 12, cols: 3, windows: 3,
+  { id: 'palace', name: 'Milbil Palace',     cost: 1000000, stars: 5, maxTables: 12, cols: 3, windows: 3,
     wall: '#efe4ff', wall2: '#e0cffd', floor: '#f6ead2', floor2: '#ecd9b5', accent: '#8b5cf6', cloth: '#fff8e1' },
 ];
+export const PLACE = Object.fromEntries(PLACES.map(p => [p.id, p]));
+export const MAX_STARS = 5;
 
 export const START_TABLES = 2;
 // What the 3rd, 4th … 12th table costs.
-export const TABLE_COSTS = [40, 70, 110, 160, 220, 290, 370, 460, 560, 670];
+export const TABLE_COSTS = [20, 100, 500, 2000, 5000, 20000, 50000, 200000, 500000, 1000000];
 export const tableCost = (owned) => TABLE_COSTS[owned - START_TABLES] ?? Infinity;
 
 // Ordering machines: customers order on these as they walk in, and every
 // order shows up in the 🧾 Orders list.
-export const MACHINE_COSTS = [100, 400, 1200];
+export const MACHINE_COSTS = [100, 10000, 1000000];
 
 // ------------------------------------------------------------ customers ---
 
@@ -302,8 +316,15 @@ export const START_COINS = 20;
 export const EAT_SECONDS = 8;
 /** Seconds between customers walking in, while there's a free table. */
 export const spawnGap = (tables, machines) => Math.max(5, 20 - 1.2 * tables - 2.5 * machines);
-/** A tip for being quick, as a share of the price. */
-export const tipShare = (waitedSec) => waitedSec < 45 ? 0.25 : waitedSec < 90 ? 0.1 : 0;
+/** A tip for being quick: a fifth of the price within 45 seconds, a tenth within 90. */
+export const tipFor = (price, waitedSec) =>
+  waitedSec < 45 ? Math.max(1, Math.round(price / 5)) : waitedSec < 90 ? Math.max(1, Math.round(price / 10)) : 0;
+/**
+ * Milbils like the fancy stuff: each dish on your menu is twice as likely to
+ * be ordered as the next cheaper one, so the dearest is picked about half the
+ * time and the cheap ones still come up now and then.
+ */
+export const ORDER_SKEW = 2;
 export const VIP_CHANCE = 0.12;
 
 // Greta's own drawings come in now and then, and pay double.

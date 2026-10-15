@@ -1,25 +1,40 @@
-// ---------- The dining room ----------
+// ---------- The restaurant ----------
 //
-// Customers walk in the door, order (at an ordering machine if you have one,
-// otherwise you tap them to take their order), sit at a free table and wait.
-// When you serve them, your chef carries the dish out, they eat, pay, and go.
+// Sit-down restaurants: customers walk in the door, order (at an ordering
+// machine if you have one, otherwise you tap them to take their order), sit
+// at a free table and wait. When you serve them, your chef carries the dish
+// out, they eat, and go.
 //
-// Everything on the floor sits in one stage and is placed in pixels by
-// layout(), so walking is just a CSS transition from one spot to the next.
+// The Drive-Through: milbils queue up in cars along a winding lane and order
+// at the speaker as they pull in. When their food is ready it goes out of the
+// window in a bag, they drive off, and everyone behind moves up.
+//
+// Everything sits in one stage and is placed in pixels by layout(), so moving
+// about is just a CSS transition from one spot to the next.
 
-import { EAT_SECONDS, VIPS, VIP_CHANCE, NAMES, spawnGap, DISH } from './data.js';
-import { S, tier, menu, nextTableCost, fmt } from './state.js';
+import { EAT_SECONDS, VIPS, VIP_CHANCE, NAMES, ORDER_SKEW, spawnGap, DISH } from './data.js';
+import { S, place, menu, nextTableCost, tablesHere, fmt } from './state.js';
 import { customerHTML, randomLook, drawLook, chefLook } from './milbil.js';
 import { menuDishSVG, dishSVG } from './food.js';
-import { $, esc, sfx, floatText } from './ui.js';
+import { $, sfx, floatText } from './ui.js';
 import { signHTML, fitSign } from './sign.js';
 
 const SPEED = 190;          // walking, in pixels a second
+const DRIVE = 260;          // driving
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 const miniDish = {};
 const dishPic = (id) => (miniDish[id] ??= menuDishSVG(id, 'dish mini'));
+
+/** What someone orders: anything on your menu, but mostly the dearest things. */
+export function pickDish(){
+  const list = menu();
+  const weights = list.map((_, i) => ORDER_SKEW ** i);
+  let r = Math.random() * weights.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < list.length; i++){ r -= weights[i]; if (r < 0) return list[i].id; }
+  return list[list.length - 1].id;
+}
 
 // ----------------------------------------------------------- furniture ---
 
@@ -60,15 +75,48 @@ const doorSVG = (accent) => `<svg viewBox="0 0 60 100" aria-hidden="true">
   <rect x="12" y="78" width="36" height="4" rx="2" fill="#000" opacity=".12"/>
 </svg>`;
 
+// A car, facing right, in two halves so the driver sits between them.
+const CAR_COLORS = ['#ff6f61', '#4c7df0', '#ffc531', '#3fae4a', '#9b5de5', '#ff8fab', '#14b8a6', '#ff9a3c'];
+const carBack = (c) => `<svg class="car-back" viewBox="0 0 120 74" aria-hidden="true">
+  <ellipse cx="60" cy="70" rx="54" ry="4" fill="#0000002e"/>
+  <path d="M28 34 Q31 4 56 4 H76 Q94 4 100 34 Z" fill="${c}"/>
+  <path d="M36 34 Q39 10 57 10 H74 Q88 10 92 34 Z" fill="#d6efff"/>
+</svg>`;
+const carFront = (c) => `<svg class="car-front" viewBox="0 0 120 74" aria-hidden="true">
+  <path d="M5 38 Q5 31 13 31 H104 Q116 31 116 42 V55 Q116 61 110 61 H11 Q5 61 5 55 Z" fill="${c}"/>
+  <path d="M63 31 V61" stroke="#00000022" stroke-width="2"/>
+  <rect x="5" y="45" width="111" height="4" fill="#fff" opacity=".35"/>
+  <rect x="68" y="36" width="10" height="3" rx="1.5" fill="#00000035"/>
+  <rect x="109" y="35" width="7" height="6" rx="2" fill="#fff3a8"/>
+  <rect x="5" y="36" width="5" height="6" rx="2" fill="#ff8a8a"/>
+  <circle cx="30" cy="61" r="10" fill="#2f2a3a"/><circle cx="30" cy="61" r="4" fill="#c9ced8"/>
+  <circle cx="92" cy="61" r="10" fill="#2f2a3a"/><circle cx="92" cy="61" r="4" fill="#c9ced8"/>
+</svg>`;
+
+const BAG = `<svg viewBox="0 0 48 56" aria-hidden="true">
+  <path d="M16 14 Q16 4 24 4 Q32 4 32 14" stroke="#b07a45" stroke-width="3" fill="none"/>
+  <path d="M6 14 H42 L40 54 H8 Z" fill="#e8b878"/><path d="M6 14 H42 L41.5 22 H6.5 Z" fill="#d9a05b"/>
+  <circle cx="24" cy="36" r="8" fill="#fff" opacity=".85"/><path d="M20 35 q4 5 8 0" stroke="#ff6f61" stroke-width="2" fill="none" stroke-linecap="round"/>
+</svg>`;
+
 function wallDecor(T){
   const win = (x, w) => `<div class="window" style="left:${x}%;width:${w}%"><i></i></div>`;
   const spots = T.windows === 1 ? [[60, 26]] : T.windows === 2 ? [[42, 20], [74, 20]] : [[38, 16], [60, 16], [82, 14]];
   let html = spots.map(([x, w]) => win(x, w)).join('');
-  html += `<div class="lamps">${[30, 55, 80].slice(0, Math.min(3, T.n + 1)).map(x => `<i style="left:${x}%"></i>`).join('')}</div>`;
-  if (T.n >= 2) html += `<div class="plant" style="left:93%"></div>`;
-  if (T.n >= 3) html += `<div class="frame" style="left:${T.n >= 4 ? 27 : 30}%"></div>`;
-  if (T.n >= 5) html += `<div class="bunting"></div>`;
+  html += `<div class="lamps">${[30, 55, 80].slice(0, Math.min(3, T.stars + 1)).map(x => `<i style="left:${x}%"></i>`).join('')}</div>`;
+  if (T.stars >= 2) html += `<div class="plant" style="left:93%"></div>`;
+  if (T.stars >= 3) html += `<div class="frame" style="left:${T.stars >= 4 ? 27 : 30}%"></div>`;
   return html;
+}
+
+// The front of the Drive-Through: a menu board with a speaker, and the window.
+function driveDecor(){
+  return `<div class="dt-board"><b>MENU</b><i></i><i></i><i></i><span class="dt-speaker"></span></div>
+    <button type="button" class="dt-window" data-act="kitchen" aria-label="Kitchen">
+      <span class="dt-awning"></span>
+      <span class="dt-inside"><span class="dt-chef">${drawLook(chefLook(S.color), { title: S.name })}</span></span>
+      <span class="dt-sill"></span>
+    </button>`;
 }
 
 // ---------------------------------------------------------------- room ---
@@ -88,6 +136,8 @@ export class Restaurant {
     new ResizeObserver(() => this.layout(false)).observe(this.room);
   }
 
+  get drive(){ return !!place().drive; }
+
   // Customers whose order is in and who are waiting for food, oldest first.
   get orders(){
     return this.customers.filter(c => c.state === 'wait').sort((a, b) => a.orderedAt - b.orderedAt);
@@ -95,35 +145,46 @@ export class Restaurant {
 
   // ------------------------------------------------------------- build ---
 
-  /** (Re)draw the room for the current restaurant. Customers stay put. */
+  /** (Re)draw the restaurant you're in. Customers stay put. */
   build(){
-    const T = tier();
+    const T = place();
     const R = this.room;
     for (const [k, v] of Object.entries({ wall: T.wall, wall2: T.wall2, floor: T.floor, floor2: T.floor2, accent: T.accent })) R.style.setProperty(`--${k}`, v);
-    R.dataset.tier = T.n;
-    R.innerHTML = `
-      <div class="wall">${wallDecor(T)}${signHTML('', '<i class="sign-edit">✏️</i>')}</div>
-      <div class="floor"></div>
-      <div class="stage" id="stage"></div>
-      <div class="counter" id="counter">
-        <div class="counter-top"></div>
-        <div class="counter-front">
-          <span class="counter-bell">🛎️</span>
-          <span class="pass" aria-hidden="true"><i></i><i></i><i></i></span>
-        </div>
-      </div>`;
-    this.stage = $('#stage', R);
-    let html = `<div class="door-el">${doorSVG(T.accent)}</div>`;
-    for (let k = 0; k < S.machines; k++) html += `<button type="button" class="kiosk" data-k="${k}" aria-label="Ordering machine">${kioskSVG(T.accent)}</button>`;
-    for (let i = 0; i < S.tables; i++){
-      html += `<div class="chair" data-i="${i}">${chairSVG(T.accent)}</div>
-        <div class="tbl" data-i="${i}">${tableSVG(T.cloth, T.accent)}<div class="tbl-dish"></div></div>`;
+    R.dataset.place = T.id;
+    R.classList.toggle('drive', this.drive);
+    const sign = signHTML('', '<i class="sign-edit">✏️</i>');
+    if (this.drive){
+      R.innerHTML = `<div class="wall">${driveDecor()}${sign}</div><div class="floor"></div><div class="stage" id="stage"></div>`;
+      this.stage = $('#stage', R);
+      let html = '';
+      for (let r = 0; r < 4; r++) html += `<div class="lane" data-r="${r}"></div><div class="lane-turn" data-r="${r}"></div>`;
+      this.stage.innerHTML = html;
+      this.chefEl = null;
+    } else {
+      R.innerHTML = `
+        <div class="wall">${wallDecor(T)}${sign}</div>
+        <div class="floor"></div>
+        <div class="stage" id="stage"></div>
+        <div class="counter" id="counter">
+          <div class="counter-top"></div>
+          <div class="counter-front">
+            <span class="counter-bell">🛎️</span>
+            <span class="pass" aria-hidden="true"><i></i><i></i><i></i></span>
+          </div>
+        </div>`;
+      this.stage = $('#stage', R);
+      let html = `<div class="door-el">${doorSVG(T.accent)}</div>`;
+      for (let k = 0; k < S.machines; k++) html += `<button type="button" class="kiosk" data-k="${k}" aria-label="Ordering machine">${kioskSVG(T.accent)}</button>`;
+      for (let i = 0; i < tablesHere(); i++){
+        html += `<div class="chair" data-i="${i}">${chairSVG(T.accent)}</div>
+          <div class="tbl" data-i="${i}">${tableSVG(T.cloth, T.accent)}<div class="tbl-dish"></div></div>`;
+      }
+      const cost = nextTableCost();
+      if (cost != null) html += `<button type="button" class="tbl-buy" data-act="buy-table"><b>+</b><span>Table</span><em>🪙${fmt(cost)}</em></button>`;
+      html += `<div class="chef-walker" id="roomChef"><div class="carry"></div>${drawLook(chefLook(S.color), { title: S.name })}</div>`;
+      this.stage.innerHTML = html;
+      this.chefEl = $('#roomChef', this.stage);
     }
-    const cost = nextTableCost();
-    if (cost != null) html += `<button type="button" class="tbl-buy" data-act="buy-table"><b>+</b><span>Table</span><em>🪙${fmt(cost)}</em></button>`;
-    html += `<div class="chef-walker" id="roomChef"><div class="carry"></div>${drawLook(chefLook(S.color), { title: S.name })}</div>`;
-    this.stage.innerHTML = html;
-    this.chefEl = $('#roomChef', this.stage);
     for (const c of this.customers){
       this.stage.appendChild(c.el);
       if (c.state === 'eat' && c.table >= 0) this.putDish(c);
@@ -131,11 +192,20 @@ export class Restaurant {
     this.layout(false);
   }
 
+  /** Everyone goes home: for moving to another restaurant. */
+  clear(){
+    for (const c of this.customers) c.el.remove();
+    this.customers = [];
+    this.chef = { x: 0, y: 0, busy: false, queue: [] };
+    this.nextSpawn = this.now + 1.5;
+  }
+
   /** Work out where everything goes from the room's size right now. */
   layout(animate){
     const W = this.room.clientWidth, H = this.room.clientHeight;
     if (!W || !H) return;
-    const T = tier();
+    if (this.drive) return this.layoutDrive(W, H, animate);
+    const T = place();
     const wallH = clamp(H * 0.22, 92, 150);
     const counterH = clamp(H * 0.14, 70, 100);
     this.room.style.setProperty('--wallH', `${wallH}px`);
@@ -186,7 +256,7 @@ export class Restaurant {
     });
     const buy = $('.tbl-buy', this.stage);
     if (buy){
-      const s = this.slots[S.tables];
+      const s = this.slots[tablesHere()];
       const w = Math.min(s.tw * 0.8, 96);
       this.put(buy, s.cx - w / 2, s.tTop + s.th - w * 0.9, w, s.row * 10 + 13);
     }
@@ -197,7 +267,58 @@ export class Restaurant {
     this.chefHome = { x: W * 0.24, y: H - counterH + chefW * 0.55 };
     if (!this.chef.busy){ this.chef.x = this.chefHome.x; this.chef.y = this.chefHome.y; }
     this.placeChef(false);
+    this.placeAll(animate);
+  }
 
+  /**
+   * The lane winds back and forth: the front row runs right, towards the
+   * window; the next one runs left, and so on. Slot 0 is at the window, and
+   * each car joins the back of the queue.
+   */
+  layoutDrive(W, H, animate){
+    const T = place();
+    const wallH = clamp(H * 0.25, 110, 170);
+    this.room.style.setProperty('--wallH', `${wallH}px`);
+    this.W = W; this.H = H; this.wallH = wallH;
+    this.fitSign();
+    const perRow = W > H * 1.1 ? 3 : 2;
+    const rows = Math.ceil(T.cars / perRow);
+    const top = wallH + 10, bottom = H - 6, pad = 12;
+    const rowH = (bottom - top) / rows, cellW = (W - pad * 2) / perRow;
+    this.carW = Math.min(cellW * 0.82, rowH * 1.15, 210);
+    const carH = this.carW * 74 / 120;
+    const laneH = carH * 0.62;
+    this.rows = [];
+    for (let r = 0; r < rows; r++){
+      const y = top + (r + 1) * rowH - rowH * 0.2;           // where the wheels touch
+      this.rows.push({ y, dir: r % 2 ? -1 : 1 });
+    }
+    this.slots = [];
+    for (let s = 0; s < T.cars; s++){
+      const r = Math.floor(s / perRow), k = s % perRow, R = this.rows[r];
+      const col = R.dir > 0 ? perRow - 1 - k : k;
+      this.slots.push({ cx: pad + (col + 0.5) * cellW, y: R.y, row: r });
+    }
+    this.stage.querySelectorAll('.lane').forEach(el => {
+      const r = +el.dataset.r, R = this.rows[r];
+      el.hidden = !R;
+      if (!R) return;
+      el.classList.toggle('left', R.dir < 0);
+      Object.assign(el.style, { width: `${W}px`, height: `${laneH}px`, transform: `translate(0px, ${R.y - laneH * 0.78}px)`, zIndex: 1 });
+    });
+    // The bends join each row's back end to the front of the next.
+    this.stage.querySelectorAll('.lane-turn').forEach(el => {
+      const r = +el.dataset.r, A = this.rows[r], B = this.rows[r + 1];
+      el.hidden = !B;
+      if (!B) return;
+      const x = A.dir > 0 ? 4 : W - 4 - laneH;
+      const y1 = A.y - laneH * 0.78;
+      Object.assign(el.style, { width: `${laneH}px`, height: `${B.y - A.y + laneH}px`, transform: `translate(${x}px, ${y1}px)`, zIndex: 0 });
+    });
+    this.placeAll(animate);
+  }
+
+  placeAll(animate){
     for (const c of this.customers){
       if (c.target != null){ const p = this.pos(c.target); c.x = p.x; c.y = p.y; }
       this.placeCust(c, animate && !!c.arrive);
@@ -211,9 +332,11 @@ export class Restaurant {
     this.fitSign();
   }
 
-  // Centred at 60% across the wall, clear of the door, above the windows.
+  // Sit-down: centred at 60% across the wall, clear of the door, above the
+  // windows. Drive-Through: centred along the top, above the board and window.
   fitSign(){
     if (!this.W) return;
+    if (this.drive) return fitSign($('.wall .sign', this.room), this.W - 52, this.wallH * 0.32, 24);
     const doorRight = 10 + Math.max(44, Math.min(this.W * 0.13, 64));
     const half = Math.min(this.W * 0.6 - doorRight - 10, this.W * 0.4 - 18);
     fitSign($('.wall .sign', this.room), half * 2, this.wallH * 0.36, 24);
@@ -226,8 +349,15 @@ export class Restaurant {
     el.style.zIndex = z;
   }
 
-  /** Where someone's feet go for a target. */
+  /** Where someone's feet (or a car's wheels) go for a target. */
   pos(t){
+    if (this.drive){
+      const s = this.slots[t.seat ?? t.enter ?? t.exit] || this.slots[0];
+      const R = this.rows[s.row];
+      if (t.enter != null) return { x: R.dir > 0 ? -this.carW * 0.7 : this.W + this.carW * 0.7, y: s.y };
+      if (t.exit != null) return { x: R.dir > 0 ? this.W + this.carW * 0.7 : -this.carW * 0.7, y: s.y };
+      return { x: s.cx, y: s.y };
+    }
     if (t === 'door') return { ...this.door };
     if (t.machine != null){ const k = this.kiosks[t.machine] || this.kiosks[0]; return k ? { x: k.x + 4, y: k.y + 6 } : { ...this.door }; }
     const s = this.slots[t.seat];
@@ -239,7 +369,8 @@ export class Restaurant {
   spawn(){
     const taken = new Set(this.customers.map(c => c.table));
     const free = [];
-    for (let i = 0; i < S.tables; i++) if (!taken.has(i)) free.push(i);
+    const n = this.drive ? place().cars : tablesHere();
+    for (let i = 0; i < n; i++) if (!taken.has(i)) free.push(i);
     if (!free.length) return false;
     const vip = Math.random() < VIP_CHANCE ? pick(VIPS) : null;
     const c = {
@@ -248,49 +379,73 @@ export class Restaurant {
       art: vip?.art || null,
       vip: !!vip,
       look: vip ? null : randomLook(),
-      dish: pick(menu()).id,
-      table: pick(free),
+      dish: pickDish(),
+      // A car joins the back of the queue; a walk-in takes any free table.
+      table: this.drive ? free[0] : pick(free),
       state: 'walk',
       ordered: false,
-      x: this.door.x, y: this.door.y,
-      target: 'door',
+      car: this.drive,
     };
+    c.target = this.drive ? { enter: c.table } : 'door';
+    const p = this.pos(c.target);
+    c.x = p.x; c.y = p.y;
     c.el = document.createElement('div');
-    c.el.className = `cust ${c.vip ? 'vip' : ''} entering`;
+    c.el.className = `cust ${c.vip ? 'vip' : ''} ${c.car ? 'car' : ''} entering`;
     c.el.dataset.id = c.id;
-    c.el.innerHTML = `<div class="cust-body">${customerHTML(c)}</div><div class="bubble" hidden></div>${c.vip ? '<span class="vip-tag">VIP</span>' : ''}`;
+    const tag = c.vip ? '<span class="vip-tag">VIP</span>' : '';
+    if (c.car){
+      const col = pick(CAR_COLORS);
+      c.el.innerHTML = `<div class="car-body">${carBack(col)}<div class="car-driver">${customerHTML(c)}</div>${carFront(col)}</div><div class="bubble" hidden></div>${tag}`;
+    } else {
+      c.el.innerHTML = `<div class="cust-body">${customerHTML(c)}</div><div class="bubble" hidden></div>${tag}`;
+    }
     this.stage.appendChild(c.el);
     this.customers.push(c);
+    this.face(c);
     this.placeCust(c, false);
     requestAnimationFrame(() => c.el.classList.remove('entering'));
-    sfx('door');
-    if (S.machines > 0){
+    if (c.car){
+      sfx('honk');
+      // Drive-Through orders go in at the speaker as you pull up.
+      this.go(c, { seat: c.table }, () => { this.placeOrder(c); this.sit(c); });
+    } else if (S.machines > 0){
+      sfx('door');
       const k = this.machineTurn++ % S.machines;
       this.go(c, { machine: k }, () => { c.state = 'machine'; c.until = this.now + 1.1; this.renderCust(c); });
     } else {
+      sfx('door');
       this.go(c, { seat: c.table }, () => this.sit(c));
     }
     return true;
   }
 
+  /** Cars point the way their row runs. */
+  face(c){
+    if (!c.car) return;
+    const s = this.slots[c.target.seat ?? c.target.enter ?? c.target.exit];
+    c.el.classList.toggle('left', !!s && this.rows[s.row].dir < 0);
+  }
+
   go(c, target, after){
     const p = this.pos(target);
-    const dur = Math.max(0.35, Math.hypot(p.x - c.x, p.y - c.y) / SPEED);
+    const dur = Math.max(0.35, Math.hypot(p.x - c.x, p.y - c.y) / (c.car ? DRIVE : SPEED));
     c.x = p.x; c.y = p.y; c.target = target;
     c.arrive = this.now + dur;
     c.after = after;
     c.el.style.transitionDuration = `${dur.toFixed(2)}s`;
     c.el.classList.add('walking');
+    this.face(c);
     this.placeCust(c, true);
   }
 
   placeCust(c, animate){
-    const w = c.vip ? this.cw * 1.02 : this.cw, h = w * 1.2;
+    const w = c.car ? this.carW : c.vip ? this.cw * 1.02 : this.cw;
+    const h = c.car ? w * 74 / 120 : w * 1.2;
     if (!animate) c.el.style.transitionDuration = '0s';
     c.el.style.width = `${w}px`;
     c.el.style.transform = `translate(${(c.x - w / 2).toFixed(1)}px, ${(c.y - h).toFixed(1)}px)`;
-    const seated = c.target?.seat != null && !c.arrive;
-    c.el.style.zIndex = seated ? this.slots[c.target.seat].row * 10 + 12 : 150;
+    const parked = c.target?.seat != null && !c.arrive;
+    c.el.style.zIndex = parked ? this.slots[c.target.seat].row * 10 + 12 : 150;
   }
 
   sit(c){
@@ -338,16 +493,38 @@ export class Restaurant {
   }
 
   leave(c){
+    const slot = c.table;
     c.state = 'leave';
-    const t = this.tblEl(c.table);
+    const t = this.tblEl(slot);
     if (t) $('.tbl-dish', t).replaceChildren();
     c.table = -1;
     this.renderCust(c);
-    this.go(c, 'door', () => {
+    const gone = () => {
       c.el.classList.add('entering');
       setTimeout(() => c.el.remove(), 300);
       this.customers = this.customers.filter(x => x !== c);
-    });
+    };
+    if (c.car){
+      sfx('honk');
+      this.go(c, { exit: slot }, gone);
+      this.moveUp();
+    } else {
+      this.go(c, 'door', gone);
+    }
+  }
+
+  /** Drive-Through: when a car leaves, the ones behind it pull forward. */
+  moveUp(){
+    const n = place().cars;
+    for (let s = 0; s < n; s++){
+      if (this.customers.some(c => c.table === s)) continue;
+      const next = this.customers
+        .filter(c => c.table > s && (c.state === 'wait' || c.state === 'walk'))
+        .sort((a, b) => a.table - b.table)[0];
+      if (!next) break;
+      next.table = s;
+      this.go(next, { seat: s }, next.state === 'walk' ? next.after : null);
+    }
   }
 
   tblEl(i){ return this.stage.querySelector(`.tbl[data-i="${i}"]`); }
@@ -359,20 +536,45 @@ export class Restaurant {
 
   // -------------------------------------------------------------- serve ---
 
-  /** The dish is ready: your chef carries it out, and they pay. */
-  serve(c, layers, pay){
+  /**
+   * The dish is ready (and already paid for). Your chef carries it out, or at
+   * the Drive-Through it goes out of the window in a bag. `arrived` runs when
+   * it gets there, for the "+50".
+   */
+  serve(c, layers, arrived){
     c.state = 'served';
     c.plate = dishSVG(DISH[c.dish].dish, layers, { finished: true, cls: 'dish mini' });
     this.renderCust(c);
-    this.chef.queue.push({ c, pay });
     this.game.ordersChanged();
+    if (c.car) return this.handOut(c, arrived);
+    this.chef.queue.push({ c, arrived });
     if (!this.chef.busy) this.nextDelivery();
+  }
+
+  handOut(c, arrived){
+    const from = $('.dt-window', this.room).getBoundingClientRect();
+    const to = c.el.getBoundingClientRect();
+    const bag = document.createElement('div');
+    bag.className = 'bag-fly';
+    bag.innerHTML = BAG;
+    Object.assign(bag.style, { left: `${from.left + from.width / 2 - 20}px`, top: `${from.top + from.height * 0.45}px` });
+    document.body.appendChild(bag);
+    sfx('swish');
+    requestAnimationFrame(() => {
+      bag.style.transform = `translate(${to.left + to.width / 2 - from.left - from.width / 2}px, ${to.top + to.height * 0.3 - from.top - from.height * 0.45}px) scale(.8)`;
+    });
+    setTimeout(() => {
+      bag.remove();
+      if (!c.el.isConnected) return;
+      arrived(c.el);
+      this.leave(c);
+    }, 650);
   }
 
   nextDelivery(){
     const job = this.chef.queue.shift();
     if (!job){ this.chef.busy = false; return; }
-    const { c, pay } = job;
+    const { c, arrived } = job;
     this.chef.busy = true;
     $('.carry', this.chefEl).innerHTML = c.plate;
     const s = this.slots[c.table] || this.slots[0];
@@ -383,7 +585,7 @@ export class Restaurant {
       c.state = 'eat';
       c.eatUntil = this.now + EAT_SECONDS;
       this.renderCust(c);
-      pay(c.el);
+      arrived(c.el);
       this.walkChef(this.chefHome, () => this.nextDelivery());
     });
   }
@@ -414,12 +616,15 @@ export class Restaurant {
     this.now = now;
     if (this.paused) this.nextSpawn = Math.max(this.nextSpawn, now + 1);
     if (now >= this.nextSpawn){
-      this.nextSpawn = now + (this.spawn() ? spawnGap(S.tables, S.machines) : 1);
+      // Cars order at the speaker, so the Drive-Through is as quick as two machines.
+      const gap = this.drive ? spawnGap(place().cars, Math.max(2, S.machines)) : spawnGap(tablesHere(), S.machines);
+      this.nextSpawn = now + (this.spawn() ? gap : 1);
     }
     for (const c of [...this.customers]){
       if (c.arrive && now >= c.arrive){
         c.arrive = 0;
         c.el.classList.remove('walking');
+        this.placeCust(c, false);
         const f = c.after; c.after = null;
         f?.();
       }
@@ -435,7 +640,7 @@ export class Restaurant {
     }
     if (this.chef.arrive && now >= this.chef.arrive){
       this.chef.arrive = 0;
-      this.chefEl.classList.remove('walking');
+      this.chefEl?.classList.remove('walking');
       const f = this.chef.after; this.chef.after = null;
       this.placeChef(false);
       f?.();
@@ -455,7 +660,4 @@ export class Restaurant {
       if (c) this.game.tapCustomer(c);
     }
   }
-
-  /** A "+20" over someone's head. */
-  pop(el, text){ floatText(el, text); }
 }

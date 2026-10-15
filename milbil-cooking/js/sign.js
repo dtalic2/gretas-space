@@ -5,7 +5,7 @@
 // name it, it's "Greta's Little Café" and moves up with the restaurant.
 
 import { SIGN_FONTS, SIGN_COLORS, SIGN_BGS, SIGN_NAMES } from './data.js';
-import { S, save, tier } from './state.js';
+import { S, save, place } from './state.js';
 import { $, esc, sfx } from './ui.js';
 
 const byId = (list) => Object.fromEntries(list.map(x => [x.id, x]));
@@ -14,9 +14,9 @@ const FONT = byId(SIGN_FONTS), COLOR = byId(SIGN_COLORS), BG = byId(SIGN_BGS);
 const font = () => FONT[S.sign.font] || SIGN_FONTS[0];
 const color = () => COLOR[S.sign.color] || SIGN_COLORS[0];
 const bg = () => BG[S.sign.bg] || SIGN_BGS[0];
-const bgCSS = (b) => b.css ?? tier().accent;
+const bgCSS = (b) => b.css ?? place().accent;
 
-export const defaultName = () => `${S.name || 'Milbil'}'s ${tier().name}`;
+export const defaultName = () => `${S.name || 'Milbil'}'s ${place().name}`;
 export const signName = () => S.sign.name.trim() || defaultName();
 
 /** The sign itself. `extra` goes inside it (the ✏️ badge in the dining room). */
@@ -90,7 +90,7 @@ function changed(){
 
 function renderPreview(){
   const wall = $('#makerWall');
-  const T = tier();
+  const T = place();
   wall.style.background = `linear-gradient(${T.wall}, ${T.wall2})`;
   wall.innerHTML = signHTML('big');
   fitSign($('.sign', wall), wall.clientWidth - 28, 104, 34);
