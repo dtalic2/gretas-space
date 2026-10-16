@@ -75,8 +75,10 @@ export const SPARE_COLORS = [
   '#2ec4b6', '#9ef01a', '#c77dff', '#f15bb5', '#00bbf9', '#8ac926', '#ff924c', '#e85d75',
 ];
 
-// The island's own colours.
-export const SEA = '#cbbef0';       // round the edge of the island
-export const GROUND = '#fbf9ff';    // land nobody owns yet
-export const GROUND_2 = '#f1ecfb';  // its checks
-export const EDGE = '#a993dd';      // the island's rim
+// The island's own colours: black, so glowing milbils stand out.
+export const SEA = '#020104';       // round the edge of the island
+export const GROUND = '#0d0b14';    // land nobody owns yet
+export const GROUND_2 = '#12101a';  // its checks, just enough to see you're moving
+export const SIDE = '#1e1533';      // the island's edge, seen from the side
+export const RIM = '#8a47e6';       // the glowing line round the island
+export const GROUND_RGB = [13, 11, 20];

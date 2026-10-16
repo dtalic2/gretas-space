@@ -54,9 +54,9 @@ export function palette(color){
   return {
     rainbow: false, css: color,
     land: hex(mix(c, WHITE, .12)),
-    side: hex(mix(c, BLACK, .32)),
+    side: hex(mix(c, BLACK, .4)),
     ink: hex(mix(c, BLACK, .5)),
     mini: c,
-    trail: hex(mix(c, WHITE, .42)),
+    trail: hex(mix(c, WHITE, .3)),
   };
 }

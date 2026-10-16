@@ -1,7 +1,8 @@
 # 🟪 Milbil.io
 
-paper.io, with milbils. You walk a milbil around a round island. Walk out of your
-land and you leave a trail behind you. Come back in and the trail, and
+paper.io, with milbils. You walk a milbil around a round black island, where
+the glowing milbils stand out. Walk out of your land and you leave a trail
+behind you. Come back in and the trail, and
 everything inside it, becomes your land. Cut through another milbil's trail to
 catch it. But if anyone touches *your* trail before you're home, you're caught.
 
@@ -96,12 +97,20 @@ All in `js/data.js`.
 
 ## The milbils
 
+The island is black so the milbils glow on it, with a glowing purple line
+round its edge. Trails glow in their milbil's colour.
+
 Drawn milbils are drawn the way Greta draws them: a tall box with a line
 across the middle, stick arms and stick legs, plus a hat or a feature or two.
 They're the same 21 kinds as in Milbil Café and Milbil GO (`js/milbil.js` is
-copied from Milbil Café). Greta's five drawings are the same pictures as in
-Milbil Café, with the insides of their bodies filled in white so they show up
-on top of coloured land.
+copied from Milbil Café). On the island each one gets a glow in its own colour
+(`js/sprites.js`).
+
+Greta's five drawings are the same glowing pictures as in Milbil Café, with
+the insides of their bodies filled in with the island's black. On the black
+island they look like neon signs, and on top of coloured land their dark
+bodies keep the glowing lines easy to see. On the start screen and the
+"caught" card they sit on black tiles too, so they glow there as well.
 
 When two milbils on the island would have land of nearly the same colour, the
 second one gets a different colour, so everyone's land is easy to tell apart.

@@ -1,8 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8a47e6"/><stop offset="1" stop-color="#4c1fa0"/></linearGradient></defs>
   <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <circle cx="256" cy="282" r="196" fill="#a993dd"/>
-  <circle cx="256" cy="270" r="196" fill="#fbf9ff"/>
+  <circle cx="256" cy="282" r="196" fill="#1e1533"/>
+  <circle cx="256" cy="270" r="196" fill="#0d0b14"/>
+  <circle cx="256" cy="270" r="198" fill="none" stroke="#8a47e6" stroke-width="22" stroke-opacity=".3"/>
+  <circle cx="256" cy="270" r="198" fill="none" stroke="#b98cff" stroke-width="7"/>
   <!-- your land, standing up off the ground -->
   <path d="M96 236 H276 V300 H336 V396 H146 V330 H96Z" fill="#2c7a8c" transform="translate(0 16)"/>
   <path d="M96 236 H276 V300 H336 V396 H146 V330 H96Z" fill="#46c8c8"/>

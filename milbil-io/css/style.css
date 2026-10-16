@@ -1,6 +1,8 @@
 /* ---------- Milbil.io ----------
    Milbil Café's look: chunky rounded lettering, white cards and buttons with a
-   darker bottom edge, and purple. The island itself is drawn on the canvas. */
+   darker bottom edge, and purple. The island itself is drawn on the canvas, in
+   black so the glowing milbils stand out; milbil pictures sit on the same
+   black (--night) everywhere else too. */
 
 :root {
   --purple: #8a47e6;
@@ -12,6 +14,8 @@
   --soft: #f4effc;
   --green: #2fbf4c;
   --green-d: #1f9a39;
+  --night: #0d0b14;
+  --glow: #8a47e6;
   --edge: inset 0 -5px 0 rgba(0, 0, 0, .22);
   --edge-sm: inset 0 -3px 0 rgba(0, 0, 0, .2);
   --safe-t: env(safe-area-inset-top, 0px);
@@ -32,7 +36,7 @@ html, body {
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
 }
-body { font-family: var(--font); font-weight: 800; color: var(--ink); background: #cbbef0; }
+body { font-family: var(--font); font-weight: 800; color: var(--ink); background: #020104; }
 button { font: inherit; color: inherit; cursor: pointer; border: 0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 h1, h2, p { margin: 0; }
 [hidden] { display: none !important; }
@@ -94,7 +98,7 @@ b, strong { font-weight: 900; }
 .mini {
   position: absolute; right: calc(var(--safe-r) + 10px); bottom: calc(var(--safe-b) + 10px);
   width: 96px; height: 96px; border-radius: 50%;
-  background: #cbbef0; box-shadow: 0 0 0 4px #fff, 0 5px 0 4px #0002;
+  background: #020104; box-shadow: 0 0 0 3px var(--glow), 0 0 16px 3px #8a47e699;
 }
 @media (min-width: 700px) and (min-height: 600px) {
   .mini { width: 130px; height: 130px; }
@@ -182,14 +186,15 @@ b, strong { font-weight: 900; }
 }
 .pick {
   display: flex; flex-direction: column; align-items: center; gap: 1px;
-  padding: 6px 2px 7px; border-radius: 12px; background: var(--soft); box-shadow: var(--edge-sm);
+  padding: 6px 2px 7px; border-radius: 12px; background: var(--night); box-shadow: var(--edge-sm);
   border-bottom: 5px solid var(--c);
 }
 .pick-pic { height: 56px; display: flex; align-items: flex-end; justify-content: center; }
 .pick .milbil { height: 56px; width: auto; max-width: 60px; display: block; overflow: visible; }
-.pick small { font-size: 10.5px; line-height: 1.1; color: var(--muted); max-width: 100%; overflow-wrap: anywhere; padding: 0 2px; }
-.pick.on { background: #fff; box-shadow: var(--edge-sm), 0 0 0 3px var(--purple); }
-.pick.on small { color: var(--ink); }
+.pick small { font-size: 10.5px; line-height: 1.1; color: #b9b0cc; max-width: 100%; overflow-wrap: anywhere; padding: 0 2px; }
+.pick .milbil:not(.art) { filter: drop-shadow(0 0 4px var(--c)); }
+.pick.on { box-shadow: var(--edge-sm), 0 0 0 3px var(--purple), 0 0 14px 2px #8a47e6aa; }
+.pick.on small { color: #fff; }
 
 .levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .lvl {
@@ -220,7 +225,7 @@ b, strong { font-weight: 900; }
 .welcome { background: linear-gradient(160deg, #7b3fd98c, #4c1fa0b3); }
 
 /* ========================================================== caught! === */
-.over-pic { display: flex; justify-content: center; }
+.over-pic { display: flex; justify-content: center; align-self: center; padding: 10px 26px 6px; border-radius: 18px; background: var(--night); }
 .over-pic .milbil { height: 96px; width: auto; display: block; overflow: visible; animation: wobble 1.6s ease-in-out infinite; }
 @keyframes wobble { 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
 .over-msg { font-family: var(--title); font-weight: var(--title-weight); font-size: 24px; line-height: 1.2; }

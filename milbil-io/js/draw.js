@@ -5,7 +5,7 @@
 // milbils on top. Only the cells on screen are drawn.
 
 import { world, owner, inside, W, MID, cellAt } from './world.js';
-import { RADIUS, VIEW, LIFT, SEA, GROUND, GROUND_2, EDGE } from './data.js';
+import { RADIUS, VIEW, LIFT, SEA, GROUND, GROUND_2, GROUND_RGB, SIDE, RIM } from './data.js';
 import { rainbowAt } from './colors.js';
 import { sprite } from './sprites.js';
 
@@ -128,13 +128,16 @@ function drawTrails(t){
     ctx.moveTo(sx(p.pts[0].x), sy(p.pts[0].y));
     for (let k = 1; k < p.pts.length; k++) ctx.lineTo(sx(p.pts[k].x), sy(p.pts[k].y));
     ctx.lineTo(sx(p.x), sy(p.y));
-    ctx.globalAlpha = .4;
-    ctx.strokeStyle = pal.rainbow ? '#6a4bc4' : pal.side;
-    ctx.lineWidth = s * .8;
+    const color = pal.rainbow ? pal.trail(t) : pal.trail;
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = .14;              // a soft glow round it
+    ctx.lineWidth = s * 1.15;
+    ctx.stroke();
+    ctx.globalAlpha = .3;
+    ctx.lineWidth = s * .82;
     ctx.stroke();
     ctx.globalAlpha = .95;
-    ctx.strokeStyle = pal.rainbow ? pal.trail(t) : pal.trail;
-    ctx.lineWidth = s * .56;
+    ctx.lineWidth = s * .52;
     ctx.stroke();
     ctx.globalAlpha = 1;
   }
@@ -157,12 +160,12 @@ function drawMilbil(p, L, dt, crown, you){
   const H = 2.5 * s;
   const sp = sprite(p.ch);
   if (sp.ready){
-    const wd = H * sp.img.width / sp.img.height;
+    const ht = H * sp.scale, wd = ht * sp.img.width / sp.img.height;
     const bob = Math.abs(Math.sin(p.walk)) * .14 * s;
     ctx.save();
     ctx.translate(fx, fy - bob);
     ctx.rotate(Math.cos(p.dir) * .12 + Math.sin(p.walk) * .05);
-    ctx.drawImage(sp.img, -wd / 2, -H * sp.foot, wd, H);
+    ctx.drawImage(sp.img, -wd / 2, -ht * sp.foot, wd, ht);
     ctx.restore();
   }
 
@@ -224,10 +227,20 @@ export function render(t, dt, leaderId, youId){
   ctx.fillRect(0, 0, w, h);
 
   const ox = sx(MID), oy = sy(MID), R = RADIUS * s;
-  ctx.fillStyle = EDGE;
+  ctx.fillStyle = SIDE;
   oval(ox, oy + L * 2, R + s * .25, R + s * .25);
   ctx.fillStyle = GROUND;
   oval(ox, oy, R, R);
+  // A glowing line round the island.
+  ctx.strokeStyle = RIM;
+  for (const [alpha, width] of [[.12, 1.6], [.25, .9], [1, .22]]){
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = s * width;
+    ctx.beginPath();
+    ctx.arc(ox, oy, R + s * .1, 0, TAU);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
 
   ctx.save();
   ctx.beginPath();
@@ -245,7 +258,6 @@ export function render(t, dt, leaderId, youId){
 // ------------------------------------------------------------- mini-map ---
 
 let mini, mctx, flat, fctx, pixels;
-const GROUND_RGB = [251, 249, 255];
 
 export function initMini(el){
   mini = el;
