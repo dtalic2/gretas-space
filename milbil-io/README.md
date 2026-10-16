@@ -27,9 +27,13 @@ Tap **Add to Home Screen** and it opens full screen like an app.
 2. **Steer.** Your milbil waits on its little patch of land until you first
    steer, then it never stops walking.
    - **Phone or tablet:** drag. Put your finger down anywhere and slide it the
-     way you want to go, like paper.io. A ring shows where you started, and
-     follows your finger if it goes a long way, so a small slide back is always
-     enough to turn round. Let go and your milbil keeps walking the same way.
+     way you want to go, like paper.io. Keep your finger down and keep
+     steering: your milbil turns whichever way you slide, for as long as you
+     hold on. The way it heads is measured from a point that trails just behind
+     your finger, so it turns as soon as your finger changes direction, and a
+     small slide back is enough to turn round. A ring shows that point, with a
+     knob leaning the way you're steering. Let go and your milbil keeps walking
+     the same way. A second finger is ignored.
    - **Computer:** your milbil walks towards the mouse pointer. The arrow keys
      and WASD work too.
 3. **Fill in land.** Step out of your land and you leave a trail. Walk back in
@@ -122,7 +126,7 @@ second one gets a different colour, so everyone's land is easy to tell apart.
 | `js/data.js` | Every number, the three kinds of other milbils, and everyone you can play as |
 | `js/world.js` | The island: land, trails, filling in, catching and bumping. Doesn't touch the page |
 | `js/bots.js` | How the other milbils play |
-| `js/input.js` | Steering: dragging, the mouse and the keys |
+| `js/input.js` | Steering: dragging (Touch Events, so phones can't cancel a drag halfway), the mouse and the keys |
 | `js/draw.js` | Drawing the island, the land standing up off the ground, trails, milbils, the mini-map |
 | `js/sprites.js` | Turns each milbil into a small picture for the board |
 | `js/milbil.js` | Draws a milbil as SVG (from Milbil Café) |
