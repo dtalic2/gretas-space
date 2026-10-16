@@ -1,7 +1,7 @@
 # 🍳 Milbil Cooking
 
 You're a milbil chef with a little café. Hungry milbils come in and order food.
-Follow the recipe one step at a time: drag each ingredient down from the shelf
+Follow the recipe one step at a time: swipe each ingredient down from the shelf
 onto the counter, then swipe to chop, mash, stir and squeeze. Serve it right and
 they pay you. You start with just Toast: buy new food that sells for more and
 more, and spend your coins on tables, ordering machines and new restaurants,
@@ -52,14 +52,20 @@ with each one's licence beside it.
    > 3. Chop the onion
    > 4. Serve together!
 
-3. **Drag the ingredient down** onto the counter to use it. You drag the nacho
+3. **Swipe the ingredient down** to use it. You swipe the nacho
    bag down to pour the nachos in. The shelf always has a few things that don't
-   belong, so read the step. Tapping a card just shows you which way to drag it.
+   belong, so read the step. A quick flick down on the card is enough, or drag it
+   all the way onto the counter, or just tap it.
+
+   On a phone or tablet your finger is followed with touch events, and the page
+   can't scroll or zoom while it's down. Pointer events alone didn't work there:
+   iPhones and iPads cancel the touch as soon as they think you might be
+   scrolling, which dropped whatever you were dragging.
 4. **Then swipe** to do the step. A tool shows you how, and a bar fills up:
 
    | Step | What you do |
    | --- | --- |
-   | Pour, add | Nothing more. Dragging it in is enough |
+   | Pour, add | Nothing more. Swiping it in is enough |
    | Chop, squeeze | Swipe down |
    | Mash, grate, roll | Swipe up and down |
    | Spread, shake | Swipe side to side |
@@ -171,7 +177,7 @@ Greta draws them, with the same code as Milbil GO.
 | --- | --- |
 | `js/data.js` | Every number: ingredients, actions and their gestures, the 22 recipes and their prices, restaurants, table and machine prices, how much milbils prefer dear food, sign fonts, colours and backgrounds |
 | `js/food.js` | Ingredient icons, how cooked food looks on a dish, plates and bowls, stations (board, pan, pot, blender, toaster) and tools |
-| `js/kitchen.js` | Dragging from the shelf, swipe detection, cooking each step, and checking the dish when you serve it |
+| `js/kitchen.js` | Following fingers and the mouse, swiping from the shelf, gesture detection, cooking each step, and checking the dish when you serve it |
 | `js/restaurant.js` | The dining room (customers walking in, ordering, eating; your chef carrying food out) and the Drive-Through (cars queueing, the bag out of the window) |
 | `js/milbil.js` | Draws a milbil as SVG, including your chef's hat and apron |
 | `js/main.js` | Start-up, the menu, orders, upgrades and settings, and the game loop |

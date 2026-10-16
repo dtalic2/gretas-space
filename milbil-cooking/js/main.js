@@ -430,7 +430,7 @@ function howToPlay(){
     <ol class="how">
       <li><span>👆</span>A hungry milbil sits down. Tap them to see what they want.</li>
       <li><span>📋</span>In the kitchen, follow the recipe one step at a time.</li>
-      <li><span>⬇️</span>Drag each ingredient <b>down</b> from the shelf onto the counter.</li>
+      <li><span>⬇️</span>Swipe each ingredient <b>down</b> from the shelf (or just tap it).</li>
       <li><span>🔪</span>Then swipe to do the step: down to chop, up and down to mash, round and round to stir.</li>
       <li><span>🍽️</span>Tap <b>Serve</b>. Got it all right? They pay you! Got it wrong? Try again.</li>
       <li><span>🛒</span>Buy new food from the menu. Each one sells for more than the last.</li>

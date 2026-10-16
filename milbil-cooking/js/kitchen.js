@@ -29,6 +29,60 @@ const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const nowS = () => performance.now() / 1000;
 const isAre = (name) => /s$/i.test(name) ? 'are' : 'is';     // "the peas are", "the onion is"
 
+/**
+ * Follow one finger (or the mouse) from press to lift, calling down/move/up
+ * with { x, y, target }. `down` returns false to ignore a press.
+ *
+ * A finger comes through Touch Events, with the page's own scrolling and
+ * zooming switched off while it's down. Phones (iPhones and iPads above all)
+ * cancel a Pointer Events touch the moment they think you might be scrolling,
+ * which used to drop whatever you were dragging. A mouse or pen uses Pointer
+ * Events, which are fine for those.
+ */
+function follow(el, { down, move, up }){
+  let live = null;                      // { touch: id } or { pointer: id }
+  const at = (p) => ({ x: p.clientX, y: p.clientY, target: p.target });
+  const mine = (e) => [...e.changedTouches].find(t => t.identifier === live?.touch);
+
+  el.addEventListener('touchstart', (e) => {
+    if (live) return;
+    const t = e.changedTouches[0];
+    if (down(at(t)) === false) return;
+    live = { touch: t.identifier };
+    e.preventDefault();                 // no scrolling, no zoom, no pretend mouse click
+  }, { passive: false });
+  addEventListener('touchmove', (e) => {
+    const t = live?.touch != null && mine(e);
+    if (!t) return;
+    e.preventDefault();
+    move(at(t));
+  }, { passive: false });
+  const lift = (cancelled) => (e) => {
+    const t = live?.touch != null && mine(e);
+    if (!t) return;
+    live = null;
+    up(at(t), cancelled);
+  };
+  addEventListener('touchend', lift(false));
+  addEventListener('touchcancel', lift(true));
+
+  el.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'touch' || live) return;
+    if (down(at(e)) === false) return;
+    live = { pointer: e.pointerId };
+    e.preventDefault();
+    el.setPointerCapture?.(e.pointerId);
+  });
+  el.addEventListener('pointermove', (e) => { if (live?.pointer === e.pointerId) move(at(e)); });
+  const plift = (cancelled) => (e) => {
+    if (live?.pointer !== e.pointerId) return;
+    live = null;
+    up(at(e), cancelled);
+  };
+  el.addEventListener('pointerup', plift(false));
+  el.addEventListener('pointercancel', plift(true));
+}
+
 export class Kitchen {
   constructor(game){
     this.game = game;
@@ -50,18 +104,9 @@ export class Kitchen {
     $('#kOrders').addEventListener('click', () => this.game.openOrders());
     this.serveBtn.addEventListener('click', () => this.serve());
 
-    // Dragging from the shelf. Pointer capture keeps the moves coming even
-    // once your finger has left the card.
-    this.shelf.addEventListener('pointerdown', (e) => this.dragStart(e));
-    this.shelf.addEventListener('pointermove', (e) => this.dragMove(e));
-    this.shelf.addEventListener('pointerup', (e) => this.dragEnd(e));
-    this.shelf.addEventListener('pointercancel', (e) => this.dragEnd(e, true));
-
-    // Gestures on the counter.
-    this.counter.addEventListener('pointerdown', (e) => this.gStart(e));
-    this.counter.addEventListener('pointermove', (e) => this.gMove(e));
-    this.counter.addEventListener('pointerup', (e) => this.gEnd(e));
-    this.counter.addEventListener('pointercancel', (e) => this.gEnd(e));
+    // Swiping ingredients down from the shelf, and the gestures on the counter.
+    follow(this.shelf, { down: (p) => this.dragStart(p), move: (p) => this.dragMove(p), up: (p, x) => this.dragEnd(p, x) });
+    follow(this.counter, { down: (p) => this.gStart(p), move: (p) => this.gMove(p), up: () => this.gEnd() });
   }
 
   get isOpen(){ return !this.el.hidden; }
@@ -231,7 +276,7 @@ export class Kitchen {
       text = c.mistakes.length ? 'All done? Tap <b>Serve</b> 🍽️' : 'Ready! Tap <b>Serve</b> 🍽️';
     } else {
       const st = c.dish.steps[c.next];
-      text = `<b>Step ${c.next + 1}:</b> drag the <b>${esc(ING[st.ing].name.toLowerCase())}</b> down here ⬇️`;
+      text = `<b>Step ${c.next + 1}:</b> swipe the <b>${esc(ING[st.ing].name.toLowerCase())}</b> down ⬇️`;
     }
     const span = $('span', this.hintEl);
     if (span._t !== text){ span._t = text; span.innerHTML = text; }
@@ -283,7 +328,7 @@ export class Kitchen {
     el.style.transform = `translate(${x}px, ${y}px)`;
   }
 
-  moveTool(e){
+  moveTool(p){
     const t = this.toolInfo();
     if (!t || this.toolEl.hidden) return;
     const box = this.counter.getBoundingClientRect();
@@ -293,59 +338,82 @@ export class Kitchen {
     const tx = TOOL_PX / 2 + dx * Math.cos(a) - dy * Math.sin(a);
     const ty = TOOL_PX / 2 + dx * Math.sin(a) + dy * Math.cos(a);
     this.toolEl.classList.remove('resting');
-    this.toolEl.style.transform = `translate(${e.clientX - box.left - tx}px, ${e.clientY - box.top - ty}px)`;
+    this.toolEl.style.transform = `translate(${p.x - box.left - tx}px, ${p.y - box.top - ty}px)`;
   }
 
   // ------------------------------------------------------------ dragging ---
 
-  dragStart(e){
-    const cardEl = e.target.closest('.ing-card');
-    if (!cardEl || this.drag) return;
-    e.preventDefault();
-    cardEl.setPointerCapture(e.pointerId);
-    this.drag = { id: e.pointerId, ing: cardEl.dataset.ing, card: cardEl, x0: e.clientX, y0: e.clientY, moved: false, ghost: null };
+  // An ingredient goes in if you drag it onto the counter, flick it
+  // downwards from anywhere, or just tap it.
+
+  dragStart(p){
+    const cardEl = p.target?.closest?.('.ing-card');
+    if (!cardEl || this.drag) return false;
+    this.drag = { ing: cardEl.dataset.ing, card: cardEl, x0: p.x, y0: p.y, moved: false, ghost: null };
     cardEl.classList.add('held');
     sfx('pick');
   }
 
-  dragMove(e){
+  dragMove(p){
     const d = this.drag;
-    if (!d || e.pointerId !== d.id) return;
-    if (!d.moved && Math.hypot(e.clientX - d.x0, e.clientY - d.y0) > 8){
+    if (!d) return;
+    if (!d.moved && Math.hypot(p.x - d.x0, p.y - d.y0) > 8){
       d.moved = true;
-      d.ghost = document.createElement('div');
-      d.ghost.className = 'ghost';
-      d.ghost.innerHTML = ingredientSVG(d.ing);
-      document.body.appendChild(d.ghost);
+      d.ghost = this.ghost(d.ing);
     }
     if (d.ghost){
-      d.ghost.style.transform = `translate(${e.clientX - 44}px, ${e.clientY - 70}px)`;
-      this.counter.classList.toggle('drop-over', this.overCounter(e));
+      d.ghost.style.transform = `translate(${p.x - 44}px, ${p.y - 60}px)`;
+      this.counter.classList.toggle('drop-over', this.overCounter(p) || this.flicked(d, p));
     }
   }
 
-  overCounter(e){
-    const r = this.counter.getBoundingClientRect();
-    return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top - 20 && e.clientY <= r.bottom;
+  ghost(ing){
+    const g = document.createElement('div');
+    g.className = 'ghost';
+    g.innerHTML = ingredientSVG(ing);
+    document.body.appendChild(g);
+    return g;
   }
 
-  dragEnd(e, cancelled = false){
+  /** Anywhere below the shelf counts as the counter. */
+  overCounter(p){
+    return p.y >= this.counter.getBoundingClientRect().top - 20;
+  }
+
+  /** A swipe that's gone mostly downwards. */
+  flicked(d, p){
+    const dx = p.x - d.x0, dy = p.y - d.y0;
+    return dy > 36 && dy > Math.abs(dx) * 0.7;
+  }
+
+  dragEnd(p, cancelled = false){
     const d = this.drag;
-    if (!d || e.pointerId !== d.id) return;
+    if (!d) return;
     this.drag = null;
     d.card.classList.remove('held');
     this.counter.classList.remove('drop-over');
-    if (!d.moved){
-      // A tap: show which way to drag it.
-      d.card.classList.remove('nudge'); void d.card.offsetWidth; d.card.classList.add('nudge');
-      toast(`Drag the ${esc(ING[d.ing].name.toLowerCase())} <b>down</b> onto the counter ⬇️`);
-      return;
+    if (cancelled){ this.flyBack(d); return; }
+    if (!d.moved || this.overCounter(p) || this.flicked(d, p)){
+      if (this.drop(d.ing)){ this.flyIn(d); return; }
     }
-    if (!cancelled && this.overCounter(e) && this.drop(d.ing)){
-      d.ghost.remove();
-      return;
-    }
-    // Fly back to the shelf.
+    this.flyBack(d);
+  }
+
+  /** The ingredient sails down onto the dish. */
+  flyIn(d){
+    const from = d.card.getBoundingClientRect();
+    const g = d.ghost || this.ghost(d.ing);
+    if (!d.ghost) g.style.transform = `translate(${from.left + from.width / 2 - 44}px, ${from.top}px)`;
+    const to = this.dishEl.getBoundingClientRect();
+    requestAnimationFrame(() => {
+      g.classList.add('in');
+      g.style.transform = `translate(${to.left + to.width / 2 - 44}px, ${to.top + to.height * 0.25 - 44}px) scale(.7)`;
+    });
+    setTimeout(() => g.remove(), 280);
+  }
+
+  flyBack(d){
+    if (!d.ghost) return;
     const r = d.card.getBoundingClientRect();
     d.ghost.classList.add('back');
     d.ghost.style.transform = `translate(${r.left + r.width / 2 - 44}px, ${r.top + 4}px) scale(.6)`;
@@ -391,29 +459,27 @@ export class Kitchen {
     return true;
   }
 
-  gStart(e){
+  gStart(p){
     const pr = this.cook?.prep;
-    if (!pr || this.g) return;
-    const ph = pr.A.phases[pr.phase];
-    if (!ph || ph.g === 'auto' || ph.g === 'wait') return;
-    e.preventDefault();
-    this.counter.setPointerCapture(e.pointerId);
+    if (!pr || this.g) return false;
     this.g = {
-      id: e.pointerId,
-      anchor: { x: e.clientX, y: e.clientY }, armed: true, low: e.clientY, high: e.clientY,
+      anchor: { x: p.x, y: p.y }, armed: true, low: p.y, high: p.y,
       dir: 0, turn: null, ext: null,
       last: null, lastH: null, acc: 0,
     };
-    this.moveTool(e);
+    this.moveTool(p);
   }
 
-  gMove(e){
+  gMove(p){
     const g = this.g, pr = this.cook?.prep;
-    if (!g || e.pointerId !== g.id || !pr) return;
-    this.moveTool(e);
+    if (!g || !pr) return;
+    this.moveTool(p);
     const ph = pr.A.phases[pr.phase];
     if (!ph) return;
-    const x = e.clientX, y = e.clientY;
+    const x = p.x, y = p.y;
+    // Still sizzling or pouring: keep up with the finger, so a flip counts
+    // from wherever it is when the wait's over, without lifting first.
+    if (ph.g === 'auto' || ph.g === 'wait'){ Object.assign(g, { anchor: { x, y }, low: y, high: y, armed: true }); return; }
     switch (ph.g){
       case 'down':
         if (g.armed && y - g.anchor.y > 34){ g.armed = false; g.low = y; this.stroke(); }
@@ -462,9 +528,9 @@ export class Kitchen {
     }
   }
 
-  gEnd(e){
+  gEnd(){
     const g = this.g, pr = this.cook?.prep;
-    if (!g || e.pointerId !== g.id) return;
+    if (!g) return;
     this.g = null;
     const ph = pr?.A.phases[pr.phase];
     if (ph && (ph.g === 'updown' || ph.g === 'side') && g.turn != null && Math.abs(g.ext - g.turn) >= 24) this.stroke();

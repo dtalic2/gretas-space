@@ -348,6 +348,7 @@ body.in-kitchen .hud-top, body.in-kitchen .hud-bottom { visibility: hidden; }
 }
 .ghost .food { width: 100%; height: 100%; display: block; }
 .ghost.back { transition: transform .25s, opacity .25s; opacity: 0; }
+.ghost.in { transition: transform .26s ease-in, opacity .12s .16s; opacity: 0; }
 
 /* The counter: you stand behind it, and the food goes on the wooden top. */
 .k-counter {
