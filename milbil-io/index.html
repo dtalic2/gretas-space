@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#6b35c9">
+  <title>Milbil.io</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="board" class="board" aria-label="The island"></canvas>
+
+  <div id="hud" class="hud" hidden>
+    <div class="hud-me">
+      <button type="button" id="pauseBtn" class="tb-btn icon" aria-label="Pause"><span class="bars"></span></button>
+      <div class="land-pill"><i id="meSwatch"></i><span><b id="mePct">0.00%</b><small>your land</small></span></div>
+      <div class="kills-pill" title="Milbils you've caught"><span>💥</span><b id="meKills">0</b></div>
+    </div>
+    <ol id="leaders" class="leaders" aria-label="Leaderboard"></ol>
+    <canvas id="mini" class="mini" aria-label="Map of the island"></canvas>
+  </div>
+
+  <div id="hint" class="hint" hidden></div>
+  <div id="ring" class="ring" hidden><i></i></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <div id="pause" class="overlay" hidden></div>
+  <div id="over" class="overlay" hidden></div>
+
+  <div id="welcome" class="overlay welcome">
+    <div class="card welcome-card">
+      <h1 class="logo">Milbil<span>.io</span></h1>
+      <p class="lead"><b id="howSteer">Drag</b> to walk your milbil around the island. Walk out of your land, make a loop, and come back in to <b>fill it in</b>. Cut through another milbil's trail to <b>catch</b> it, but watch out: if anyone touches <i>your</i> trail before you're home, you're caught!</p>
+      <label class="name-row">
+        <span>Your name</span>
+        <input id="nameInput" maxlength="12" autocomplete="off" spellcheck="false" placeholder="Greta">
+      </label>
+      <div class="pick-label">Pick your milbil</div>
+      <div id="picks" class="picks"></div>
+      <div class="pick-label">The other milbils</div>
+      <div id="levels" class="levels"></div>
+      <button type="button" id="playBtn" class="btn-play">Play!</button>
+      <p id="welcomeBest" class="welcome-best"></p>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

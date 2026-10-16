@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8a47e6"/><stop offset="1" stop-color="#4c1fa0"/></linearGradient></defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="256" cy="282" r="196" fill="#a993dd"/>
+  <circle cx="256" cy="270" r="196" fill="#fbf9ff"/>
+  <!-- your land, standing up off the ground -->
+  <path d="M96 236 H276 V300 H336 V396 H146 V330 H96Z" fill="#2c7a8c" transform="translate(0 16)"/>
+  <path d="M96 236 H276 V300 H336 V396 H146 V330 H96Z" fill="#46c8c8"/>
+  <!-- the trail out and back -->
+  <path d="M276 250 C330 250 392 230 400 180 C408 132 352 112 316 140" fill="none" stroke="#2c7a8c" stroke-opacity=".45" stroke-width="34" stroke-linecap="round"/>
+  <path d="M276 250 C330 250 392 230 400 180 C408 132 352 112 316 140" fill="none" stroke="#a6ecec" stroke-width="24" stroke-linecap="round"/>
+  <!-- the milbil -->
+  <ellipse cx="300" cy="172" rx="40" ry="16" fill="#2c7a8c"/>
+  <g transform="translate(234 30) scale(1.65)" stroke-linecap="round" fill="none">
+    <path d="M18 50 L9 40 M62 50 L71 40" stroke="#8b7bff" stroke-width="3.5"/>
+    <path d="M31 80 L30 89 M49 80 L50 89" stroke="#8b7bff" stroke-width="3.5"/>
+    <rect x="18" y="20" width="44" height="60" rx="4" fill="#fff" stroke="#8b7bff" stroke-width="3.5"/>
+    <path d="M18 50 H62" stroke="#8b7bff" stroke-width="3"/>
+    <circle cx="31" cy="33" r="3.6" fill="#2b2233"/><circle cx="49" cy="33" r="3.6" fill="#2b2233"/>
+    <path d="M35 41 Q40 46 45 41" stroke="#2b2233" stroke-width="2.6"/>
+  </g>
+</svg>
