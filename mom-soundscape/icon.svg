@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb3c9"/><stop offset=".5" stop-color="#ff6f9c"/><stop offset="1" stop-color="#c94fa6"/></linearGradient></defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- sound waves -->
+  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-width="26">
+    <path d="M118 176 Q76 256 118 336" stroke-opacity=".55"/>
+    <path d="M394 176 Q436 256 394 336" stroke-opacity=".55"/>
+    <path d="M160 206 Q136 256 160 306"/>
+    <path d="M352 206 Q376 256 352 306"/>
+  </g>
+  <!-- the heart, standing up off the background -->
+  <path d="M256 392 C176 330 186 214 256 224 C326 214 336 330 256 392Z" transform="translate(0 14)" fill="#a51f55" fill-opacity=".45"/>
+  <path d="M256 392 C150 320 168 196 256 232 C344 196 362 320 256 392Z" fill="#ff3b47" stroke="#fff" stroke-width="16" stroke-linejoin="round"/>
+  <!-- the record dot -->
+  <circle cx="256" cy="300" r="34" fill="#fff"/>
+  <circle cx="256" cy="300" r="20" fill="#ff3b47"/>
+</svg>
