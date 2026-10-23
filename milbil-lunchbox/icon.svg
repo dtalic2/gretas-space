@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="112" fill="#ffe0b8"/>
+  <!-- the lunchbox -->
+  <rect x="58" y="150" width="396" height="296" rx="44" fill="#e5484d"/>
+  <rect x="78" y="170" width="356" height="72" rx="28" fill="#b8303a"/>
+  <path d="M212 150v-18a44 44 0 0 1 88 0v18h-36v-18a8 8 0 0 0-16 0v18z" fill="#b8303a"/>
+  <!-- compartments -->
+  <g fill="#ffe9e0">
+    <rect x="86" y="262" width="150" height="80" rx="20"/>
+    <rect x="276" y="262" width="150" height="80" rx="20"/>
+    <rect x="86" y="358" width="150" height="72" rx="20"/>
+    <rect x="276" y="358" width="150" height="72" rx="20"/>
+  </g>
+  <!-- what's inside: apple, sandwich, carrots, juice -->
+  <g>
+    <circle cx="161" cy="302" r="28" fill="#e5484d"/><rect x="156" y="270" width="9" height="14" rx="4" fill="#8a5a2b"/>
+    <path d="M165 276q16-10 20 2-13 8-20-2z" fill="#6cc24a"/>
+  </g>
+  <g><path d="M311 328l40-56 40 56z" fill="#e8c88a"/><path d="M322 324l29-40 29 40z" fill="#fff0cf"/>
+     <path d="M333 318l18-24 18 24z" fill="#f7c843"/></g>
+  <g fill="#f0821e"><rect x="118" y="372" width="18" height="46" rx="9"/><rect x="152" y="368" width="18" height="50" rx="9"/><rect x="186" y="372" width="18" height="46" rx="9"/></g>
+  <g><rect x="326" y="366" width="52" height="58" rx="10" fill="#ffb300"/><rect x="336" y="384" width="32" height="26" rx="7" fill="#fff6d9"/>
+     <path d="M378 368q22-18 30-34" stroke="#3fae4a" stroke-width="12" fill="none" stroke-linecap="round"/></g>
+  <!-- a milbil peeking over the lid -->
+  <g>
+    <rect x="196" y="36" width="120" height="104" rx="14" fill="#fff" stroke="#8b7bff" stroke-width="12"/>
+    <path d="M196 102h120" stroke="#8b7bff" stroke-width="10"/>
+    <circle cx="228" cy="74" r="10" fill="#2b2233"/><circle cx="284" cy="74" r="10" fill="#2b2233"/>
+    <circle cx="232" cy="70" r="3.6" fill="#fff"/><circle cx="288" cy="70" r="3.6" fill="#fff"/>
+    <path d="M238 118q18 16 36 0" stroke="#2b2233" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <circle cx="214" cy="92" r="9" fill="#ff8fab" opacity=".6"/><circle cx="298" cy="92" r="9" fill="#ff8fab" opacity=".6"/>
+  </g>
+</svg>

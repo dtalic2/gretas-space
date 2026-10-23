@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#ffe0b8">
+  <title>M-I-L-B-I-L Lunchbox Simulator</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="hud">
+    <button type="button" id="meBtn" class="me" aria-label="You">
+      <span class="me-pic" id="meAvatar"></span>
+      <span class="me-info"><b id="meName">You</b><small id="meDay">Day 1</small></span>
+    </button>
+    <div class="hud-right">
+      <div class="pill" id="coinPill" title="Your coins">🪙<b id="coins">0</b></div>
+      <div class="pill points" id="pointPill" title="Points you've walked home with">⭐<b id="points">0</b></div>
+    </div>
+  </header>
+
+  <nav class="tools">
+    <button type="button" class="round" id="kitBtn" title="Your packing kit">🧰<em id="kitBadge"></em></button>
+    <button type="button" class="round" id="stickerBtn" title="Stickers">✨<em id="stickerBadge"></em></button>
+    <button type="button" class="round" id="bookBtn" title="The milbils">📖</button>
+    <button type="button" class="round" id="judgeBtn" title="The judges">👩‍⚖️</button>
+    <button type="button" class="round" id="helpBtn" title="How to play">❓</button>
+    <button type="button" class="round" id="setBtn" title="Settings">⚙️</button>
+  </nav>
+
+  <main id="day">
+    <section class="note-card card" id="noteCard"></section>
+    <section class="pack card" id="packCard"></section>
+    <section class="shop card" id="shopCard"></section>
+  </main>
+
+  <footer class="bar" id="bar">
+    <button type="button" class="bar-money" id="barMoney"></button>
+    <button type="button" class="btn go" id="lidBtn">🎒 Close the lid</button>
+  </footer>
+
+  <div id="report" class="screen" hidden></div>
+  <div id="pickNext" class="screen" hidden></div>
+
+  <div id="sheet" class="sheet" hidden></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <div id="welcome" class="screen welcome" hidden>
+    <div class="welcome-card">
+      <h1><span>M-I-L-B-I-L</span><br>Lunchbox Simulator</h1>
+      <div class="welcome-milbil" id="welcomeMilbil"></div>
+      <p class="lead">You pack the school lunchboxes.</p>
+      <p>Every morning one milbil hands you their lunchbox, their lunch money and a note
+        saying what they'd like. Buy the food at <b>Bill's</b>, <b>Billy's</b> or
+        <b>Lebelibs</b> — they're all after your money, so the prices change every day —
+        and pack the box. At lunchtime three judges mark it out of ten each, and you walk
+        home with up to <b>30 points</b> and whatever change is left.</p>
+      <label class="name-row">
+        <span>What's your name?</span>
+        <span class="name-input"><input id="nameInput" maxlength="14" autocomplete="off" spellcheck="false"><button type="button" id="nameDice" aria-label="Random name">🎲</button></span>
+      </label>
+      <div class="swatches" id="swatches" role="radiogroup" aria-label="Colour"></div>
+      <div class="hats" id="hats" role="radiogroup" aria-label="Hat"></div>
+      <button type="button" id="startBtn" class="btn go big">🎒 Start packing!</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
