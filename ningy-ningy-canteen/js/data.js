@@ -31,8 +31,8 @@ export const JINGLE = 0.5;            // ...when they can hear the jingle
 //
 // What the supermarket sells. `price` is the normal price of a whole pack, and
 // `size` is how many things you can sell out of one: a packet of ice blocks
-// has 4 in it, and a 6-pack of spring rolls makes 2 serves of 3. Milbils buy
-// one thing at a time, and expect to pay about double what that one thing
+// has 4 in it. Spring rolls are bought and sold as the whole 6-pack. Milbils
+// buy one thing at a time, and expect to pay about double what that one thing
 // cost you on a normal (not a deal) day — so Billy's shows the price of one,
 // and the pack it comes in underneath.
 
@@ -40,9 +40,9 @@ export const PRODUCTS = [
   { id:'iceblock', name:'Ice Block', plural:'Ice Blocks', a:'an Ice Block', kind:'treat',
     pack:'Ice Block Packet', per:'packet', size:4, price:200, inPack:'Comes in a packet of 4',
     blurb:'Like an ice cream on a stick.' },
-  { id:'springrolls', name:'Spring Rolls', plural:'serves of Spring Rolls', a:'some Spring Rolls', kind:'main',
-    pack:'6-Pack of Spring Rolls', per:'6-pack', size:2, price:200, inPack:'Comes in a 6-pack, which makes 2 serves',
-    unit:'a serve of 3', blurb:'Crispy, and sold three at a time.' },
+  { id:'springrolls', name:'Spring Rolls', plural:'6-packs of Spring Rolls', a:'a 6-pack of Spring Rolls', kind:'main',
+    pack:'6-Pack of Spring Rolls', size:1, price:200, unit:'6-pack',
+    blurb:'Six crispy spring rolls. You sell the whole pack.' },
   { id:'kofta', name:'Lamb Kofta', plural:'Lamb Koftas', a:'a Lamb Kofta', kind:'main',
     pack:'Lamb Kofta', size:1, price:100, blurb:'On a stick, straight off the grill.' },
   { id:'beefbowl', name:'Beef Bowl', plural:'Beef Bowls', a:'a Beef Bowl', kind:'main',

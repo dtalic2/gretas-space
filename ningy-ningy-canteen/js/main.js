@@ -866,11 +866,11 @@ function openShop(){
         <div class="shop-info">
           <b>${esc(p.name)}${p.unit ? ` <small>(${esc(p.unit)})</small>` : ''}</b>
           <small>${p.size > 1 ? `${esc(p.inPack)}: <b>${money(price)}</b> for the ${esc(p.per)}` : esc(p.blurb)}</small>
-          ${deal ? `<span class="save">🏷️ Save ${short(deal)} on each ${esc(p.name)}!</span>` : ''}
+          ${deal ? `<span class="save">🏷️ Save ${short(deal)} on each ${esc(p.pack)}!</span>` : ''}
           <small class="have">In your truck: <b>${n}</b></small>
         </div>
         <div class="shop-buy">
-          <span class="shop-price">${deal ? `<s>${short(p.price / p.size)}</s>` : ''}<b>${short(price / p.size)}</b><small>${p.unit ? 'a serve' : 'each'}</small></span>
+          <span class="shop-price">${deal ? `<s>${short(p.price / p.size)}</s>` : ''}<b>${short(price / p.size)}</b><small>each</small></span>
           <span class="buy-btns">
             <button type="button" class="btn small" data-act="back" data-id="${p.id}" ${here && canBack ? '' : 'disabled'} aria-label="Put back">−</button>
             <button type="button" class="btn go small" data-act="buy" data-id="${p.id}" ${here && S.money >= price ? '' : 'disabled'}>${p.size > 1 ? `Buy ${p.size}` : 'Buy'}</button>
@@ -913,7 +913,7 @@ function openPrices(){
         ${foodSVG(p.id)}
         <div class="price-info">
           <b>${esc(p.name)}${p.unit ? ` <small>(${esc(p.unit)})</small>` : ''}</b>
-          <small>At Billy's: <b>${short(cost)}</b>${p.unit ? ' a serve' : ' each'} · fair price <b>${money(fairPrice(p))}</b> (double)</small>
+          <small>At Billy's: <b>${short(cost)}</b> each · fair price <b>${money(fairPrice(p))}</b> (double)</small>
           <small class="${make >= 0 ? 'pos' : 'neg'}">${make > 0 ? `You make ${short(make)} on each` : make === 0 ? 'You make nothing on these' : `You lose ${short(-make)} on each!`}</small>
         </div>
         <div class="price-side">
@@ -1020,10 +1020,10 @@ function openHelp(){
     render: () => `
       <div class="help">
         <h3>🛒 1. Buy food at Billy's</h3>
-        <p>Every morning you start at Billy's Supermarket. Billy's shows the price of one of each thing. Some things only come in packs: a packet of ice blocks has 4 in it (50c each, so $2 for the packet), a 6-pack of spring rolls makes 2 serves of 3, and a juice pack has 4 juices.
+        <p>Every morning you start at Billy's Supermarket. Billy's shows the price of one of each thing. Ice blocks come in a packet of 4 (50c each, so $2 for the packet) and juice in a pack of 4, but you sell them one at a time. Spring rolls come in a 6-pack, and you sell the whole 6-pack.
         Some days Billy's has <b>deals</b> on a few things — the deal tells you how much you save on each one.</p>
         <h3>📋 2. Set your prices</h3>
-        <p>Milbils think a fair price is about <b>double</b> what Billy's normally charges for one. A Beef Bowl costs you $1.50, so milbils expect to pay about $3. An Ice Block costs you 50c, so they expect $1.
+        <p>Milbils think a fair price is about <b>double</b> what Billy's normally charges for one. A Beef Bowl costs you $1.50, so milbils expect to pay about $3. An Ice Block costs you 50c, so they expect $1. A 6-pack of Spring Rolls costs you $2, so they expect $4.
         Charge more and you make more on each one, but some milbils will buy less, and some will walk off. Charge less and some will buy two!</p>
         <h3>🗺️ 3. Drive around Milbil Town</h3>
         <p>Lunch runs from 11:00 to 2:00. Drive to a place and the milbils having lunch there will see the truck and queue up. When everyone there has had lunch, drive somewhere else.

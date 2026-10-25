@@ -7,12 +7,14 @@
 
 import {
   PRODUCTS, PRODUCT, MILBILS, SPOT, PLACES, UPGRADE, START_MONEY, CARRY_MAX,
-  LIGHTS, JOBS, STEP, round50, fairPrice,
+  LIGHTS, JOBS, STEP, PRICE_MAX, round50, fairPrice,
 } from './data.js';
 
 const KEY = 'ningy-ningy-canteen-v1';
+const VERSION = 2;    // 2: spring rolls are sold as a whole 6-pack, not serves of 3
 
 const fresh = () => ({
+  v: VERSION,
   started: false,
   name: '',
   color: '#ff9a3c',
@@ -37,10 +39,21 @@ const fresh = () => ({
 export const S = fresh();
 
 export function load(){
+  let was = VERSION;
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) Object.assign(S, fresh(), JSON.parse(raw));
+    if (raw){
+      const saved = JSON.parse(raw);
+      was = saved.v | 0;
+      Object.assign(S, fresh(), saved);
+    }
   } catch {}
+  S.v = VERSION;
+  // Spring rolls used to be sold in serves of 3, two to a 6-pack.
+  if (was < 2 && S.stock && S.prices){
+    S.stock.springrolls = Math.ceil((Number(S.stock.springrolls) || 0) / 2);
+    S.prices.springrolls = Math.min(PRICE_MAX, (Number(S.prices.springrolls) || 0) * 2);
+  }
   const cents = (n) => Math.max(0, Math.round(Number(n) || 0));
   S.money = cents(S.money);
   S.day = Math.max(1, S.day | 0);

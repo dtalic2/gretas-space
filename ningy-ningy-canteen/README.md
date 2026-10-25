@@ -49,7 +49,7 @@ underneath.
 | Food | Billy's price, for one | Comes in | Milbils expect |
 | --- | --- | --- | --- |
 | Ice Block | 50c | a packet of 4, $2.00 | $1.00 |
-| Spring Rolls (a serve of 3) | $1.00 | a 6-pack (2 serves), $2.00 | $2.00 |
+| Spring Rolls (6-pack) | $2.00 | one 6-pack at a time | $4.00 |
 | Lamb Kofta | $1.00 | one at a time | $2.00 |
 | Beef Bowl | $1.50 | one at a time | $3.00 |
 | Veggie Bowl | $1.50 | one at a time | $3.00 |
@@ -137,7 +137,7 @@ drawn by the game, the way Greta draws milbils.
 
 The chalkboard on the side of the truck, next to the hatch, always shows how
 much food you've got left to sell. It counts things you can hand over — an ice
-block, a serve of spring rolls, a juice — so a packet of 4 ice blocks adds 4.
+block, a 6-pack of spring rolls, a juice — so a packet of 4 ice blocks adds 4.
 The number goes yellow at 3 or fewer and the board goes red when you're out.
 
 You can repaint the truck for free whenever you like. If you ever run out of

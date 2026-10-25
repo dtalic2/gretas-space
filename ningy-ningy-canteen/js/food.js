@@ -26,13 +26,19 @@ const ICONS = {
     <rect x="19" y="21" width="26" height="11" fill="#ffd23f"/>
     ${shine(24, 13, 2, 5, 0)}`,
 
+  // A clear tray of six: three, then two, then one on top.
   springrolls: () => {
-    const roll = (x, y, rot) => `<g transform="translate(${x} ${y}) rotate(${rot})">
-      <rect x="-15" y="-6.5" width="30" height="13" rx="6.5" fill="#e9a43a"/>
-      <path d="M-8 -6 v12 M-1 -6 v12 M6 -6 v12" stroke="#c98424" stroke-width="1.6" opacity=".6"/>
-      <ellipse cx="13" cy="0" rx="3" ry="5.6" fill="#f7cf7a"/>
-      <ellipse cx="-7" cy="-3.2" rx="5" ry="1.4" fill="#fff" opacity=".45"/></g>`;
-    return `${SHADOW}${roll(20, 46, -6)}${roll(44, 46, 6)}${roll(32, 33, 0)}`;
+    const roll = (x, y) => `<g transform="translate(${x} ${y})">
+      <rect x="-9.5" y="-4.6" width="19" height="9.2" rx="4.6" fill="#e9a43a"/>
+      <path d="M-4.5 -4.2 v8.4 M0.5 -4.2 v8.4" stroke="#c98424" stroke-width="1.2" opacity=".6"/>
+      <ellipse cx="8" cy="0" rx="2" ry="4" fill="#f7cf7a"/>
+      <ellipse cx="-4.5" cy="-2.3" rx="3.2" ry="1" fill="#fff" opacity=".45"/></g>`;
+    return `${SHADOW}
+      <path d="M6 41 H58 L57 44 H7Z" fill="#cfe7f3"/>
+      ${roll(32, 26)}${roll(24.5, 34.5)}${roll(39.5, 34.5)}${roll(17, 43)}${roll(32, 43)}${roll(47, 43)}
+      <path d="M6 44 H58 L54 56 H10Z" fill="#d8eef9" opacity=".8"/>
+      <circle cx="32" cy="50" r="4.6" fill="#ff5d6c"/>
+      <text x="32" y="52.6" font-size="7.5" font-weight="900" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif">6</text>`;
   },
 
   kofta: () => `${SHADOW}
