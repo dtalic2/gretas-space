@@ -120,6 +120,9 @@ main { max-width: 560px; margin: 0 auto; padding: 10px; display: grid; grid-temp
 .bulb { animation: twinkle 1.6s infinite; }
 .bulb.b1 { animation-delay: -.5s; } .bulb.b2 { animation-delay: -1s; }
 @keyframes twinkle { 50% { opacity: .35; } }
+.stock-sign { transform-box: fill-box; transform-origin: center; }
+.stock-sign.tick { animation: signpop .35s; }
+@keyframes signpop { 45% { transform: scale(1.18); } }
 .scene.driving .truck-wrap { animation: bounce .35s infinite alternate; }
 .scene.driving .ground { background: #9aa0ad; }
 .scene.driving .prop { display: none; }

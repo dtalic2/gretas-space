@@ -23,7 +23,7 @@ import {
 import { decide, orderLine, leaveWords } from './orders.js';
 import { drawLook } from './milbil.js';
 import { foodSVG } from './food.js';
-import { truckSVG } from './truck.js';
+import { truckSVG, stockSign } from './truck.js';
 import { mapSVG, placeTruck, route, along } from './town.js';
 import { $, esc, toast, floatText, Sheet, card, cardOpen, sfx, setSound } from './ui.js';
 
@@ -70,7 +70,7 @@ function showWelcome(){
   const w = $('#welcome');
   w.hidden = false;
   const draw = () => {
-    $('#welcomeTruck').innerHTML = truckSVG(S.truck, you());
+    $('#welcomeTruck').innerHTML = truckSVG(S.truck, you(), { stock: totalStock() });
   };
   const row = (sel, items, attr, render) => { $(sel).innerHTML = items.map(render).join(''); };
   row('#swatches', COLORS, 'c', c => `<button type="button" class="swatch" data-c="${c}" style="background:${c}" aria-label="Your colour"></button>`);
@@ -168,7 +168,19 @@ function renderScene(){
 }
 
 function renderTruck(){
-  $('#truckWrap').innerHTML = truckSVG(S.truck, you(), { lights: has('lights'), umbrella: has('umbrella') });
+  $('#truckWrap').innerHTML = truckSVG(S.truck, you(), { lights: has('lights'), umbrella: has('umbrella'), stock: totalStock() });
+}
+
+/** Keep the sign on the truck showing how much food is left. */
+function renderSign(){
+  const g = $('#truckWrap .stock-sign');
+  if (!g) return;
+  const n = totalStock();
+  if (g._n === n) return;
+  const changed = g._n != null;
+  g._n = n;
+  g.innerHTML = stockSign(n);
+  if (changed){ g.classList.remove('tick'); void g.getBoundingClientRect(); g.classList.add('tick'); }
 }
 
 // Where milbils stand. The first one is at the hatch; everyone else lines
@@ -351,6 +363,7 @@ function renderCounter(){
     </button>`;
   }).join('');
   const total = totalStock();
+  renderSign();
   $('#counterCard').innerHTML = `
     <div class="counter-head"><h2>🥡 In the truck</h2><span class="muted">${total ? `${total} things to sell` : 'Empty! Buy food at Billy\'s 🛒'}</span></div>
     <div class="counter">${items}</div>`;
@@ -941,7 +954,7 @@ function openTruck(){
         ${own ? '<span class="tick">✓</span>' : `<button type="button" class="btn gold small" data-act="buy" data-id="${u.id}" ${S.money >= u.cost ? '' : 'disabled'}>${money(u.cost)}</button>`}
       </div>`;
     }).join('');
-    return `<div class="truck-preview">${truckSVG(S.truck, you(), { lights: has('lights'), umbrella: has('umbrella') })}</div>
+    return `<div class="truck-preview">${truckSVG(S.truck, you(), { lights: has('lights'), umbrella: has('umbrella'), stock: totalStock() })}</div>
       <h3>Paint it</h3><div class="swatches">${paints}</div>
       <h3>Make it better</h3>${rows}`;
   };
@@ -1064,7 +1077,7 @@ $('#setBtn').addEventListener('click', () => { sfx('tap'); openSettings(); });
 // ============================================================ start ===
 
 function firstMorning(){
-  card(`<div class="intro-truck">${truckSVG(S.truck, you())}</div>
+  card(`<div class="intro-truck">${truckSVG(S.truck, you(), { stock: totalStock() })}</div>
     <h2>Welcome to Ningy Ningy Canteen!</h2>
     <ol class="steps">
       <li>🛒 Buy food at <b>Billy's Supermarket</b>. You've got ${money(S.money)}.</li>

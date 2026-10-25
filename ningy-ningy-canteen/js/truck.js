@@ -12,12 +12,29 @@ export function shade(hex, by = 0.22){
   return `#${[n >> 16, (n >> 8) & 255, n & 255].map(v => f(v).toString(16).padStart(2, '0')).join('')}`;
 }
 
+const FONT = `font-family="ui-rounded, 'SF Pro Rounded', 'Nunito', 'Trebuchet MS', system-ui, sans-serif"`;
+
+/**
+ * The chalkboard on the side of the truck: how many things you've got left to
+ * sell. It goes yellow when you're nearly out and red when you're out.
+ * Inner markup only, so the game can swap it in place as the number changes.
+ */
+export function stockSign(n){
+  const out = n <= 0, low = n > 0 && n <= 3;
+  const big = n >= 100 ? 12 : 17;
+  return `<rect x="63" y="38" width="27" height="50" rx="4" fill="${out ? '#c4363c' : '#2f4a3a'}" stroke="#c9a46a" stroke-width="2.4"/>
+    <text x="76.5" y="48.5" font-size="6.6" font-weight="900" text-anchor="middle" fill="#ffffffcc" ${FONT}>FOOD</text>
+    <text x="76.5" y="${n >= 100 ? 70 : 72}" font-size="${big}" font-weight="900" text-anchor="middle" fill="${low ? '#ffd23f' : '#fff'}" ${FONT}>${Math.max(0, n)}</text>
+    <text x="76.5" y="82.5" font-size="6.6" font-weight="900" text-anchor="middle" fill="#ffffffcc" ${FONT}>LEFT</text>`;
+}
+
 /**
  * The big truck. `who` is your look; it stands in the hatch.
  * `lights` strings fairy lights along the awning, `umbrella` puts a shade
- * umbrella next to the hatch.
+ * umbrella next to the hatch, and `stock` puts the number of things left on
+ * the sign by the hatch.
  */
-export function truckSVG(color, who, { lights = false, umbrella = false } = {}){
+export function truckSVG(color, who, { lights = false, umbrella = false, stock = 0 } = {}){
   const dark = shade(color);
   const stripes = Array.from({ length: 6 }, (_, i) => {
     const x = 86 + i * 20, c = i % 2 ? '#ffffff' : '#ff5d6c';
@@ -41,6 +58,7 @@ export function truckSVG(color, who, { lights = false, umbrella = false } = {}){
     <rect x="98" y="46" width="94" height="10" rx="3" fill="#5c4c70"/>
     <g fill="#ffd8a8" opacity=".9"><rect x="102" y="48" width="10" height="6" rx="1.5"/><rect x="116" y="48" width="10" height="6" rx="1.5"/><rect x="172" y="48" width="14" height="6" rx="1.5"/></g>
     ${me}
+    <g class="stock-sign">${stockSign(stock)}</g>
     <rect x="88" y="88" width="114" height="9" rx="3" fill="#f4efe6"/>
     <rect x="88" y="95" width="114" height="3" rx="1.5" fill="#00000022"/>
     ${stripes}
@@ -50,7 +68,7 @@ export function truckSVG(color, who, { lights = false, umbrella = false } = {}){
     <rect x="3" y="108" width="20" height="8" rx="3" fill="#cfcfd8"/>
     <rect x="66" y="4" width="146" height="21" rx="9" fill="#fff" stroke="${dark}" stroke-width="2.4"/>
     <text x="139" y="18.6" font-size="11" font-weight="900" text-anchor="middle" fill="${dark}"
-      font-family="ui-rounded, 'SF Pro Rounded', 'Nunito', 'Trebuchet MS', system-ui, sans-serif" letter-spacing=".4">NINGY NINGY CANTEEN</text>
+      ${FONT} letter-spacing=".4">NINGY NINGY CANTEEN</text>
     <g transform="translate(44 122)"><circle r="16" fill="#2b2233"/><circle r="7" fill="#cfcfd8"/><circle r="2.4" fill="#2b2233"/></g>
     <g transform="translate(172 122)"><circle r="16" fill="#2b2233"/><circle r="7" fill="#cfcfd8"/><circle r="2.4" fill="#2b2233"/></g>
     <path d="M26 106 a18 18 0 0 1 36 0" fill="none" stroke="${dark}" stroke-width="3"/>

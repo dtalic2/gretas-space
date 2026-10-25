@@ -131,6 +131,11 @@ drawn by the game, the way Greta draws milbils.
 | 🚀 Turbo Engine | $25 | Drive nearly twice as fast. |
 | 💡 Fairy Lights | $40 | Milbils will pay 15% more before a price feels too high. |
 
+The chalkboard on the side of the truck, next to the hatch, always shows how
+much food you've got left to sell. It counts things you can hand over — an ice
+block, a serve of spring rolls, a juice — so a packet of 4 ice blocks adds 4.
+The number goes yellow at 3 or fewer and the board goes red when you're out.
+
 You can repaint the truck for free whenever you like. If you ever run out of
 both money and food, Granny Ningy gives you $10 to get going again.
 
