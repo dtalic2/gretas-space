@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="112" fill="#fff1d6"/>
+  <rect y="372" width="512" height="140" fill="#8fd16a"/>
+  <path d="M0 372h512v24H0z" fill="#7cbf58"/>
+  <!-- the truck -->
+  <g transform="translate(40 100) scale(1.95)">
+    <path d="M8 118 V80 Q8 64 22 58 L40 50 Q48 46 62 46 V118Z" fill="#ff7a59"/>
+    <path d="M22 64 L40 57 Q46 55 54 55 V80 H17 Q17 68 22 64Z" fill="#bfe6ff"/>
+    <rect x="60" y="22" width="154" height="100" rx="12" fill="#ff7a59"/>
+    <rect x="94" y="42" width="102" height="50" rx="6" fill="#4a3b5c"/>
+    <rect x="128" y="62" width="34" height="32" rx="3" fill="#fff" stroke="#ff9a3c" stroke-width="2.6"/>
+    <path d="M128 78 H162" stroke="#ff9a3c" stroke-width="2.2"/>
+    <circle cx="139" cy="70" r="2.4" fill="#2b2233"/><circle cx="151" cy="70" r="2.4" fill="#2b2233"/>
+    <path d="M128 62 V54 Q123 52 125 47 Q128 43 133 45 Q136 40 142 42 Q148 40 150 46 Q156 44 158 49 Q160 54 156 55 V62Z" fill="#fff" stroke="#2b2233" stroke-width="1.2"/>
+    <rect x="88" y="88" width="114" height="9" rx="3" fill="#f4efe6"/>
+    <g>
+      <rect x="86" y="28" width="20" height="12" fill="#ff5d6c"/><circle cx="96" cy="40" r="10" fill="#ff5d6c"/>
+      <rect x="106" y="28" width="20" height="12" fill="#fff"/><circle cx="116" cy="40" r="10" fill="#fff"/>
+      <rect x="126" y="28" width="20" height="12" fill="#ff5d6c"/><circle cx="136" cy="40" r="10" fill="#ff5d6c"/>
+      <rect x="146" y="28" width="20" height="12" fill="#fff"/><circle cx="156" cy="40" r="10" fill="#fff"/>
+      <rect x="166" y="28" width="20" height="12" fill="#ff5d6c"/><circle cx="176" cy="40" r="10" fill="#ff5d6c"/>
+      <rect x="186" y="28" width="20" height="12" fill="#fff"/><circle cx="196" cy="40" r="10" fill="#fff"/>
+    </g>
+    <rect x="8" y="104" width="206" height="7" fill="#fff" opacity=".45"/>
+    <circle cx="12" cy="96" r="4.2" fill="#ffe27a"/>
+    <g transform="translate(44 122)"><circle r="16" fill="#2b2233"/><circle r="7" fill="#cfcfd8"/></g>
+    <g transform="translate(172 122)"><circle r="16" fill="#2b2233"/><circle r="7" fill="#cfcfd8"/></g>
+  </g>
+  <!-- a milbil in the queue -->
+  <g transform="translate(400 250)">
+    <rect x="-34" y="0" width="68" height="94" rx="8" fill="#fff" stroke="#8b7bff" stroke-width="7"/>
+    <path d="M-34 47 H34" stroke="#8b7bff" stroke-width="6"/>
+    <circle cx="-13" cy="22" r="5.5" fill="#2b2233"/><circle cx="13" cy="22" r="5.5" fill="#2b2233"/>
+    <path d="M-9 34 Q0 42 9 34" stroke="#2b2233" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M-14 94 V118 M14 94 V118" stroke="#8b7bff" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  <!-- the sign -->
+  <rect x="150" y="56" width="300" height="50" rx="20" fill="#fff" stroke="#c45a3f" stroke-width="5"/>
+  <text x="300" y="91" font-family="ui-rounded, 'SF Pro Rounded', 'Nunito', 'Trebuchet MS', system-ui, sans-serif" font-size="27" font-weight="900" text-anchor="middle" fill="#c45a3f">NINGY NINGY</text>
+</svg>

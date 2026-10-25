@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#fff1d6">
+  <title>Ningy Ningy Canteen</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="hud">
+    <button type="button" id="meBtn" class="me" aria-label="Your truck">
+      <span class="me-pic" id="meAvatar"></span>
+      <span class="me-info"><b id="meName">You</b><small id="meDay">Day 1</small></span>
+    </button>
+    <div class="hud-right">
+      <div class="pill clock" id="clockPill" title="Lunch runs from 11:00 to 2:00">🕐<b id="clock">11:00am</b><span class="clock-bar"><i id="clockFill"></i></span></div>
+      <div class="pill cash" id="moneyPill" title="Your money">💰<b id="money">$20.00</b></div>
+    </div>
+  </header>
+
+  <main>
+    <section class="card scene-card">
+      <div id="scene" class="scene">
+        <div id="sceneBg" class="scene-bg"></div>
+        <div id="truckWrap" class="truck-wrap"></div>
+        <div id="walkers" class="walkers"></div>
+        <div id="sceneTag" class="scene-tag"></div>
+        <nav class="tools">
+          <button type="button" class="round" id="truckBtn" title="Your truck" aria-label="Your truck">🚚<em id="truckBadge"></em></button>
+          <button type="button" class="round" id="bookBtn" title="The milbils" aria-label="The milbils">📖</button>
+          <button type="button" class="round" id="helpBtn" title="How to play" aria-label="How to play">❓</button>
+          <button type="button" class="round" id="setBtn" title="Settings" aria-label="Settings">⚙️</button>
+        </nav>
+      </div>
+      <p id="status" class="status"></p>
+    </section>
+    <section id="orderCard" class="card order-card" aria-live="polite"></section>
+    <section id="counterCard" class="card counter-card"></section>
+  </main>
+
+  <footer class="bar">
+    <button type="button" id="shopBtn" class="btn">🛒 Shop<em id="shopBadge"></em></button>
+    <button type="button" id="priceBtn" class="btn">📋 Prices</button>
+    <button type="button" id="driveBtn" class="btn go">🗺️ Drive</button>
+  </footer>
+
+  <div id="map" class="screen map-screen" hidden>
+    <div class="map-inner">
+      <header class="map-head">
+        <div><h2>🗺️ Milbil Town</h2><small id="mapClock"></small></div>
+        <button type="button" id="mapClose" class="sheet-x" aria-label="Close the map">✕</button>
+      </header>
+      <div id="mapBox" class="map-box"></div>
+      <div id="mapInfo" class="map-info"></div>
+    </div>
+  </div>
+
+  <div id="report" class="screen" hidden></div>
+  <div id="sheet" class="sheet" hidden></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <div id="welcome" class="screen welcome" hidden>
+    <div class="welcome-card">
+      <h1><span>Ningy Ningy</span><br>Canteen</h1>
+      <div class="welcome-truck" id="welcomeTruck"></div>
+      <p class="lead">Start your own canteen. It's a truck!</p>
+      <p>Drive it around Milbil Town, park where milbils are having lunch, and a queue
+        will collect at your hatch. Buy the food at <b>Billy's Supermarket</b>, pick your
+        own prices, and take their orders.</p>
+      <label class="name-row">
+        <span>What's your name?</span>
+        <span class="name-input"><input id="nameInput" maxlength="14" autocomplete="off" spellcheck="false"><button type="button" id="nameDice" aria-label="Random name">🎲</button></span>
+      </label>
+      <div class="pick-label">You</div>
+      <div class="swatches" id="swatches" role="radiogroup" aria-label="Your colour"></div>
+      <div class="hats" id="hats" role="radiogroup" aria-label="Your hat"></div>
+      <div class="pick-label">Your truck</div>
+      <div class="swatches" id="truckSwatches" role="radiogroup" aria-label="Truck colour"></div>
+      <button type="button" id="startBtn" class="btn go big">🚚 Open the canteen!</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

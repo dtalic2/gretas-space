@@ -72,6 +72,15 @@
         "8131"
       ],
       "port": 8131
+    },
+    {
+      "name": "ningy-ningy-canteen",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "ningy-ningy-canteen/serve.py",
+        "8133"
+      ],
+      "port": 8133
     }
   ]
 }
