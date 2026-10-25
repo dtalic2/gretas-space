@@ -18,6 +18,30 @@ const bowl = (band, heap) => `${SHADOW}
   <path d="M12 42 Q32 49 52 42" stroke="${band}" stroke-width="3.2" fill="none" stroke-linecap="round"/>
   ${shine(15, 38, 1.8, 4.5, 20)}`;
 
+function pizzaPie(rx, ry, toppings, xl = false){
+  const cx = 32, cy = 36;
+  const slices = [0, 45, 90, 135].map(a => {
+    const t = a * Math.PI / 180, dx = Math.cos(t) * (rx - 4), dy = Math.sin(t) * (ry - 4);
+    return `M${cx - dx} ${cy - dy} L${cx + dx} ${cy + dy}`;
+  }).join(' ');
+  return `${SHADOW}
+    <ellipse cx="${cx}" cy="${cy + 2}" rx="${rx}" ry="${ry}" fill="#c98424"/>
+    <ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#e9b25a"/>
+    <ellipse cx="${cx}" cy="${cy}" rx="${rx - 3.5}" ry="${ry - 3}" fill="#e5484d"/>
+    <ellipse cx="${cx}" cy="${cy}" rx="${rx - 5}" ry="${ry - 4.5}" fill="#ffd66b"/>
+    ${toppings(cx, cy)}
+    <path d="${slices}" stroke="#e9b25a" stroke-width="1.1" opacity=".75"/>
+    ${shine(cx - rx * 0.45, cy - ry * 0.55, 3.4, 1.4, -15)}
+    ${xl ? `<g transform="translate(9 9)"><rect x="-8" y="-6" width="17" height="12" rx="4" fill="#2f2640"/>
+      <text x="0.5" y="3.4" font-size="8.5" font-weight="900" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif">XL</text></g>` : ''}`;
+}
+
+/** A mushroom slice: a cap and a little stalk. */
+const mushroom = (x, y) => `<g transform="translate(${x} ${y})">
+  <path d="M-4.2 0.6 Q-4.2 -4 0 -4 Q4.2 -4 4.2 0.6Z" fill="#c4a07a"/>
+  <rect x="-1.6" y="0.2" width="3.2" height="3.4" rx="1" fill="#ead8bb"/>
+  <path d="M-3 -1 Q0 -3 3 -1" stroke="#9b7b55" stroke-width=".8" fill="none"/></g>`;
+
 const ICONS = {
   iceblock: () => `${SHADOW}
     <rect x="28.5" y="40" width="7" height="18" rx="3.5" fill="#e3b778"/>
@@ -64,6 +88,19 @@ const ICONS = {
     <g fill="#ffb877"><circle cx="34" cy="25" r="1.6"/><circle cx="41" cy="22" r="1.6"/></g>
     <g fill="#ffd23f"><circle cx="45" cy="28" r="1.8"/><circle cx="48" cy="25" r="1.8"/><circle cx="43" cy="31" r="1.7"/><circle cx="28" cy="29" r="1.7"/></g>
     <circle cx="30" cy="20" r="3.6" fill="#e5484d"/>`),
+
+  // Pizzas: a whole one seen from a little above, with slice lines.
+  pizza: () => pizzaPie(24, 18, (cx, cy) => [[-9, -5], [8, -7], [0, 3], [-12, 6], [11, 5], [2, -12]]
+    .map(([x, y]) => `<circle cx="${cx + x}" cy="${cy + y}" r="3.6" fill="#c8423b"/><circle cx="${cx + x - 1}" cy="${cy + y - 1}" r="1" fill="#e8705f"/>`).join('')),
+
+  mushroompizza: () => pizzaPie(24, 18, (cx, cy) => [[-10, -5], [7, -8], [-1, 3], [11, 4], [-11, 6], [3, -13]]
+    .map(([x, y]) => mushroom(cx + x, cy + y)).join('')),
+
+  xlpizza: () => pizzaPie(29, 21, (cx, cy) => [[-13, -6], [0, -13], [12, -7], [-5, 2], [9, 4], [-15, 7], [2, 12], [17, 2]]
+    .map(([x, y], i) => i % 3 === 2 ? mushroom(cx + x, cy + y)
+      : `<circle cx="${cx + x}" cy="${cy + y}" r="3.6" fill="#c8423b"/><circle cx="${cx + x - 1}" cy="${cy + y - 1}" r="1" fill="#e8705f"/>`).join('') +
+    [[-8, 9], [6, -3], [14, -12]].map(([x, y]) => `<circle cx="${cx + x}" cy="${cy + y}" r="2" fill="#3a3044"/><circle cx="${cx + x}" cy="${cy + y}" r=".8" fill="#fde5a0"/>`).join(''),
+    true),
 
   sushi: () => {
     const piece = (x, y) => `<g transform="translate(${x} ${y})">

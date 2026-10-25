@@ -54,6 +54,9 @@ underneath.
 | Beef Bowl | $1.50 | one at a time | $3.00 |
 | Veggie Bowl | $1.50 | one at a time | $3.00 |
 | Avocado Sushi | $1.00 | one at a time | $2.00 |
+| Regular Pizza | $2.50 | one at a time | $5.00 |
+| Mushroom Pizza | $2.50 | one at a time | $5.00 |
+| XL Pizza | $3.00 | one at a time | $6.00 |
 | Juice | 50c | a pack of 4, $2.00 | $1.00 |
 | Pop Cake 🔒 | 50c | one at a time | $1.00 |
 | Portable Waffle 🔒 | $2.00 | one at a time | $4.00 |
@@ -130,7 +133,7 @@ Anything a milbil doesn't spend or save goes on lunch somewhere else.
 | 🏫 Milbil School | Sprouty, Giggle, Toothy, Freckles, Chomp, Doodle, Pickle, Bubbles, Zippy, Squeak, Dot | Ice Blocks, Pop Cakes, Spring Rolls |
 | 🌳 Bilberry Park | Petal, Snooze, Bobbin, Puddle, Clover, Honey, Twig, Nibbles | Ice Blocks, Waffles, Juice |
 | 🏖️ Ningy Beach | Sunny, Scoop, Fizz, Marzi, Splash, Shelly, Coral, Surfy | Ice Blocks, Juice — and sometimes only something cold |
-| ⚽ Sports Field | Sporty, Tumble, Gus, Zig, Bounce, Dash, Kicks, Sprint | Beef Bowls, Lamb Koftas, Juice |
+| ⚽ Sports Field | Sporty, Tumble, Gus, Zig, Bounce, Dash, Kicks, Sprint | Beef Bowls, Lamb Koftas, Juice, XL Pizzas |
 | ⛲ Town Square | Hattie, Royal Milbil, Cosy, Biscuit, Penny, Tinker, Lulu, Bramble | Sushi, Veggie Bowls, Waffles |
 | 📚 The Library | Brainy, Wizzle, Quill, Hush (the library ghost), Owlet | Sushi, Juice |
 | 🛒 Billy's Supermarket | nobody eats here | — |
