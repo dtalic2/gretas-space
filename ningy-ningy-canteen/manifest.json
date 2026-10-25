@@ -1,7 +1,7 @@
 {
-  "name": "Ningy Ningy Canteen",
-  "short_name": "Ningy Canteen",
-  "description": "Run a canteen truck around Milbil Town: buy food at the supermarket, set your prices, and serve the queues of milbils that collect at your hatch.",
+  "name": "Ningy-Ningy Canteen",
+  "short_name": "Ningy-Ningy",
+  "description": "Drive the Ningy-Ningy truck around Milbil Town: buy food at the supermarket, set your prices, and serve the queues of milbils that collect at your hatch.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

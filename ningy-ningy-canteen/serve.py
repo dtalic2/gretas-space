@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Local server for Ningy Ningy Canteen.
+Local server for Ningy-Ningy Canteen.
 
 Two jobs beyond `python3 -m http.server`:
 
@@ -59,7 +59,7 @@ def lan_ips():
 
 def banner():
     line = '─' * 46
-    print(f'\n  🚚 Ningy Ningy Canteen\n  {line}')
+    print(f'\n  🚚 Ningy-Ningy Canteen\n  {line}')
     print(f'  On this Mac   http://localhost:{PORT}')
 
     ips = lan_ips()

@@ -1,6 +1,7 @@
-# 🚚 Ningy Ningy Canteen
+# 🚚 Ningy-Ningy Canteen
 
-You start a canteen, and the canteen is a truck. Every morning you buy food at
+You start a canteen, and the canteen is a truck: the **Ningy-Ningy truck**,
+with its name on a sign on the roof. Every morning you buy food at
 **Billy's Supermarket**, pick your own prices, then drive around Milbil Town.
 Wherever you park, the milbils having lunch there notice the truck and a
 **queue collects** at your hatch. Each one reads your menu board and either
@@ -125,7 +126,7 @@ and how much money they've got.
 Chomp, Petal, Sunny, Hattie and Scoop are Greta's own drawings. The rest are
 drawn by the game, the way Greta draws milbils.
 
-## Your truck
+## The Ningy-Ningy truck
 
 | Upgrade | Cost | What it does |
 | --- | --- | --- |

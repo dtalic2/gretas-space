@@ -1,6 +1,6 @@
-// ---------- Ningy Ningy Canteen ----------
+// ---------- Ningy-Ningy Canteen ----------
 //
-// Your canteen is a truck. In the morning you're parked at Billy's
+// Your canteen is the Ningy-Ningy truck. In the morning you're parked at Billy's
 // Supermarket: buy food, set your prices, then drive off around Milbil Town.
 // Wherever you park, the milbils having lunch there notice and a queue
 // collects at your hatch. Each one reads your menu board, decides, and either
@@ -32,6 +32,7 @@ setSound(S.sound);
 const sheet = new Sheet($('#sheet'));
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const short = (c) => money(c, { short: true });
+const NN = '<span class="nb">Ningy-Ningy</span>';   // never split at the hyphen
 
 /** A milbil's picture: Greta's drawing if there is one, otherwise drawn here. */
 const picOf = (m, cls = '') => m.art
@@ -365,7 +366,7 @@ function renderCounter(){
   const total = totalStock();
   renderSign();
   $('#counterCard').innerHTML = `
-    <div class="counter-head"><h2>🥡 In the truck</h2><span class="muted">${total ? `${total} things to sell` : 'Empty! Buy food at Billy\'s 🛒'}</span></div>
+    <div class="counter-head"><h2>🥡 In the ${NN} truck</h2><span class="muted">${total ? `${total} things to sell` : 'Empty! Buy food at Billy\'s 🛒'}</span></div>
     <div class="counter">${items}</div>`;
 }
 
@@ -718,7 +719,7 @@ async function startDrive(to){
   const t = today();
   if (t.phase === 'closed' || RT.mode === 'driving' || to === t.at) return;
   if (t.phase === 'morning' && totalStock() === 0){
-    const go = await card(`<h2>🥡 Your truck is empty!</h2><p>There's nothing to sell yet. Buy some food at Billy's Supermarket first?</p>`,
+    const go = await card(`<h2>🥡 The ${NN} truck is empty!</h2><p>There's nothing to sell yet. Buy some food at Billy's Supermarket first?</p>`,
       [{ label: '🛒 Go shopping', cls: 'go', value: 'shop' }, { label: 'Drive anyway', value: 'go' }]);
     if (go === 'shop'){ closeMap(); openShop(); return; }
   }
@@ -794,7 +795,7 @@ function showReport(sum){
   ].filter(([k]) => left[k]).map(([k, e, txt]) => `<li>${e} ${left[k]} ${txt}</li>`).join('');
   r.innerHTML = `<div class="inner">
     <h2>🌙 That's lunch!</h2>
-    <p class="center muted">Day ${sum.day} at Ningy Ningy Canteen</p>
+    <p class="center muted">Day ${sum.day} at Ningy-Ningy Canteen</p>
     <div class="card big-num">
       <div><b>${sum.served}</b><small>milbils served 😋</small></div>
       <div><b class="${profit >= 0 ? 'pos' : 'neg'}">${profit >= 0 ? '+' : ''}${money(profit)}</b><small>profit today</small></div>
@@ -884,7 +885,7 @@ function openShop(){
   };
   sheet.show({
     key: 'shop', icon: '🛒', title: 'Billy\'s Supermarket',
-    sub: 'Prices are for one of each. Your truck charges about double.',
+    sub: `Prices are for one of each. The ${NN} truck charges about double.`,
     banner: () => `<div class="sheet-money">💰 You have <b>${money(S.money)}</b>${today().spent ? ` · spent ${money(today().spent)} today` : ''}</div>`,
     render,
     onAct: (act, id, btn) => {
@@ -961,7 +962,7 @@ function openTruck(){
       <h3>Make it better</h3>${rows}`;
   };
   sheet.show({
-    key: 'truck', icon: '🚚', title: 'Your truck',
+    key: 'truck', icon: '🚚', title: `The ${NN} truck`,
     sub: 'Spend some of your profit on the canteen.',
     banner: () => `<div class="sheet-money">💰 You have <b>${money(S.money)}</b></div>`,
     render,
@@ -1080,7 +1081,7 @@ $('#setBtn').addEventListener('click', () => { sfx('tap'); openSettings(); });
 
 function firstMorning(){
   card(`<div class="intro-truck">${truckSVG(S.truck, you(), { stock: totalStock() })}</div>
-    <h2>Welcome to Ningy Ningy Canteen!</h2>
+    <h2>Welcome to Ningy-Ningy Canteen!</h2>
     <ol class="steps">
       <li>🛒 Buy food at <b>Billy's Supermarket</b>. You've got ${money(S.money)}.</li>
       <li>📋 Check your <b>prices</b>. Milbils expect about double what Billy's charges.</li>

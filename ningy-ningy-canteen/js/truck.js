@@ -45,7 +45,7 @@ export function truckSVG(color, who, { lights = false, umbrella = false, stock =
     return `<circle cx="${x}" cy="${y}" r="2.6" fill="${['#ffd23f', '#ff6fa5', '#7ad37a', '#38b6ff'][i % 4]}" class="bulb b${i % 3}"/>`;
   }).join('') + `<path d="M86 50 Q140 56 206 50" stroke="#3a3044" stroke-width=".8" fill="none"/>` : '';
   const me = drawLook(who, { title: 'You' }).replace('<svg ', '<svg x="122" y="44" width="44" height="54" ');
-  return `<svg class="truck" viewBox="0 0 220 150" role="img" aria-label="Ningy Ningy Canteen">
+  return `<svg class="truck" viewBox="0 0 220 150" role="img" aria-label="The Ningy-Ningy truck">
     <ellipse cx="112" cy="141" rx="104" ry="6" fill="#00000022"/>
     ${umbrella ? `<g transform="translate(206 0)"><rect x="-1.5" y="18" width="3" height="120" fill="#8a6a4a"/>
       <path d="M-30 30 Q0 -6 30 30Z" fill="#ffd23f"/><path d="M-30 30 Q-15 22 -10 30 Q0 22 10 30 Q15 22 30 30" fill="#ff9f1c"/></g>` : ''}
@@ -68,7 +68,7 @@ export function truckSVG(color, who, { lights = false, umbrella = false, stock =
     <rect x="3" y="108" width="20" height="8" rx="3" fill="#cfcfd8"/>
     <rect x="66" y="4" width="146" height="21" rx="9" fill="#fff" stroke="${dark}" stroke-width="2.4"/>
     <text x="139" y="18.6" font-size="11" font-weight="900" text-anchor="middle" fill="${dark}"
-      ${FONT} letter-spacing=".4">NINGY NINGY CANTEEN</text>
+      ${FONT} letter-spacing=".4">NINGY-NINGY TRUCK</text>
     <g transform="translate(44 122)"><circle r="16" fill="#2b2233"/><circle r="7" fill="#cfcfd8"/><circle r="2.4" fill="#2b2233"/></g>
     <g transform="translate(172 122)"><circle r="16" fill="#2b2233"/><circle r="7" fill="#cfcfd8"/><circle r="2.4" fill="#2b2233"/></g>
     <path d="M26 106 a18 18 0 0 1 36 0" fill="none" stroke="${dark}" stroke-width="3"/>

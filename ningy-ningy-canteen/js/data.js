@@ -1,4 +1,4 @@
-// ---------- Every number in Ningy Ningy Canteen ----------
+// ---------- Every number in Ningy-Ningy Canteen ----------
 //
 // Money is kept in cents, and every price in the game is a multiple of 50c so
 // the sums stay easy: the supermarket, its deals, your menu, the milbils'
