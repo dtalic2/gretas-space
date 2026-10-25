@@ -91,30 +91,88 @@ function drawLand(L){
     }
   }
 
-  // Row by row from the top, so each row's top covers the edge of the row above.
-  for (let y = y0; y <= y1; y++){
-    const row = y * W, top = Y[y - y0] - L, bot = Y[y - y0 + 1] - L;
-    let x = x0;
-    while (x <= x1){
-      const o = owner[row + x];
-      if (!o){ x++; continue; }
-      const pal = pals[o];
-      if (pal.rainbow){
-        const k = rainbowAt(x, y), l = X[x - x0], r = X[x - x0 + 1];
-        if (owner[row + x + W] !== o){ ctx.fillStyle = pal.side[k]; ctx.fillRect(l, bot, r - l, L); }
-        ctx.fillStyle = pal.land[k]; ctx.fillRect(l, top, r - l, bot - top);
-        x++;
+  // Each milbil's land is one smooth shape: its outline runs through the
+  // middles of its cells' edges (marching squares), so stair-steps become
+  // straight slopes and corners are cut off, instead of little squares.
+  // Neighbouring land is cut along the same lines, so it meets with no gap.
+  // Where all four cells round a point are owned but not all by the same
+  // milbil, one of them also gets the whole square underneath, so no ground
+  // shows through where three lands meet or two touch only at a corner.
+  // Solid squares inside the land are joined into one long strip per row, and
+  // the darker edge is only drawn from the pieces along the land's edges,
+  // since it only ever shows at the bottom of the land.
+  const tops = new Map(), sides = new Map(), under = new Map();
+  for (let j = y0 - 1; j <= y1; j++){
+    let run = 0, from = 0;                 // a strip of solid squares, and where it began
+    const endRun = (i) => { if (run) strip(tops, run, from + .5, j + .5, i + .5, j + 1.5); run = 0; };
+    for (let i = x0 - 1; i <= x1; i++){
+      const k = j * W + i;
+      const a = owner[k], b = owner[k + 1], d = owner[k + W], c = owner[k + W + 1];
+      if (a && a === b && a === c && a === d){
+        if (run !== a){ endRun(i); run = a; from = i; }
         continue;
       }
-      const edge = owner[row + x + W] !== o;
-      let e = x + 1;
-      while (e <= x1 && owner[row + e] === o && (owner[row + e + W] !== o) === edge) e++;
-      const l = X[x - x0], r = X[e - x0];
-      if (edge){ ctx.fillStyle = pal.side; ctx.fillRect(l, bot, r - l, L); }
-      ctx.fillStyle = pal.land; ctx.fillRect(l, top, r - l, bot - top);
-      x = e;
+      endRun(i);
+      if (!(a | b | c | d)) continue;
+      const qx = i + .5, qy = j + .5;      // this square runs between the middles of four cells
+      if (a && b && c && d) strip(under, a, qx, qy, qx + 1, qy + 1);
+      if (a) piece(a, a, b, c, d, qx, qy, tops, sides);
+      if (b && b !== a) piece(b, a, b, c, d, qx, qy, tops, sides);
+      if (c && c !== a && c !== b) piece(c, a, b, c, d, qx, qy, tops, sides);
+      if (d && d !== a && d !== b && d !== c) piece(d, a, b, c, d, qx, qy, tops, sides);
+    }
+    endRun(x1 + 1);
+  }
+  // The land's darker edge first, then its top lifted up off the ground. A top
+  // is always in front of an edge, so neighbours overlap the right way round.
+  for (const [o, path] of sides){ ctx.fillStyle = landFill(o, 'side', x0, y0, x1, y1); ctx.fill(path); }
+  ctx.save();
+  ctx.translate(0, -L);
+  for (const layer of [under, tops]){
+    for (const [o, path] of layer){ ctx.fillStyle = landFill(o, 'land', x0, y0, x1, y1); ctx.fill(path); }
+  }
+  ctx.restore();
+}
+
+const pathFor = (paths, o) => { let p = paths.get(o); if (!p) paths.set(o, p = new Path2D()); return p; };
+
+function strip(paths, o, X0, Y0, X1, Y1){
+  const x = sx(X0), y = sy(Y0);
+  pathFor(paths, o).rect(x, y, sx(X1) - x, sy(Y1) - y);
+}
+
+// Where each case's shape goes in a square whose corners are the middles of
+// four cells: a top-left, b top-right, c bottom-right, d bottom-left, and the
+// middles of its sides t, r, m (bottom) and l. Two cells touching only at a
+// corner stay apart.
+const SPOT = { a: [0, 0], b: [1, 0], c: [1, 1], d: [0, 1], t: [.5, 0], r: [1, .5], m: [.5, 1], l: [0, .5] };
+const SHAPES = [
+  [], ['lmd'], ['rcm'], ['lrcd'], ['tbr'], ['tbr', 'lmd'], ['tbcm'], ['tbcdl'],
+  ['atl'], ['atmd'], ['atl', 'rcm'], ['atrcd'], ['abrl'], ['abrmd'], ['abcml'], ['abcd'],
+].map(list => list.map(shape => [...shape].map(ch => SPOT[ch])));
+
+function piece(o, a, b, c, d, qx, qy, ...into){
+  const shapes = SHAPES[(a === o) << 3 | (b === o) << 2 | (c === o) << 1 | (d === o)];
+  for (const paths of into){
+    const path = pathFor(paths, o);
+    for (const pts of shapes){
+      path.moveTo(sx(qx + pts[0][0]), sy(qy + pts[0][1]));
+      for (let n = 1; n < pts.length; n++) path.lineTo(sx(qx + pts[n][0]), sy(qy + pts[n][1]));
+      path.closePath();
     }
   }
+}
+
+// One colour, or for rainbow land a rainbow that runs smoothly across it in
+// diagonal stripes, fixed to the island as the camera moves.
+function landFill(o, which, x0, y0, x1, y1){
+  const pal = pals[o];
+  if (!pal.rainbow) return pal[which];
+  const colors = pal[which], span = Math.max(x1 - x0, y1 - y0) + 4;
+  const g = ctx.createLinearGradient(sx(x0 - 2), sy(y0 - 2), sx(x0 - 2 + span), sy(y0 - 2 + span));
+  const v0 = x0 + y0 - 4;
+  for (let n = 0; n <= 2 * span; n++) g.addColorStop(n / (2 * span), colors[(v0 + n) % colors.length]);
+  return g;
 }
 
 function drawTrails(t){

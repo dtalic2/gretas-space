@@ -127,7 +127,7 @@ second one gets a different colour, so everyone's land is easy to tell apart.
 | `js/world.js` | The island: land, trails, filling in, catching and bumping. Doesn't touch the page |
 | `js/bots.js` | How the other milbils play |
 | `js/input.js` | Steering: dragging (Touch Events, so phones can't cancel a drag halfway), the mouse and the keys |
-| `js/draw.js` | Drawing the island, the land standing up off the ground, trails, milbils, the mini-map |
+| `js/draw.js` | Drawing the island, the land as smooth shapes standing up off the ground, trails, milbils, the mini-map |
 | `js/sprites.js` | Turns each milbil into a small picture for the board |
 | `js/milbil.js` | Draws a milbil as SVG (from Milbil Café) |
 | `js/colors.js` | Land colours, and rainbow land |
@@ -142,6 +142,14 @@ through every cell that isn't yours. Any cell it can't reach is closed off, so
 it's yours too. Milbils walk smoothly, but when one moves corner to corner it
 steps through a side cell first, so a trail never has a diagonal gap someone
 could slip through.
+
+The cells are only how the game keeps track of land. It doesn't draw them as
+squares: each milbil's land is drawn as one shape whose outline runs through
+the middles of the cells' edges (this is called marching squares). Stair-steps
+become straight slopes, corners are cut off, and one cell on its own is a
+little diamond. Neighbouring land is cut along the same lines, so two lands
+always meet with no gap, and where three lands meet, one colour is laid
+underneath so no ground shows through.
 
 The game saves to `localStorage`. In the browser console, `ISLAND.world` is
 everything on the island and `ISLAND.you` is you.
