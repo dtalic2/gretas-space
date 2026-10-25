@@ -61,7 +61,7 @@ underneath.
 | Pop Cake 🔒 | 50c | one at a time | $1.00 |
 | Portable Waffle 🔒 | $2.00 | one at a time | $4.00 |
 
-**Deals.** Most days Billy's puts one to three things on a deal: never
+**Deals.** Every day Billy's puts two to four things on a deal: never
 everything, and only things it sells one at a time, so the saving is the same
 on every one you buy. A deal says how much you save on each one — "Save 50c on
 each Beef Bowl" — rather than a percentage. Deals don't change what milbils

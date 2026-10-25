@@ -160,16 +160,15 @@ export function lunchMoney(day, id){
 export function newDay(){
   const r = rng(S.day * 104729 + S.salt * 7 + 5);
 
-  // A few things at the supermarket are cheaper today. Never everything, and
-  // only things sold one at a time, so the saving is the same on each one.
+  // Every day, two to four things at the supermarket are cheaper. Never
+  // everything, and only things sold one at a time, so the saving is the same
+  // on each one.
   const deals = {};
-  if (r() < 0.75){
-    const can = openProducts().filter(p => p.size === 1 && p.price >= 100);
-    const n = 1 + Math.floor(r() * 3);
-    for (let i = 0; i < n && can.length; i++){
-      const p = can.splice(Math.floor(r() * can.length), 1)[0];
-      deals[p.id] = p.price >= 200 && r() < 0.3 ? 100 : 50;
-    }
+  const can = openProducts().filter(p => p.size === 1 && p.price >= 100);
+  const n = Math.min(can.length - 1, 2 + Math.floor(r() * 3));
+  for (let i = 0; i < n; i++){
+    const p = can.splice(Math.floor(r() * can.length), 1)[0];
+    deals[p.id] = p.price >= 200 && r() < 0.3 ? 100 : 50;
   }
 
   const who = {};

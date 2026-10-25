@@ -1043,7 +1043,7 @@ function openHelp(){
       <div class="help">
         <h3>🛒 1. Buy food at Billy's</h3>
         <p>Every morning you start at Billy's Supermarket. Billy's shows the price of one of each thing. Ice blocks come in a packet of 4 (50c each, so $2 for the packet) and juice in a pack of 4, but you sell them one at a time. Spring rolls come in a 6-pack, and you sell the whole 6-pack.
-        Some days Billy's has <b>deals</b> on a few things — the deal tells you how much you save on each one.</p>
+        Every day Billy's has <b>deals</b> on a few things — the deal tells you how much you save on each one.</p>
         <h3>📋 2. Set your prices</h3>
         <p>You pick your own prices on the menu board 📋. Milbils think a fair price is about <b>double</b> what Billy's normally charges for one. A Beef Bowl costs you $1.50, so milbils expect to pay about $3. An Ice Block costs you 50c, so they expect $1. A 6-pack of Spring Rolls costs you $2, so they expect $4.
         Some milbils are taken aback 😲 when something on your board costs far more than they'd pay — they gasp, and then either walk off or buy something else.
