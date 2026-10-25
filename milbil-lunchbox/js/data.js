@@ -237,7 +237,7 @@ export const MILBILS = [
     money:260, tip:135,
     blurb:'Read a book about food groups and has not stopped talking about it.',
     loves:['g:veg', 'g:fruit', 'b:lebelibs'], hates:['g:treat'],
-    asks:[{ kind:'variety', n:4 }, { kind:'variety', n:5 }, { what:'g:veg', n:2 }] },
+    asks:[{ kind:'variety', n:4 }, { what:'g:main', n:2 }, { what:'g:veg', n:2 }] },
 
   { id:'sporty', name:'Sporty', points:400, look:{ line:'#e05252', hat:'cap' },
     box:{ spaces:5, body:'#e05252', lid:'#b83c3c', inner:'#ffe9e9' },
@@ -251,7 +251,7 @@ export const MILBILS = [
     money:350, tip:180,
     blurb:'Picks the prettiest thing out first and eats it very slowly.',
     loves:['g:fruit', 't:sweet'], hates:['t:salty'],
-    asks:[{ what:'g:fruit', n:3 }, { what:'t:sweet', n:2 }, { kind:'variety', n:4 }] },
+    asks:[{ what:'g:fruit', n:2 }, { what:'t:sweet', n:2 }, { kind:'variety', n:4 }] },
 
   { id:'cosy', name:'Cosy', points:700, look:{ line:'#3f7fe0', hat:'beanie', extra:'scarf' },
     box:{ spaces:5, body:'#3f7fe0', lid:'#2c5fb0', inner:'#e6eeff' },
@@ -272,35 +272,35 @@ export const MILBILS = [
     money:520, tip:275,
     blurb:'Calls the soup a potion and the thermos a cauldron. Fair enough.',
     loves:['f:soup', 't:warm'], hates:['f:crackers'],
-    asks:[{ what:'t:warm', n:2 }, { kind:'variety', n:5 }, { what:'g:main', n:2 }] },
+    asks:[{ what:'t:warm', n:2 }, { kind:'variety', n:4 }, { what:'g:main', n:2 }] },
 
   { id:'hattie', name:'Hattie', points:1300, art:'art/hattie.png',
     box:{ spaces:6, body:'#b05cf0', lid:'#8a3fc9', inner:'#f4e9ff' },
     money:590, tip:315,
     blurb:'Swaps half the lunchbox at the table, so pack things worth swapping.',
     loves:['t:cheesy', 'g:snack'], hates:['f:water'],
-    asks:[{ what:'g:snack', n:2 }, { kind:'variety', n:5 }, { kind:'full' }] },
+    asks:[{ what:'g:snack', n:2 }, { kind:'variety', n:4 }, { kind:'full' }] },
 
   { id:'scoop', name:'Scoop', points:1540, art:'art/scoop.png',
     box:{ spaces:6, body:'#38b6ff', lid:'#1f8fd0', inner:'#e4f5ff' },
     money:660, tip:355,
     blurb:'Only truly happy when something in the box is still cold at noon.',
     loves:['t:cold', 't:sweet'], hates:['t:warm'],
-    asks:[{ what:'t:cold', n:3 }, { what:'g:treat', n:1 }, { kind:'variety', n:5 }] },
+    asks:[{ what:'t:cold', n:3 }, { what:'g:treat', n:1 }, { kind:'variety', n:4 }] },
 
   { id:'royal', name:'Royal Milbil', points:1800, look:{ line:'#e0b000', hat:'crown', extra:'cape' },
     box:{ spaces:6, body:'#f5c542', lid:'#c9961a', inner:'#fff6d9' },
     money:800, tip:460,
     blurb:'Will not be seen eating anything out of a big orange bag.',
     loves:['f:sushi', 'f:strawberries', 'b:lebelibs'], hates:['b:bills', 'f:crackers'],
-    asks:[{ kind:'full' }, { kind:'variety', n:5 }, { what:'g:fruit', n:2 }] },
+    asks:[{ kind:'full' }, { kind:'variety', n:4 }, { what:'g:fruit', n:2 }] },
 
   { id:'golden', name:'Golden Milbil', points:2080, look:{ line:'#d99a00', fill:'#ffe27a', eyes:'sparkle' },
     box:{ spaces:6, body:'#ffe27a', lid:'#d99a00', inner:'#fffbe8' },
     money:1100, tip:700,
     blurb:'Nobody knows where they come from. The lunch money is always gold.',
     loves:['g:fruit', 'g:veg', 't:sweet'], hates:[],
-    asks:[{ kind:'variety', n:6 }, { kind:'full' }, { what:'g:fruit', n:3 }] },
+    asks:[{ kind:'variety', n:4 }, { kind:'full' }, { what:'g:main', n:3 }] },
 ];
 export const MILBIL = Object.fromEntries(MILBILS.map(m => [m.id, m]));
 export const FIRST_MILBILS = MILBILS.filter(m => m.points === 0).map(m => m.id);
@@ -328,9 +328,34 @@ export const MAX_POINTS = JUDGES.length * JUDGE_MAX;
 // with the morning's request worth the most.
 export const LIKING = { love:3, avoid:2, ask:4 };
 
-// And Tidy's ten.
-export const TIDY = { full:4, variety:4, nodupes:2 };
-export const TIDY_GROUPS = 4;        // this many food groups earns the lot
+// And Tidy's ten. Most of them are for the mix below.
+export const TIDY = { mix:6, full:2, nodupes:2 };
+
+// What every milbil thinks a lunchbox ought to look like: about half of it a
+// proper main, about a quarter fruit or veg, about a quarter something sweet.
+// Snacks and drinks belong to no bar — they're extras, and they eat into the
+// shares, so a lunchbox of nothing but crackers and juice marks badly.
+export const MIX = [
+  { id:'main',  icon:'🥪', name:'Main',         share:0.5,  groups:['main'] },
+  { id:'fresh', icon:'🍎', name:'Fruit or veg', share:0.25, groups:['fruit', 'veg'] },
+  { id:'sweet', icon:'🍪', name:'Sweet',        share:0.25, groups:['treat'] },
+];
+
+/**
+ * How many of each a box of `n` things ought to hold. Shares rarely divide
+ * evenly, so the spare places go to whoever came closest to another whole one:
+ * 3 → one of each, 4 → 2/1/1, 5 → 3/1/1, 6 → 3/2/1.
+ */
+export function mixPlan(n){
+  const plan = Object.fromEntries(MIX.map(m => [m.id, 0]));
+  if (n <= 0) return plan;
+  const want = MIX.map(m => ({ id: m.id, want: n * m.share }));
+  for (const w of want) plan[w.id] = Math.floor(w.want);
+  let spare = n - Object.values(plan).reduce((a, b) => a + b, 0);
+  const closest = [...want].sort((a, b) => (b.want % 1) - (a.want % 1));
+  for (let i = 0; spare > 0; i++, spare--) plan[closest[i % closest.length].id]++;
+  return plan;
+}
 
 // Points out of 30 that earn one, two and three stars on the report card.
 // Below one star the family asks for their change back, so you can't get rich
@@ -341,16 +366,15 @@ export const STARS_AT = [8, 18, 27];
 // score out of 100. It is all Nurse Pip looks at.
 export const HEALTHY = 70;
 export const SUPER_HEALTHY = 88;
-export const BALANCED_GROUPS = 4;
 
 // Coins. The milbil's tip is their full tip multiplied by the marks out of 30,
 // and then these go on top of it.
 export const BONUS = {
-  healthy:  0.15,
-  super:    0.35,
-  balanced: 0.20,
-  full:     0.10,
-  record:   0.25,
+  healthy: 0.15,
+  super:   0.35,
+  mix:     0.20,   // the half / quarter / quarter mix, exactly right
+  full:    0.10,
+  record:  0.25,
 };
 
 // Pack for the same milbil day after day and they get fond of you: every day

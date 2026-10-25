@@ -5,8 +5,8 @@
 
 import {
   FOOD, GROUP, BRAND, MILBIL, MAX_HEALTH, STICKER_BY_ID, STICKER_TIP, KIT_BY_ID,
-  JUDGES, JUDGE_MAX, MAX_POINTS, LIKING, TIDY, TIDY_GROUPS, STARS_AT,
-  BONUS, HEALTHY, SUPER_HEALTHY, BALANCED_GROUPS, STREAK_TIP, STREAK_MAX,
+  JUDGES, JUDGE_MAX, MAX_POINTS, LIKING, TIDY, MIX, mixPlan, STARS_AT,
+  BONUS, HEALTHY, SUPER_HEALTHY, STREAK_TIP, STREAK_MAX,
   wishMatch, wishText, askText,
 } from './data.js';
 import { foodSVG } from './food.js';
@@ -68,6 +68,23 @@ export function healthOf(items){
   return Math.round(avg / MAX_HEALTH * 100);
 }
 
+/**
+ * How close the box is to half main, a quarter fruit or veg, a quarter sweet.
+ * The plan is worked out for however many things are actually in there, so a
+ * half-packed box isn't punished twice — Tidy marks emptiness separately.
+ */
+export function mixOf(items){
+  const packed = items.filter(Boolean);
+  const plan = mixPlan(packed.length);
+  const have = Object.fromEntries(MIX.map(m =>
+    [m.id, packed.filter(it => m.groups.includes(FOOD[it.food]?.group)).length]));
+  const hit = MIX.reduce((n, m) => n + Math.min(have[m.id], plan[m.id]), 0);
+  return { plan, have, hit, total: packed.length, score: packed.length ? hit / packed.length : 0 };
+}
+
+/** The plan for a box this size, for showing what to aim at before you start. */
+export const mixGoal = (spaces) => mixPlan(spaces);
+
 export function healthLabel(h){
   if (h >= SUPER_HEALTHY) return { icon:'🌟', text:'Super healthy' };
   if (h >= HEALTHY)       return { icon:'🥗', text:'Healthy' };
@@ -126,7 +143,7 @@ function markPip(items, health, label, allergy){
   return { judge: judge('pip'), score: Math.round(health / 10), notes };
 }
 
-/** Tidy, out of ten: a full box, a bit of everything, nothing packed twice. */
+/** Tidy, out of ten: the right mix, a full box, nothing packed twice. */
 function markTidy(milbil, packed, allergy){
   const spaces = milbil.box.spaces;
   const n = packed.items.length;
@@ -135,12 +152,17 @@ function markTidy(milbil, packed, allergy){
   if (allergy){
     return { judge: judge('tidy'), score: 0, notes: [{ ok:false, text:'It came home shut. That tells me everything.' }] };
   }
+  const mix = packed.mix;
+  const mixPts = Math.round(TIDY.mix * mix.score);
   const fullPts = share(n, spaces, TIDY.full);
-  const varietyPts = share(Math.min(packed.groups, TIDY_GROUPS), TIDY_GROUPS, TIDY.variety);
   const dupePts = n && !dupes ? TIDY.nodupes : 0;
-  return { judge: judge('tidy'), score: fullPts + varietyPts + dupePts, notes: [
+  const mixNotes = MIX.map(m => ({
+    ok: mix.have[m.id] >= mix.plan[m.id],
+    text: `${m.icon} ${m.name}: ${mix.have[m.id]} of ${mix.plan[m.id]} wanted`,
+  }));
+  return { judge: judge('tidy'), score: mixPts + fullPts + dupePts, notes: [
+    ...mixNotes,
     { ok: n === spaces, text: n === spaces ? `All ${spaces} spaces used` : `${n} of ${spaces} spaces used` },
-    { ok: packed.groups >= TIDY_GROUPS, text:`${packed.groups} different food group${packed.groups === 1 ? '' : 's'}` },
     { ok: !!n && !dupes, text: dupes ? `${dupes} thing${dupes > 1 ? 's' : ''} packed twice` : 'Nothing packed twice' },
   ] };
 }
@@ -160,7 +182,8 @@ export function scoreBox(day, you){
   const items = day.items.filter(Boolean);
   const groups = new Set(items.map(it => FOOD[it.food]?.group)).size;
   const full = items.length === milbil.box.spaces;
-  const packed = { items, groups, full };
+  const mix = mixOf(day.items);
+  const packed = { items, groups, full, mix };
 
   // The one rule nobody gets marks for: a milbil who finds what they're
   // allergic to brings the box home with the lid still on.
@@ -184,7 +207,7 @@ export function scoreBox(day, you){
   if (health >= SUPER_HEALTHY) extras.push({ icon:'🌟', text:'Super healthy lunchbox', pct:BONUS.super });
   else if (health >= HEALTHY)  extras.push({ icon:'🥗', text:'Healthy lunchbox', pct:BONUS.healthy });
   if (record) extras.push({ icon:'🏆', text:'Your healthiest lunchbox yet', pct:BONUS.record });
-  if (groups >= BALANCED_GROUPS) extras.push({ icon:'🌈', text:`${groups} different food groups`, pct:BONUS.balanced });
+  if (mix.score === 1) extras.push({ icon:'🍱', text:'Exactly the right mix', pct:BONUS.mix });
   if (full) extras.push({ icon:'📦', text:'Every space filled', pct:BONUS.full });
   for (const id of you.kit || []){
     const k = KIT_BY_ID[id];
@@ -195,8 +218,9 @@ export function scoreBox(day, you){
   if (you.streak > 1) extras.push({ icon:'🤝', text:`${you.streak} days in a row`, pct:Math.min(you.streak * STREAK_TIP, STREAK_MAX) });
   // Posh food gets noticed. So does the cheap stuff.
   const brandPct = items.reduce((s, it) => s + (BRAND[it.brand]?.tip ?? 0), 0) / Math.max(1, items.length);
-  if (brandPct > 0.001) extras.push({ icon:'🌿', text:'Proper fresh food', pct:brandPct });
-  else if (brandPct < -0.001) extras.push({ icon:'🏷️', text:'All a bit cheap', pct:brandPct });
+  // Only worth a line if it's at least a whole percent either way.
+  if (brandPct >= 0.01) extras.push({ icon:'🌿', text:'Proper fresh food', pct:brandPct });
+  else if (brandPct <= -0.01) extras.push({ icon:'🏷️', text:'All a bit cheap', pct:brandPct });
 
   const bonusPct = extras.reduce((s, e) => s + e.pct, 0);
   const tip = Math.round(milbil.tip * (points / MAX_POINTS) * (1 + bonusPct));
@@ -207,7 +231,7 @@ export function scoreBox(day, you){
   const change = keepsChange ? day.money - day.spent : Math.min(0, day.money - day.spent);
   return {
     allergy, marks, points, stars, health, label, record, keepsChange,
-    groups, full, extras, bonusPct, tip,
+    groups, full, mix, extras, bonusPct, tip,
     change, coins: change + tip, items,
   };
 }

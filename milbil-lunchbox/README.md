@@ -60,10 +60,38 @@ points** at most.
 | --- | --- | --- |
 | 😋 **Munch** | Did they like it? | Every line on the note. The thing they asked for that morning is worth the most. |
 | 🩺 **Nurse Pip** | Is it good for them? | Nothing but the health score — the average health of everything in the box, out of 100. |
-| 🎀 **Tidy** | Is it a proper lunch? | 4 for filling every space, 4 for four different food groups, 2 for not packing the same thing twice. |
+| 🎀 **Tidy** | Is it a proper lunch? | 6 for getting **the mix** right, 2 for filling every space, 2 for not packing the same thing twice. |
 
 Points are the score you keep for ever, and they're what unlocks new milbils.
 They never get spent.
+
+## The mix
+
+Whoever it's for, every milbil wants a lunchbox made up of roughly:
+
+- **half** a proper 🥪 **main**
+- **a quarter** 🍎 **fruit or veg**
+- **a quarter** something 🍪 **sweet**
+
+Snacks and drinks fill none of those three, so a box of crackers and juice
+marks badly however much the milbil likes crackers. The shares rarely divide
+evenly, so the spare places go wherever they're closest to another whole item:
+
+| Spaces in the box | 🥪 Main | 🍎 Fruit or veg | 🍪 Sweet |
+| --- | --- | --- | --- |
+| 3 | 1 | 1 | 1 |
+| 4 | 2 | 1 | 1 |
+| 5 | 3 | 1 | 1 |
+| 6 | 3 | 2 | 1 |
+
+The three counters under the lunchbox, and the small ones in the bar at the
+bottom of the screen, turn green as each one is filled. Tidy marks you on how
+much of the box ended up in the right place, so a box that's 3 out of 4 right
+gets 3 quarters of her six marks.
+
+The mix and the health score pull against each other on purpose. A quarter of
+the box has to be sweet, so the trick is picking a *healthy* sweet: a yogurt pot
+is ♥♥♥♥ and a brownie is nothing at all.
 
 ## Coins
 
@@ -73,9 +101,9 @@ They never get spent.
 - **The tip** is the milbil's full tip multiplied by your marks out of 30, so
   18/30 pays 60% of it.
 - **Bonuses** go on top of the tip: a healthy box (+15%) or a super healthy one
-  (+35%), your healthiest box yet (+25%), four food groups (+20%), every space
-  filled (+10%), each bit of kit you own, each sticker, and 8% for every day in
-  a row with the same milbil, up to 80%.
+  (+35%), your healthiest box yet (+25%), exactly the right mix (+20%), every
+  space filled (+10%), each bit of kit you own, each sticker, and 8% for every
+  day in a row with the same milbil, up to 80%.
 
 Coins buy kit and stickers. That's all they're for, so spend them.
 

@@ -141,6 +141,19 @@ main { max-width: 560px; margin: 0 auto; padding: 10px; display: grid; grid-temp
   position: absolute; right: 3px; bottom: 3px; font-size: 10px; line-height: 1;
   border-radius: 8px; padding: 2px 4px; color: #fff; box-shadow: 0 1px 2px #0003;
 }
+.mix-goal { width: 100%; text-align: center; display: grid; gap: 5px; }
+.mix-goal small { font-size: 12px; color: var(--muted); }
+.chips { display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; }
+.chip {
+  display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700;
+  background: #f3eef8; border-radius: 10px; padding: 3px 8px; white-space: nowrap;
+}
+.chip i { font-style: normal; }
+.chip b { font-weight: 900; }
+.chip.ok { background: #e3f6e4; color: var(--green-d); }
+.bar-money .chips { justify-content: flex-start; margin-top: 3px; }
+.bar-money .chip { font-size: 11px; padding: 2px 6px; gap: 2px; }
+
 .box-mini {
   display: inline-grid; place-items: center; width: 30px; height: 24px; border-radius: 6px;
   background: var(--body); position: relative; flex: none;

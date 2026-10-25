@@ -7,14 +7,14 @@
 import {
   FOODS, FOOD, GROUPS, GROUP, BRANDS, BRAND, MILBILS, MILBIL, JUDGES, KIT, STICKERS,
   STICKER_SLOTS, STICKER_TIP, MAX_POINTS, MAX_HEALTH, NAMES, COLORS, HATS, NAME_MAX,
-  STREAK_TIP, STREAK_MAX, HEALTHY, SUPER_HEALTHY, TIDY_GROUPS, TAGS,
+  STREAK_TIP, STREAK_MAX, HEALTHY, SUPER_HEALTHY, MIX, TAGS,
   wishMatch, wishText, askText,
 } from './data.js';
 import {
   S, load, save, wipe, you, unlocked, friend, fmt, canPack, kitNeeded,
   market, offersFor, priceAt, today, startDay, purse, putIn, takeOut, freeSlot, packedCount,
 } from './state.js';
-import { boxHTML, boxMiniHTML, scoreBox, itemHealth, healthOf, healthLabel } from './box.js';
+import { boxHTML, boxMiniHTML, scoreBox, itemHealth, healthOf, healthLabel, mixGoal } from './box.js';
 import { drawLook } from './milbil.js';
 import { foodSVG } from './food.js';
 import { $, esc, toast, floatText, Sheet, card, sfx, setSound } from './ui.js';
@@ -33,6 +33,20 @@ const picOf = (m, cls = '') => m.art
 
 const hearts = (n) => `<span class="hearts h${n >= 4 ? 'g' : n >= 2 ? 'a' : 'r'}" title="How healthy it is: ${n} out of ${MAX_HEALTH}">${'♥'.repeat(n)}<span class="empty">${'♡'.repeat(MAX_HEALTH - n)}</span></span>`;
 const markClass = (n) => n >= 9 ? 'm10' : n >= 6 ? 'm7' : n >= 3 ? 'm4' : 'm0';
+
+/**
+ * Half a main, a quarter fruit or veg, a quarter sweet — how far along you are.
+ * The target shown is for the whole box, so you can see what you're aiming at
+ * before you've packed a thing.
+ */
+function mixChips(items, spaces, short = false){
+  const goal = mixGoal(spaces);
+  const packed = items.filter(Boolean);
+  return MIX.map(m => {
+    const have = packed.filter(it => m.groups.includes(FOOD[it.food]?.group)).length;
+    return `<span class="chip ${have >= goal[m.id] ? 'ok' : ''}">${m.icon}${short ? '' : ` ${m.name}`}<i><b>${have}</b>/${goal[m.id]}</i></span>`;
+  }).join('');
+}
 
 /** Can anything you're allowed to pack today satisfy this wish? */
 const reachable = (wish) => FOODS.some(f => canPack(f) && wishMatch(wish, { food: f.id, brand:'billys' }));
@@ -144,6 +158,10 @@ function renderPack(popSlot = -1){
       <span>${lab.icon} ${t.items.some(Boolean) ? `<b>${h}</b>/100` : 'nothing in it yet'}</span>
     </div>
     ${boxHTML(m, t.items, { stickers: S.wearing, tappable: true })}
+    <div class="mix-goal">
+      <small>Milbils like about <b>half a main</b>, <b>a quarter fruit or veg</b> and <b>a quarter sweet</b>:</small>
+      <div class="chips">${mixChips(t.items, m.box.spaces)}</div>
+    </div>
     <p class="muted" style="font-size:12.5px;text-align:center">Tap something in the box to put it back and get the money back.</p>`;
   $(`#packCard .slot[data-slot="${popSlot}"]`)?.classList.add('pop');
   $('#packCard').querySelector('.box-tray').addEventListener('click', (e) => {
@@ -293,9 +311,11 @@ function renderBar(){
   const m = MILBIL[t.milbil];
   const p = purse();
   const n = packedCount();
-  $('#barMoney').innerHTML = p.over
-    ? `<span class="over">💰 <b>−${fmt(p.over)}</b> of your own</span><br>🎒 ${n} of ${m.box.spaces} packed`
-    : `💰 <b>${fmt(p.left)}</b> left<br>🎒 ${n} of ${m.box.spaces} packed`;
+  const money = p.over
+    ? `<span class="over">💰 <b>−${fmt(p.over)}</b> of your own</span>`
+    : `💰 <b>${fmt(p.left)}</b> left`;
+  $('#barMoney').innerHTML = `${money} · 🎒 ${n}/${m.box.spaces}
+    <span class="chips">${mixChips(t.items, m.box.spaces, true)}</span>`;
   const lid = $('#lidBtn');
   lid.disabled = n === 0;
   lid.textContent = n === 0 ? '🎒 Pack something first' : '🎒 Close the lid';
@@ -580,6 +600,7 @@ function openHelp(){
       ['🛍️', 'Shop around', "Bill's, Billy's and Lebelibs all sell the same food at different prices, and the prices move every single day. Look for the BEST badge and the 🏷️ half-price deals."],
       ['🏷️', "Cheap isn't always best", "Bill's food is less healthy and milbils can tell. Lebelibs costs nearly double but it's fresher, and some milbils only want the posh stuff."],
       ['🎒', 'Pack the box', 'Tap a price to buy it and drop it in. Tap anything in the box to put it back and get the money back.'],
+      ['🍱', 'Get the mix right', 'Whoever it is for, a milbil wants about half a main, about a quarter fruit or veg and about a quarter something sweet. The little 🥪 🍎 🍪 counters under the box show how far along you are. Snacks and drinks fill no counter, so too many of them spoil the mix.'],
       ['👩‍⚖️', 'Three judges', `Munch, Nurse Pip and Tidy each mark the box out of ten, so you walk home with up to ${MAX_POINTS} points. Points are what unlock new milbils.`],
       ['🪙', 'Keep the change', "Whatever lunch money you didn't spend is yours, as long as the lunchbox earned at least one star. Plus a tip from the milbil."],
       ['🤝', 'Stay or swap', 'Pack for the same milbil again and their tip grows every day. Swap and you get a different lunchbox, different likes, and the run starts again.'],
