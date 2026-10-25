@@ -229,6 +229,7 @@ const SOUNDS = {
   nope:   () => tone(200, { dur: 0.16, type: 'sawtooth', vol: 0.05, to: 140 }),
   huff:   () => { tone(330, { dur: 0.14, type: 'triangle', vol: 0.07, to: 220 }); tone(260, { at: 0.13, dur: 0.18, type: 'triangle', vol: 0.06, to: 180 }); },
   hello:  () => tone(780, { dur: 0.09, type: 'sine', vol: 0.06, to: 980 }),
+  gasp:   () => { noise(0.14, { vol: 0.06, freq: 2200, q: 2, to: 1200 }); tone(520, { at: 0.04, dur: 0.16, type: 'triangle', vol: 0.07, to: 1040 }); },
   horn:   () => { tone(415, { dur: 0.12, type: 'square', vol: 0.05 }); tone(415, { at: 0.18, dur: 0.16, type: 'square', vol: 0.05 }); },
   jingle: () => [659, 784, 880, 784, 659, 523].forEach((f, i) => tone(f, { at: i * 0.12, dur: 0.14, type: 'triangle', vol: 0.07 })),
   engine: () => noise(0.5, { vol: 0.06, freq: 160, q: 0.8, to: 260 }),

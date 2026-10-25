@@ -72,8 +72,8 @@ is still in the truck.
 
 ## Prices and milbils
 
-Milbils think a fair price is about **double** what Billy's normally charges
-for one. Each milbil has their own limit, a bit above fair, and it wobbles a
+You pick your own prices on the 📋 menu board, 50c at a time. Milbils think a
+fair price is about **double** what Billy's normally charges for one. Each milbil has their own limit, a bit above fair, and it wobbles a
 little from day to day:
 
 | Your price compared to fair | What milbils do |
@@ -88,13 +88,20 @@ The face next to each price on the counter and the menu board is what the
 average milbil thinks. Fair prices make the most profit: higher and you lose
 too many milbils, lower and you're giving food away.
 
+**Taken aback.** When a milbil walks up and reads your board, anything on it
+that costs more than *they* would ever pay makes them gasp and jump — "😲 $5.00
+for a Beef Bowl?!" Then they either walk off, or grumble and buy something
+else. Only the fussier ones mind a price that's a little high; put something up
+to a lot more than fair and nearly everyone gasps. The day's report says how
+many were taken aback.
+
 A milbil also walks off if you've **sold out** of what they wanted, if they
 **can't afford** anything on the board, or if they wait in the queue **too
 long**.
 
 ## Lunch money
 
-There are 24 milbils, and each one turns up with a different amount of money
+There are 48 milbils, and each one turns up with a different amount of money
 every day: anything from **$1 to $10**, and **$5 on average**. Most milbils
 have the lower amounts — $2, $3 or $4 is the most common, and half of them have
 $4.50 or less — while about one in four has more, anything up to $10. Those few
@@ -117,12 +124,12 @@ Anything a milbil doesn't spend or save goes on lunch somewhere else.
 
 | Place | Who's there | They like |
 | --- | --- | --- |
-| 🏫 Milbil School | Sprouty, Giggle, Toothy, Freckles, Chomp, Doodle | Ice Blocks, Pop Cakes, Spring Rolls |
-| 🌳 Bilberry Park | Petal, Snooze, Bobbin, Puddle | Ice Blocks, Waffles, Juice |
-| 🏖️ Ningy Beach | Sunny, Scoop, Fizz, Marzi | Ice Blocks, Juice — and sometimes only something cold |
-| ⚽ Sports Field | Sporty, Tumble, Gus, Zig | Beef Bowls, Lamb Koftas, Juice |
-| ⛲ Town Square | Hattie, Royal Milbil, Cosy, Biscuit | Sushi, Veggie Bowls, Waffles |
-| 📚 The Library | Brainy, Wizzle | Sushi, Juice |
+| 🏫 Milbil School | Sprouty, Giggle, Toothy, Freckles, Chomp, Doodle, Pickle, Bubbles, Zippy, Squeak, Dot | Ice Blocks, Pop Cakes, Spring Rolls |
+| 🌳 Bilberry Park | Petal, Snooze, Bobbin, Puddle, Clover, Honey, Twig, Nibbles | Ice Blocks, Waffles, Juice |
+| 🏖️ Ningy Beach | Sunny, Scoop, Fizz, Marzi, Splash, Shelly, Coral, Surfy | Ice Blocks, Juice — and sometimes only something cold |
+| ⚽ Sports Field | Sporty, Tumble, Gus, Zig, Bounce, Dash, Kicks, Sprint | Beef Bowls, Lamb Koftas, Juice |
+| ⛲ Town Square | Hattie, Royal Milbil, Cosy, Biscuit, Penny, Tinker, Lulu, Bramble | Sushi, Veggie Bowls, Waffles |
+| 📚 The Library | Brainy, Wizzle, Quill, Hush (the library ghost), Owlet | Sushi, Juice |
 | 🛒 Billy's Supermarket | nobody eats here | — |
 
 Three days in four a milbil has lunch at their usual place; the fourth they turn

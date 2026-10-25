@@ -74,6 +74,10 @@ export function load(){
   S.hinted = (S.hinted && typeof S.hinted === 'object') ? S.hinted : {};
   if (S.today && (S.today.day !== S.day || !S.today.who)) S.today = null;
   if (S.today && !SPOT[S.today.at]) S.today.at = 'super';
+  // Milbils who moved to town after today started: they're at their usual
+  // place with today's money.
+  if (S.today?.who) for (const m of MILBILS) if (!S.today.who[m.id])
+    S.today.who[m.id] = { spot: m.spot, cash: lunchMoney(S.day, m.id), save: 0, done: null, spent: 0, got: {}, waffle: false };
   // Deals used to go on packs too.
   if (S.today?.deals) for (const id of Object.keys(S.today.deals)) if (PRODUCT[id]?.size !== 1) delete S.today.deals[id];
 }
@@ -259,7 +263,7 @@ export function closeDay(){
   }
   const earned = MILBILS.reduce((n, m) => n + lunchMoney(S.day + 1, m.id), 0);
   S.summary = {
-    day: S.day, sales: t.sales, spent: t.spent, served: t.served,
+    day: S.day, sales: t.sales, spent: t.spent, served: t.served, gasped: t.gasped || 0,
     left: { ...t.left }, sold: { ...t.sold }, money: S.money, bonus, earned,
   };
   t.phase = 'closed';

@@ -10,6 +10,8 @@
 //     the extras: they buy less.
 //   - Way under the fair price, they might get two.
 //   - If nothing on the board works for them, they walk off.
+//   - Anything on the board over their limit takes them aback when they first
+//     read it, whether or not they stay (`shock`: the dearest thing).
 
 import { PRODUCTS, PRODUCT, MILBIL, SPOT } from './data.js';
 import { S, today, isOpen, ratio, rng, money } from './state.js';
@@ -51,6 +53,10 @@ export function decide(id){
   const menu = PRODUCTS.filter(p => isOpen(p.id));
   const inStock = menu.filter(p => stock(p) > 0);
   if (!inStock.length) return { leave: 'soldout' };
+
+  // The dearest thing on the board, if it's more than they'd ever pay.
+  const dearest = inStock.reduce((a, p) => ratio(p) > ratio(a) ? p : a);
+  const shock = ratio(dearest) > limit ? dearest.id : null;
 
   let left = budget;
   const lines = [];
@@ -101,13 +107,13 @@ export function decide(id){
 
   if (!lines.length){
     const canPay = inStock.some(p => price(p) <= budget);
-    return { leave: canPay ? 'pricey' : (inStock.some(p => ratio(p) <= limit) ? 'broke' : 'pricey') };
+    return { leave: canPay ? 'pricey' : (inStock.some(p => ratio(p) <= limit) ? 'broke' : 'pricey'), shock };
   }
 
   const total = lines.reduce((n, l) => n + price(PRODUCT[l.id]) * l.qty, 0);
   const worst = Math.max(...lines.map(l => ratio(PRODUCT[l.id])));
   const mood = worst <= BARGAIN ? 'bargain' : worst <= 1 ? 'happy' : 'pricey';
-  return { lines, total, mood, less: !fair, two };
+  return { lines, total, mood, less: !fair, two, shock };
 }
 
 // ------------------------------------------------------------- the words ---
@@ -136,6 +142,13 @@ export function orderLine(o, id){
     `Only ${what} today. It's a bit pricey!`]);
   if (o.mood === 'bargain') return pick(r, [`${cap}, please! What a bargain!`, `Can I have ${what}? Great prices!`]);
   return pick(r, [`Can I have ${what}, please?`, `${cap}, please!`, `Hi! I'd like ${what}.`, `${cap}, thank you!`]);
+}
+
+/** What they say when a price takes them aback. */
+export function shockWords(pid, id){
+  const p = PRODUCT[pid];
+  const r = rng(S.day * 29 + MILBILS_INDEX[id] * 5);
+  return pick(r, [`😲 ${money(S.prices[pid])} for ${p.a}?!`, `😲 Whoa! ${money(S.prices[pid])} for ${p.a}?!`, `😲 How much for ${p.a}?! ${money(S.prices[pid])}?!`]);
 }
 
 /** Why they walked off, for the bubble over their head and the toast. */

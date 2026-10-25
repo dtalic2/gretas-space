@@ -22,7 +22,7 @@ export const CLOCK_RATE = 1;          // game minutes per real second, parked
 export const DRIVE_RATE = 5;          // game minutes per real second, driving
 export const ROAD_SPEED = 16;         // map units per game minute
 export const TURBO = 1.8;             // how much faster the turbo engine is
-export const PATIENCE = 55;           // minutes a milbil will stand in the queue
+export const PATIENCE = 70;           // minutes a milbil will stand in the queue
 export const UMBRELLA = 1.5;          // ...in the shade of an umbrella
 export const ARRIVE_SPREAD = 26;      // minutes for a spot's crowd to wander over
 export const JINGLE = 0.5;            // ...when they can hear the jingle
@@ -196,6 +196,70 @@ export const MILBILS = [
     look:{ line:'#2bb5a0', extra:'glasses' }, blurb:'Checks your prices against the supermarket\'s. Every time.' },
   { id:'wizzle', name:'Wizzle', spot:'library', likes:['veggiebowl', 'waffle'], fussy:1.3, saver:0.3,
     look:{ line:'#6a5cff', hat:'wizard' }, blurb:'Reads spell books over lunch.' },
+
+  // ---------------------------------------------------- more of Milbil Town ---
+  // They come after everyone above so the milbils who were already here keep
+  // the same luck from day to day.
+
+  // --- Milbil School ---
+  { id:'pickle', name:'Pickle', spot:'school', likes:['kofta', 'juice'], fussy:1.2, saver:0.2,
+    look:{ line:'#5fae3a', fill:'#eaffd9', eyes:'wink', mouth:'teeth' }, blurb:'Likes everything sour. Loves koftas anyway.' },
+  { id:'bubbles', name:'Bubbles', spot:'school', likes:['iceblock', 'popcake'], fussy:1.3, saver:0.3,
+    look:{ line:'#38b6ff', eyes:'big', hold:'balloon' }, blurb:'Never lets go of the balloon.' },
+  { id:'zippy', name:'Zippy', spot:'school', likes:['springrolls', 'iceblock'], fussy:1.25, saver:0.1,
+    look:{ line:'#ff4d6d', hat:'cap', eyes:'sparkle' }, blurb:'First out of class when the bell goes.' },
+  { id:'squeak', name:'Squeak', spot:'school', likes:['popcake', 'veggiebowl'], fussy:1.2, saver:0.4,
+    look:{ line:'#b98cff', eyes:'big', mouth:'open', extra:'bow' }, blurb:'Very small. Very loud.' },
+  { id:'dot', name:'Dot', spot:'school', likes:['juice', 'sushi'], fussy:1.35, saver:0.2,
+    look:{ line:'#ff9a3c', hat:'party', extra:'freckles' }, blurb:'Counts the dots on everything.' },
+
+  // --- Bilberry Park ---
+  { id:'clover', name:'Clover', spot:'park', likes:['veggiebowl', 'sushi'], fussy:1.25, saver:0.3,
+    look:{ line:'#3fae4a', hat:'sprout', eyes:'happy' }, blurb:'Looks for four-leaf clovers every lunchtime.' },
+  { id:'honey', name:'Honey', spot:'park', likes:['waffle', 'popcake'], fussy:1.3, saver:0.5,
+    look:{ line:'#f2b707', fill:'#fff6d6', eyes:'sleepy', extra:'apron' }, blurb:'Sleepy after lunch, every single day.' },
+  { id:'twig', name:'Twig', spot:'park', likes:['kofta', 'veggiebowl'], fussy:1.2, saver:0.2,
+    look:{ line:'#8a6a4a', hat:'straw', mouth:'teeth' }, blurb:'Builds little huts out of sticks.' },
+  { id:'nibbles', name:'Nibbles', spot:'park', likes:['iceblock', 'waffle'], fussy:1.35, saver:0.3,
+    look:{ line:'#ff6fa5', eyes:'happy', mouth:'open', hold:'icecream' }, blurb:'Eats ice cream one tiny bite at a time.' },
+
+  // --- Ningy Beach ---
+  { id:'splash', name:'Splash', spot:'beach', likes:['iceblock', 'juice'], fussy:1.25, saver:0.1,
+    look:{ line:'#14b8a6', hat:'cap', eyes:'big' }, blurb:'Has always just been swimming.' },
+  { id:'shelly', name:'Shelly', spot:'beach', likes:['sushi', 'iceblock'], fussy:1.3, saver:0.3,
+    look:{ line:'#ff8fab', hat:'flowers', eyes:'sparkle' }, blurb:'Has a shell for every day of the year.' },
+  { id:'coral', name:'Coral', spot:'beach', likes:['juice', 'popcake'], fussy:1.2, saver:0.2,
+    look:{ line:'#ff7a59', eyes:'happy', extra:'bow' }, blurb:'Snorkels all morning, then gets very thirsty.' },
+  { id:'surfy', name:'Surfy', spot:'beach', likes:['springrolls', 'iceblock'], fussy:1.4, saver:0.1,
+    look:{ line:'#2f80ed', fill:'#e8f4ff', eyes:'wink', mouth:'open' }, blurb:'Waits all day for the big wave.' },
+
+  // --- Sports Field ---
+  { id:'bounce', name:'Bounce', spot:'field', likes:['beefbowl', 'juice'], fussy:1.3, saver:0.2,
+    look:{ line:'#ffb000', hat:'beanie', eyes:'sparkle' }, blurb:'Can\'t stand still, even in the queue.' },
+  { id:'dash', name:'Dash', spot:'field', likes:['kofta', 'iceblock'], fussy:1.2, saver:0.2,
+    look:{ line:'#e5484d', eyes:'cross', extra:'scarf' }, blurb:'The fastest milbil on the field.' },
+  { id:'kicks', name:'Kicks', spot:'field', likes:['beefbowl', 'springrolls'], fussy:1.35, saver:0.1,
+    look:{ line:'#3fbf6a', hat:'cap', mouth:'teeth' }, blurb:'Plays football until it gets dark.' },
+  { id:'sprint', name:'Sprint', spot:'field', likes:['veggiebowl', 'juice'], fussy:1.25, saver:0.3,
+    look:{ line:'#5b6cff', eyes:'happy', badge:'star' }, blurb:'Won a gold star for running.' },
+
+  // --- Town Square ---
+  { id:'penny', name:'Penny', spot:'square', likes:['sushi', 'juice'], fussy:1.2, saver:0.5,
+    look:{ line:'#d99a00', fill:'#fff4c4', extra:'glasses' }, blurb:'Counts every coin, twice.' },
+  { id:'tinker', name:'Tinker', spot:'square', likes:['beefbowl', 'waffle'], fussy:1.35, saver:0.2,
+    look:{ line:'#9b5de5', hat:'chef', extra:'apron' }, blurb:'Fixes the town clock on Tuesdays.' },
+  { id:'lulu', name:'Lulu', spot:'square', likes:['waffle', 'iceblock'], fussy:1.3, saver:0.3,
+    look:{ line:'#ff6fae', eyes:'sleepy', extra:'bow' }, blurb:'Sings by the fountain.' },
+  { id:'bramble', name:'Bramble', spot:'square', likes:['veggiebowl', 'kofta'], fussy:1.25, saver:0.2,
+    look:{ line:'#4cbb4a', hat:'beanie', eyes:'wink', extra:'scarf' }, blurb:'Wears a beanie and a scarf, rain or shine.' },
+
+  // --- The Library ---
+  { id:'quill', name:'Quill', spot:'library', likes:['sushi', 'veggiebowl'], fussy:1.2, saver:0.3,
+    look:{ line:'#6a5cff', hat:'beanie', extra:'glasses' }, blurb:'Writes stories in the back corner.' },
+  { id:'hush', name:'Hush', spot:'library', likes:['juice', 'popcake'], fussy:1.3, saver:0.2,
+    look:{ line:'#7aa7ff', eyes:'sleepy', ghost:true }, blurb:'The library ghost. Very quiet, very friendly.' },
+  { id:'owlet', name:'Owlet', spot:'library', likes:['sushi', 'waffle'], fussy:1.35, saver:0.3,
+    look:{ line:'rainbow', eyes:'big' }, blurb:'Stays up late reading, and is wide awake at lunch.' },
 ];
 export const MILBIL = Object.fromEntries(MILBILS.map(m => [m.id, m]));
 

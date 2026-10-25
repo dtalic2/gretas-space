@@ -20,7 +20,7 @@ import {
   S, load, save, wipe, has, you, money, isOpen, openProducts, totalStock, ratio,
   today, newDay, dealOn, shopPrice, buyPack, returnPack, closeDay, nextDay,
 } from './state.js';
-import { decide, orderLine, leaveWords } from './orders.js';
+import { decide, orderLine, leaveWords, shockWords } from './orders.js';
 import { drawLook } from './milbil.js';
 import { foodSVG } from './food.js';
 import { truckSVG, stockSign } from './truck.js';
@@ -234,6 +234,9 @@ function say(el, text, ms = 0){
   clearTimeout(b._hide);
   b.innerHTML = text;
   b.hidden = !text;
+  // Near the right-hand edge, hang the bubble off the walker's right side so
+  // it stays on screen.
+  b.classList.toggle('edge', (el._x ?? 0) + 140 > geometry().W);
   b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
   if (ms) b._hide = setTimeout(() => { b.hidden = true; }, ms);
 }
@@ -483,9 +486,12 @@ function callCrowd(){
 /** A milbil walks up and reads the menu board. */
 function walkUp(id){
   const plan = decide(id);
+  const el = walkerEl(id);
+  // A price on the board they think is far too much: they gasp and jump as
+  // soon as they're close enough to read it.
+  if (plan.shock) setTimeout(() => { if (el.isConnected) takenAback(id, el, plan.shock); }, 500);
   if (plan.leave){
     // Walks up, has a look, walks off.
-    const el = walkerEl(id);
     RT.drifters.add(id);
     const { W, MW } = geometry();
     const x = Math.min(W - MW - 6, slotX(RT.queue.length, RT.queue.length + 1));
@@ -495,25 +501,37 @@ function walkUp(id){
       RT.drifters.delete(id);
       walkOff(id, leaveWords(plan.leave, id).bubble);
       sfx('huff');
-    }, 1300);
-    gone(id, plan.leave);
+    }, plan.shock ? 2300 : 1300);
+    gone(id, plan.leave, !plan.shock);
     renderStatus();
     return;
   }
   const max = PATIENCE * (has('umbrella') ? UMBRELLA : 1);
   RT.queue.push({ id, plan, patience: max, max });
-  sfx('hello');
+  if (!plan.shock) sfx('hello');
   layoutQueue();
   renderStatus();
 }
 
+function takenAback(id, el, pid){
+  const t = today();
+  t.gasped = (t.gasped || 0) + 1;
+  say(el, shockWords(pid, id), 2200);
+  // If they got to the hatch while gasping, show their order again after.
+  setTimeout(() => { if (RT.serving?.id === id && el.isConnected) say(el, orderBubble(RT.serving.plan)); }, 2300);
+  el.classList.remove('aback'); void el.offsetWidth; el.classList.add('aback');
+  setTimeout(() => el.classList.remove('aback'), 600);
+  sfx('gasp');
+  if (t.gasped === 1) toast(`😲 <b>${esc(MILBIL[id].name)}</b> was taken aback by your price for ${esc(PRODUCT[pid].plural)}! Change prices on the menu board 📋.`);
+}
+
 /** Mark someone as gone for the day, and say why. */
-function gone(id, reason){
+function gone(id, reason, tell = true){
   const t = today();
   t.who[id].done = reason;
   t.left[reason] = (t.left[reason] || 0) + 1;
   S.totals.left++;
-  toast(leaveWords(reason, id).toast);
+  if (tell) toast(leaveWords(reason, id).toast);
   save();
 }
 
@@ -539,13 +557,16 @@ function stepUp(){
   RT.serving = { id: q.id, plan, got: {} };
   RT.paid = null;
   const el = walkerEl(q.id);
-  say(el, plan.lines.map(l => `${l.qty > 1 ? `<b>${l.qty}×</b>` : ''}${foodSVG(l.id, 'mini')}`).join(''));
+  say(el, orderBubble(plan));
   sfx('pick');
   renderOrder();
   renderCounter();
   renderStatus();
 }
 
+
+/** The little picture of an order over the head of whoever's at the hatch. */
+const orderBubble = (plan) => plan.lines.map(l => `${l.qty > 1 ? `<b>${l.qty}×</b>` : ''}${foodSVG(l.id, 'mini')}`).join('');
 
 /** Tapping food on the counter hands it over. */
 function handOver(id, btn){
@@ -793,6 +814,7 @@ function showReport(sum){
     ['soldout', '🥡', 'wanted something you\'d sold out of'],
     ['slow', '⏳', 'got tired of waiting'],
   ].filter(([k]) => left[k]).map(([k, e, txt]) => `<li>${e} ${left[k]} ${txt}</li>`).join('');
+  const gasped = sum.gasped ? `<li>😲 ${sum.gasped} ${sum.gasped === 1 ? 'was' : 'were'} taken aback by your prices${sum.gasped > leftN ? ' (some stayed and bought something anyway)' : ''}</li>` : '';
   r.innerHTML = `<div class="inner">
     <h2>🌙 That's lunch!</h2>
     <p class="center muted">Day ${sum.day} at Ningy-Ningy Canteen</p>
@@ -807,7 +829,7 @@ function showReport(sum){
       <div><span>🏦 Money you have now</span><b>${money(S.money)}</b></div>
     </div>
     ${sold ? `<div class="card"><h3>What you sold</h3><ul class="sold">${sold}</ul></div>` : ''}
-    ${leftN ? `<div class="card"><h3>Milbils who walked off: ${leftN}</h3><ul class="reasons">${reasons}</ul>
+    ${leftN || gasped ? `<div class="card"><h3>Milbils who walked off: ${leftN}</h3><ul class="reasons">${reasons}${gasped}</ul>
       ${left.pricey ? '<p class="muted small">Milbils expect to pay about double what Billy\'s normally charges. Try lowering a price or two on your menu board 📋.</p>' : ''}</div>` : ''}
     <div class="card"><h3>🌙 Overnight</h3>
       <p class="small">Every milbil gets more lunch money for tomorrow — ${money(sum.earned)} between them. Anything they saved today, they still have.</p>
@@ -1023,7 +1045,8 @@ function openHelp(){
         <p>Every morning you start at Billy's Supermarket. Billy's shows the price of one of each thing. Ice blocks come in a packet of 4 (50c each, so $2 for the packet) and juice in a pack of 4, but you sell them one at a time. Spring rolls come in a 6-pack, and you sell the whole 6-pack.
         Some days Billy's has <b>deals</b> on a few things — the deal tells you how much you save on each one.</p>
         <h3>📋 2. Set your prices</h3>
-        <p>Milbils think a fair price is about <b>double</b> what Billy's normally charges for one. A Beef Bowl costs you $1.50, so milbils expect to pay about $3. An Ice Block costs you 50c, so they expect $1. A 6-pack of Spring Rolls costs you $2, so they expect $4.
+        <p>You pick your own prices on the menu board 📋. Milbils think a fair price is about <b>double</b> what Billy's normally charges for one. A Beef Bowl costs you $1.50, so milbils expect to pay about $3. An Ice Block costs you 50c, so they expect $1. A 6-pack of Spring Rolls costs you $2, so they expect $4.
+        Some milbils are taken aback 😲 when something on your board costs far more than they'd pay — they gasp, and then either walk off or buy something else.
         Charge more and you make more on each one, but some milbils will buy less, and some will walk off. Charge less and some will buy two!</p>
         <h3>🗺️ 3. Drive around Milbil Town</h3>
         <p>Lunch runs from 11:00 to 2:00. Drive to a place and the milbils having lunch there will see the truck and queue up. When everyone there has had lunch, drive somewhere else.
