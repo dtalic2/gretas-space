@@ -151,7 +151,7 @@ main { max-width: 560px; margin: 0 auto; padding: 10px; display: grid; grid-temp
   position: absolute; bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%);
   background: #fff; border-radius: 11px; padding: 3px 7px; font-size: 12px; font-weight: 800; line-height: 1.2;
   width: max-content; max-width: 150px; text-align: center; box-shadow: 0 2px 6px #0002;
-  display: flex; align-items: center; justify-content: center; gap: 2px;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px;
 }
 .bubble::after {
   content: ""; position: absolute; left: 50%; bottom: -5px; margin-left: -5px;
@@ -187,9 +187,9 @@ main { max-width: 560px; margin: 0 auto; padding: 10px; display: grid; grid-temp
   margin: 7px 0; background: #fffbe8; border: 2px dashed #f0d79a; border-radius: 13px;
   padding: 6px 10px; font-size: 15px; font-weight: 700; line-height: 1.3;
 }
-.order-row { display: flex; align-items: center; gap: 10px; }
+.order-row { display: flex; align-items: center; gap: 6px 10px; flex-wrap: wrap; }
 .order-row .muted { font-size: 12px; line-height: 1.25; }
-.wants { display: flex; flex-wrap: wrap; gap: 6px; flex: none; }
+.wants { display: flex; flex-wrap: wrap; gap: 6px; flex: 0 1 auto; min-width: 0; }
 .want {
   width: 44px; height: 44px; border-radius: 12px; background: #f3eef8; position: relative;
   display: grid; place-items: center; box-shadow: inset 0 2px 5px #0000000f;

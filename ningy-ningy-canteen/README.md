@@ -78,15 +78,18 @@ little from day to day:
 
 | Your price compared to fair | What milbils do |
 | --- | --- |
-| 🤩 three-quarters or less | Happy. Some buy two. |
-| 😀 up to fair | Buy what they want: something to eat, maybe a juice, maybe a treat. |
+| 🤩 three-quarters or less | They **spend lots**: they keep adding things to their order until they've nearly run out of money. |
+| 😀 a bit under fair | They **spend more**: often one or two extra things. |
+| 😀 fair | Buy what they want: something to eat, maybe a juice, maybe a treat. |
 | 😐 up to a fifth more | Most still buy, but they **buy less** — just the main thing, no extras. |
 | 😬 up to nearly half as much again | Lots of them **walk off**. |
 | 😡 more than that | Almost nobody buys. |
 
 The face next to each price on the counter and the menu board is what the
-average milbil thinks. Fair prices make the most profit: higher and you lose
-too many milbils, lower and you're giving food away.
+average milbil thinks. Low prices make milbils spend more money with you, but
+you make less on each thing, and you sell out sooner. At fair prices a milbil
+spends about $2.80; with everything 50c cheaper, about $3.60 on three or four
+things. Fair prices still make the most profit.
 
 **Taken aback.** When a milbil walks up and reads your board, anything on it
 that costs more than *they* would ever pay makes them gasp and jump — "😲 $5.00

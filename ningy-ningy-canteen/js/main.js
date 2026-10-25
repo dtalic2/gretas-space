@@ -951,7 +951,7 @@ function openPrices(){
     const locked = PRODUCTS.filter(p => !isOpen(p.id)).map(p =>
       `<p class="muted small">🔒 ${esc(p.plural)} — serve ${p.unlock} milbils to unlock (${S.served}/${p.unlock})</p>`).join('');
     return `<div class="note-box">Milbils think a fair price is about <b>double</b> what Billy's normally charges for one.
-      Go higher and some milbils buy less, or walk off. Go lower and some buy two!</div>${rows}${locked}`;
+      Go higher and some milbils buy less, or walk off. Go lower and they spend more — the cheaper it is, the more they buy!</div>${rows}${locked}`;
   };
   sheet.show({
     key: 'prices', icon: '📋', title: 'Your menu board',
@@ -1047,7 +1047,7 @@ function openHelp(){
         <h3>📋 2. Set your prices</h3>
         <p>You pick your own prices on the menu board 📋. Milbils think a fair price is about <b>double</b> what Billy's normally charges for one. A Beef Bowl costs you $1.50, so milbils expect to pay about $3. An Ice Block costs you 50c, so they expect $1. A 6-pack of Spring Rolls costs you $2, so they expect $4.
         Some milbils are taken aback 😲 when something on your board costs far more than they'd pay — they gasp, and then either walk off or buy something else.
-        Charge more and you make more on each one, but some milbils will buy less, and some will walk off. Charge less and some will buy two!</p>
+        Charge more and you make more on each one, but some milbils will buy less, and some will walk off. Charge less and milbils spend more: they keep adding things to their order while it's cheap and they've got the money.</p>
         <h3>🗺️ 3. Drive around Milbil Town</h3>
         <p>Lunch runs from 11:00 to 2:00. Drive to a place and the milbils having lunch there will see the truck and queue up. When everyone there has had lunch, drive somewhere else.
         The red number on the map is how many milbils there haven't eaten yet. Driving takes time!</p>

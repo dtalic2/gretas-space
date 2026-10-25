@@ -8,7 +8,9 @@
 //     `fussy` × the fair price, a little higher or lower depending on the day.
 //   - Over the fair price, they'll still buy the main thing but usually skip
 //     the extras: they buy less.
-//   - Way under the fair price, they might get two.
+//   - Under the fair price, they spend more: they keep adding things while
+//     it's cheap and they've got the money, and the cheaper it is the longer
+//     they keep going. Way under, they might get two of the first thing too.
 //   - If nothing on the board works for them, they walk off.
 //   - Anything on the board over their limit takes them aback when they first
 //     read it, whether or not they stay (`shock`: the dearest thing).
@@ -71,11 +73,11 @@ export function decide(id){
     for (const p of list){ x -= weight(p); if (x <= 0) return p; }
     return list[list.length - 1];
   };
-  let two = false;
+  let more = false;
   const add = (p) => {
     let qty = 1;
     const cheap = ratio(p) <= BARGAIN;
-    if (cheap && stock(p) >= 2 && price(p) * 2 <= left && r() < 0.4){ qty = 2; two = true; }
+    if (cheap && stock(p) >= 2 && price(p) * 2 <= left && r() < 0.4){ qty = 2; more = true; }
     lines.push({ id: p.id, qty });
     left -= price(p) * qty;
   };
@@ -105,6 +107,26 @@ export function decide(id){
     if (any.length) add(pickFrom(any));
   }
 
+  // Cheap? Then they spend more. While what they've picked is under the fair
+  // price and there's money left, they keep adding things — another of
+  // something, or something new — and the cheaper it is, the more likely they
+  // go on. At the fair price they stop where they are.
+  if (lines.length){
+    const units = lines.reduce((n, l) => n + l.qty, 0);
+    const avg = lines.reduce((n, l) => n + ratio(PRODUCT[l.id]) * l.qty, 0) / units;
+    const keepGoing = Math.min(0.9, Math.max(0, (1 - avg) * 3.2));
+    const have = (p) => lines.find(l => l.id === p.id)?.qty || 0;
+    for (let i = 0; i < 5 && r() < keepGoing; i++){
+      const can = inStock.filter(p => stock(p) > have(p) && price(p) <= left && ratio(p) <= Math.min(limit, 1));
+      if (!can.length) break;
+      const p = pickFrom(can);
+      const line = lines.find(l => l.id === p.id);
+      if (line) line.qty++; else lines.push({ id: p.id, qty: 1 });
+      left -= price(p);
+      more = true;
+    }
+  }
+
   if (!lines.length){
     const canPay = inStock.some(p => price(p) <= budget);
     return { leave: canPay ? 'pricey' : (inStock.some(p => ratio(p) <= limit) ? 'broke' : 'pricey'), shock };
@@ -113,12 +135,12 @@ export function decide(id){
   const total = lines.reduce((n, l) => n + price(PRODUCT[l.id]) * l.qty, 0);
   const worst = Math.max(...lines.map(l => ratio(PRODUCT[l.id])));
   const mood = worst <= BARGAIN ? 'bargain' : worst <= 1 ? 'happy' : 'pricey';
-  return { lines, total, mood, less: !fair, two, shock };
+  return { lines, total, mood, less: !fair, more, shock };
 }
 
 // ------------------------------------------------------------- the words ---
 
-const numWord = ['', 'one', 'two', 'three'];
+const numWord = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven'];
 
 /** "a Beef Bowl and two Juices" */
 export function orderWords(lines){
@@ -137,7 +159,7 @@ export function orderLine(o, id){
   const r = rng(S.day * 17 + MILBILS_INDEX[id] * 3);
   const what = orderWords(o.lines);
   const cap = what.charAt(0).toUpperCase() + what.slice(1);
-  if (o.two) return pick(r, [`Ooh, cheap! ${cap}, please!`, `So cheap! Can I have ${what}?`]);
+  if (o.more) return pick(r, [`Ooh, cheap! ${cap}, please!`, `So cheap! Can I have ${what}?`, `Everything's so cheap! ${cap}, please!`]);
   if (o.less) return pick(r, [`Just ${what}, please. Your prices are a bit high!`,
     `Only ${what} today. It's a bit pricey!`]);
   if (o.mood === 'bargain') return pick(r, [`${cap}, please! What a bargain!`, `Can I have ${what}? Great prices!`]);
