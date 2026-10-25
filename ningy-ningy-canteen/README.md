@@ -40,25 +40,28 @@ the menu board — but not while you're driving.
 
 ## Billy's Supermarket
 
-Every price is a multiple of 50c, so the sums stay easy.
+Every price is a multiple of 50c, so the sums stay easy. Billy's shows the
+price of **one** of each thing, so you can see straight away that milbils
+expect double. Some things only come in packs, and the pack price is shown
+underneath.
 
-| What you buy | Price | What you can sell from it | Costs you, each | Milbils expect |
-| --- | --- | --- | --- | --- |
-| Ice Block Packet | $2.00 | 4 ice blocks | 50c | $1.00 |
-| 6-Pack of Spring Rolls | $2.00 | 2 serves of 3 | $1.00 | $2.00 |
-| Lamb Kofta | $1.00 | 1 | $1.00 | $2.00 |
-| Beef Bowl | $1.50 | 1 | $1.50 | $3.00 |
-| Veggie Bowl | $1.50 | 1 | $1.50 | $3.00 |
-| Avocado Sushi | $1.00 | 1 | $1.00 | $2.00 |
-| Juice Pack | $2.00 | 4 juices | 50c | $1.00 |
-| Pop Cake 🔒 | 50c | 1 | 50c | $1.00 |
-| Portable Waffle 🔒 | $2.00 | 1 | $2.00 | $4.00 |
+| Food | Billy's price, for one | Comes in | Milbils expect |
+| --- | --- | --- | --- |
+| Ice Block | 50c | a packet of 4, $2.00 | $1.00 |
+| Spring Rolls (a serve of 3) | $1.00 | a 6-pack (2 serves), $2.00 | $2.00 |
+| Lamb Kofta | $1.00 | one at a time | $2.00 |
+| Beef Bowl | $1.50 | one at a time | $3.00 |
+| Veggie Bowl | $1.50 | one at a time | $3.00 |
+| Avocado Sushi | $1.00 | one at a time | $2.00 |
+| Juice | 50c | a pack of 4, $2.00 | $1.00 |
+| Pop Cake 🔒 | 50c | one at a time | $1.00 |
+| Portable Waffle 🔒 | $2.00 | one at a time | $4.00 |
 
-**Deals.** Most days Billy's puts one to three things on a deal, never
-everything and never Pop Cakes. A deal says how much you save on each one —
-"Save 50c on each Beef Bowl", "Save $1.00 on each Juice Pack" — rather than a
-percentage. Deals don't change what milbils expect to pay: that's always
-worked out from the normal price.
+**Deals.** Most days Billy's puts one to three things on a deal: never
+everything, and only things it sells one at a time, so the saving is the same
+on every one you buy. A deal says how much you save on each one — "Save 50c on
+each Beef Bowl" — rather than a percentage. Deals don't change what milbils
+expect to pay: that's always worked out from the normal price.
 
 **Unlocking.** Serve 10 milbils and Billy's starts selling you **Pop Cakes**
 (50c each). Serve 30 and you can get **Portable Waffles** ($2 each).

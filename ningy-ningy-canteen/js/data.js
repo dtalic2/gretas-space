@@ -33,14 +33,15 @@ export const JINGLE = 0.5;            // ...when they can hear the jingle
 // `size` is how many things you can sell out of one: a packet of ice blocks
 // has 4 in it, and a 6-pack of spring rolls makes 2 serves of 3. Milbils buy
 // one thing at a time, and expect to pay about double what that one thing
-// cost you on a normal (not a deal) day.
+// cost you on a normal (not a deal) day — so Billy's shows the price of one,
+// and the pack it comes in underneath.
 
 export const PRODUCTS = [
   { id:'iceblock', name:'Ice Block', plural:'Ice Blocks', a:'an Ice Block', kind:'treat',
-    pack:'Ice Block Packet', per:'packet', size:4, price:200, packNote:'4 ice blocks in a packet',
+    pack:'Ice Block Packet', per:'packet', size:4, price:200, inPack:'Comes in a packet of 4',
     blurb:'Like an ice cream on a stick.' },
   { id:'springrolls', name:'Spring Rolls', plural:'serves of Spring Rolls', a:'some Spring Rolls', kind:'main',
-    pack:'6-Pack of Spring Rolls', per:'6-pack', size:2, price:200, packNote:'6 spring rolls make 2 serves of 3',
+    pack:'6-Pack of Spring Rolls', per:'6-pack', size:2, price:200, inPack:'Comes in a 6-pack, which makes 2 serves',
     unit:'a serve of 3', blurb:'Crispy, and sold three at a time.' },
   { id:'kofta', name:'Lamb Kofta', plural:'Lamb Koftas', a:'a Lamb Kofta', kind:'main',
     pack:'Lamb Kofta', size:1, price:100, blurb:'On a stick, straight off the grill.' },
@@ -51,7 +52,7 @@ export const PRODUCTS = [
   { id:'sushi', name:'Avocado Sushi', plural:'Avocado Sushis', a:'an Avocado Sushi', kind:'main',
     pack:'Avocado Sushi', size:1, price:100, blurb:'Two rolls with avocado in the middle.' },
   { id:'juice', name:'Juice', plural:'Juices', a:'a Juice', kind:'drink',
-    pack:'Juice Pack', per:'pack', size:4, price:200, packNote:'4 juice boxes in a pack',
+    pack:'Juice Pack', per:'pack', size:4, price:200, inPack:'Comes in a pack of 4',
     blurb:'Orange juice with a bendy straw.' },
   { id:'popcake', name:'Pop Cake', plural:'Pop Cakes', a:'a Pop Cake', kind:'treat',
     pack:'Pop Cake', size:1, price:50, unlock:10, blurb:'A little round cake on a stick, with sprinkles.' },

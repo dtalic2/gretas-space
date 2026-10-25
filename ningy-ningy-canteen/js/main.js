@@ -14,7 +14,7 @@ import {
   PRODUCTS, PRODUCT, SPOT, PLACES, MILBILS, MILBIL, UPGRADES, UPGRADE,
   STEP, PRICE_MAX, DAY_START, DAY_LEN, CLOCK_RATE, DRIVE_RATE, ROAD_SPEED, TURBO,
   PATIENCE, UMBRELLA, ARRIVE_SPREAD, JINGLE, NAMES, NAME_MAX, COLORS, HATS, TRUCKS,
-  unitCost, faceFor,
+  unitCost, fairPrice, faceFor,
 } from './data.js';
 import {
   S, load, save, wipe, has, you, money, isOpen, openProducts, totalStock, ratio,
@@ -854,23 +854,25 @@ function openShop(){
         <div class="pack-pic">${foodSVG(p.id)}</div>
         <div class="shop-info"><b>🔒 ${esc(p.plural)}</b><small>${short(p.price)} each, once you've served ${p.unlock} milbils (${S.served}/${p.unlock}).</small>
           <div class="meter"><i style="width:${Math.min(100, S.served / p.unlock * 100)}%"></i></div></div></div>`;
+      // The big price is for one, so it's easy to see the truck charges double.
+      // Packs say what the whole pack costs underneath.
       const deal = dealOn(p.id);
       const price = shopPrice(p);
       const canBack = (t.bought[p.id] || []).length && (S.stock[p.id] || 0) >= p.size;
       const n = S.stock[p.id] || 0;
       return `<div class="shop-row ${deal ? 'deal' : ''}">
-        <div class="pack-pic">${foodSVG(p.id)}${p.size > 1 ? `<i>×${p.id === 'springrolls' ? 6 : p.size}</i>` : ''}</div>
+        <div class="pack-pic">${foodSVG(p.id)}${p.size > 1 ? `<i>×${p.size}</i>` : ''}</div>
         <div class="shop-info">
-          <b>${esc(p.pack)}</b>
-          <small>${esc(p.packNote || p.blurb)}</small>
-          ${deal ? `<span class="save">🏷️ Save ${short(deal)} on each ${esc(p.per || p.name)}!</span>` : ''}
-          <small class="have">In your truck: <b>${n}</b> ${esc(n === 1 ? p.name : p.plural)}</small>
+          <b>${esc(p.name)}${p.unit ? ` <small>(${esc(p.unit)})</small>` : ''}</b>
+          <small>${p.size > 1 ? `${esc(p.inPack)}: <b>${money(price)}</b> for the ${esc(p.per)}` : esc(p.blurb)}</small>
+          ${deal ? `<span class="save">🏷️ Save ${short(deal)} on each ${esc(p.name)}!</span>` : ''}
+          <small class="have">In your truck: <b>${n}</b></small>
         </div>
         <div class="shop-buy">
-          <span class="shop-price">${deal ? `<s>${money(p.price)}</s>` : ''}<b>${money(price)}</b></span>
+          <span class="shop-price">${deal ? `<s>${short(p.price / p.size)}</s>` : ''}<b>${short(price / p.size)}</b><small>${p.unit ? 'a serve' : 'each'}</small></span>
           <span class="buy-btns">
-            <button type="button" class="btn small" data-act="back" data-id="${p.id}" ${here && canBack ? '' : 'disabled'} aria-label="Put one back">−</button>
-            <button type="button" class="btn go small" data-act="buy" data-id="${p.id}" ${here && S.money >= price ? '' : 'disabled'}>Buy</button>
+            <button type="button" class="btn small" data-act="back" data-id="${p.id}" ${here && canBack ? '' : 'disabled'} aria-label="Put back">−</button>
+            <button type="button" class="btn go small" data-act="buy" data-id="${p.id}" ${here && S.money >= price ? '' : 'disabled'}>${p.size > 1 ? `Buy ${p.size}` : 'Buy'}</button>
           </span>
         </div>
       </div>`;
@@ -882,7 +884,7 @@ function openShop(){
   };
   sheet.show({
     key: 'shop', icon: '🛒', title: 'Billy\'s Supermarket',
-    sub: 'Food comes in packs. What\'s in the truck stays there until you sell it.',
+    sub: 'Prices are for one of each. Your truck charges about double.',
     banner: () => `<div class="sheet-money">💰 You have <b>${money(S.money)}</b>${today().spent ? ` · spent ${money(today().spent)} today` : ''}</div>`,
     render,
     onAct: (act, id, btn) => {
@@ -910,8 +912,8 @@ function openPrices(){
         ${foodSVG(p.id)}
         <div class="price-info">
           <b>${esc(p.name)}${p.unit ? ` <small>(${esc(p.unit)})</small>` : ''}</b>
-          <small>Billy's normally charges ${money(cost)} for one</small>
-          <small class="${make >= 0 ? 'pos' : 'neg'}">${make > 0 ? `You make ${money(make)} on each` : make === 0 ? 'You make nothing on these' : `You lose ${money(-make)} on each!`}</small>
+          <small>At Billy's: <b>${short(cost)}</b>${p.unit ? ' a serve' : ' each'} · fair price <b>${money(fairPrice(p))}</b> (double)</small>
+          <small class="${make >= 0 ? 'pos' : 'neg'}">${make > 0 ? `You make ${short(make)} on each` : make === 0 ? 'You make nothing on these' : `You lose ${short(-make)} on each!`}</small>
         </div>
         <div class="price-side">
           <div class="stepper">
@@ -1017,10 +1019,10 @@ function openHelp(){
     render: () => `
       <div class="help">
         <h3>🛒 1. Buy food at Billy's</h3>
-        <p>Every morning you start at Billy's Supermarket. Food comes in packs: a packet of ice blocks has 4 in it, a 6-pack of spring rolls makes 2 serves of 3, and a juice pack has 4 juices.
+        <p>Every morning you start at Billy's Supermarket. Billy's shows the price of one of each thing. Some things only come in packs: a packet of ice blocks has 4 in it (50c each, so $2 for the packet), a 6-pack of spring rolls makes 2 serves of 3, and a juice pack has 4 juices.
         Some days Billy's has <b>deals</b> on a few things — the deal tells you how much you save on each one.</p>
         <h3>📋 2. Set your prices</h3>
-        <p>Milbils think a fair price is about <b>double</b> what Billy's normally charges for one. A Beef Bowl costs you $1.50, so milbils expect to pay about $3.
+        <p>Milbils think a fair price is about <b>double</b> what Billy's normally charges for one. A Beef Bowl costs you $1.50, so milbils expect to pay about $3. An Ice Block costs you 50c, so they expect $1.
         Charge more and you make more on each one, but some milbils will buy less, and some will walk off. Charge less and some will buy two!</p>
         <h3>🗺️ 3. Drive around Milbil Town</h3>
         <p>Lunch runs from 11:00 to 2:00. Drive to a place and the milbils having lunch there will see the truck and queue up. When everyone there has had lunch, drive somewhere else.
