@@ -130,75 +130,81 @@ export const ROADS = [
 // ----------------------------------------------------------------- milbils ---
 //
 //   spot    where they usually have lunch (three days in four)
-//   money   lunch money they get every day, before what they saved yesterday
 //   likes   what they'd pick first
 //   fussy   the most they'll pay, as a fraction of the fair price
 //   saver   how often they put some money aside for tomorrow
 //
-// Their lunch money averages out at about $4.50.
+// Their lunch money is new every day: see MONEY below.
 
 export const MILBILS = [
   // --- Milbil School ---
-  { id:'sprouty', name:'Sprouty', spot:'school', money:350, likes:['veggiebowl', 'sushi'], fussy:1.25, saver:0.2,
+  { id:'sprouty', name:'Sprouty', spot:'school', likes:['veggiebowl', 'sushi'], fussy:1.25, saver:0.2,
     look:{ line:'#4cbb4a', hat:'sprout' }, blurb:'Eats anything green, and some things that aren\'t.' },
-  { id:'giggle', name:'Giggle', spot:'school', money:300, likes:['iceblock', 'popcake'], fussy:1.35, saver:0.1,
+  { id:'giggle', name:'Giggle', spot:'school', likes:['iceblock', 'popcake'], fussy:1.35, saver:0.1,
     look:{ line:'#ff6fae', eyes:'happy', mouth:'open' }, blurb:'Laughs at everything, especially pudding.' },
-  { id:'toothy', name:'Toothy', spot:'school', money:400, likes:['springrolls', 'kofta'], fussy:1.2, saver:0.2,
+  { id:'toothy', name:'Toothy', spot:'school', likes:['springrolls', 'kofta'], fussy:1.2, saver:0.2,
     look:{ line:'#7d8cff', mouth:'teeth', eyes:'cross' }, blurb:'Likes anything that goes crunch.' },
-  { id:'freckles', name:'Freckles', spot:'school', money:350, likes:['juice', 'iceblock'], fussy:1.3, saver:0.3,
+  { id:'freckles', name:'Freckles', spot:'school', likes:['juice', 'iceblock'], fussy:1.3, saver:0.3,
     look:{ line:'#ff8a5b', extra:'freckles' }, blurb:'Always thirsty after handball.' },
-  { id:'chomp', name:'Chomp', spot:'school', money:550, likes:['beefbowl', 'kofta', 'springrolls'], fussy:1.4, saver:0.1,
+  { id:'chomp', name:'Chomp', spot:'school', likes:['beefbowl', 'kofta', 'springrolls'], fussy:1.4, saver:0.1,
     art:'art/chomp.png', blurb:'The hungriest milbil at school. Will eat two lunches if you let them.' },
-  { id:'doodle', name:'Doodle', spot:'school', money:300, likes:['popcake', 'juice'], fussy:1.3, saver:0.4,
+  { id:'doodle', name:'Doodle', spot:'school', likes:['popcake', 'juice'], fussy:1.3, saver:0.4,
     look:{ line:'#14b8a6', hat:'party', eyes:'happy' }, blurb:'Draws on every napkin.' },
 
   // --- Bilberry Park ---
-  { id:'petal', name:'Petal', spot:'park', money:450, likes:['veggiebowl', 'juice'], fussy:1.3, saver:0.3,
+  { id:'petal', name:'Petal', spot:'park', likes:['veggiebowl', 'juice'], fussy:1.3, saver:0.3,
     art:'art/petal.png', blurb:'Has a picnic in the park every single day.' },
-  { id:'snooze', name:'Snooze', spot:'park', money:400, likes:['waffle', 'springrolls'], fussy:1.25, saver:0.5,
+  { id:'snooze', name:'Snooze', spot:'park', likes:['waffle', 'springrolls'], fussy:1.25, saver:0.5,
     look:{ line:'#7aa7ff', eyes:'sleepy' }, blurb:'Naps under the big tree. Saves up for waffles.' },
-  { id:'bobbin', name:'Bobbin', spot:'park', money:400, likes:['sushi', 'iceblock'], fussy:1.3, saver:0.2,
+  { id:'bobbin', name:'Bobbin', spot:'park', likes:['sushi', 'iceblock'], fussy:1.3, saver:0.2,
     look:{ line:'#b05cf0', hat:'flowers' }, blurb:'Picks flowers, then picks lunch.' },
-  { id:'puddle', name:'Puddle', spot:'park', money:350, likes:['iceblock', 'popcake'], fussy:1.2, saver:0.3,
+  { id:'puddle', name:'Puddle', spot:'park', likes:['iceblock', 'popcake'], fussy:1.2, saver:0.3,
     look:{ line:'#38b6ff', hat:'straw', eyes:'big' }, blurb:'Feeds the ducks, then wants a treat.' },
 
   // --- Ningy Beach ---
-  { id:'sunny', name:'Sunny', spot:'beach', money:500, likes:['iceblock', 'juice'], fussy:1.4, saver:0.1,
+  { id:'sunny', name:'Sunny', spot:'beach', likes:['iceblock', 'juice'], fussy:1.4, saver:0.1,
     art:'art/sunny.png', blurb:'Never leaves the beach if it can help it.' },
-  { id:'scoop', name:'Scoop', spot:'beach', money:450, likes:['iceblock', 'waffle'], fussy:1.35, saver:0.2,
+  { id:'scoop', name:'Scoop', spot:'beach', likes:['iceblock', 'waffle'], fussy:1.35, saver:0.2,
     art:'art/scoop.png', blurb:'Thinks everything is better frozen.' },
-  { id:'fizz', name:'Fizz', spot:'beach', money:400, likes:['juice', 'springrolls'], fussy:1.25, saver:0.2,
+  { id:'fizz', name:'Fizz', spot:'beach', likes:['juice', 'springrolls'], fussy:1.25, saver:0.2,
     look:{ line:'#ff9a3c', hat:'cap', mouth:'open' }, blurb:'Builds sandcastles. Gets very thirsty.' },
-  { id:'marzi', name:'Marzi', spot:'beach', money:450, likes:['iceblock', 'sushi'], fussy:1.3, saver:0.3,
+  { id:'marzi', name:'Marzi', spot:'beach', likes:['iceblock', 'sushi'], fussy:1.3, saver:0.3,
     look:{ line:'#ff6fa5', extra:'bow', eyes:'sparkle' }, blurb:'Collects shells and spends pocket money carefully.' },
 
   // --- Sports Field ---
-  { id:'sporty', name:'Sporty', spot:'field', money:550, likes:['beefbowl', 'juice'], fussy:1.3, saver:0.1,
+  { id:'sporty', name:'Sporty', spot:'field', likes:['beefbowl', 'juice'], fussy:1.3, saver:0.1,
     look:{ line:'#e05252', hat:'cap' }, blurb:'Runs ten laps, then eats a whole bowl.' },
-  { id:'tumble', name:'Tumble', spot:'field', money:500, likes:['kofta', 'beefbowl'], fussy:1.25, saver:0.1,
+  { id:'tumble', name:'Tumble', spot:'field', likes:['kofta', 'beefbowl'], fussy:1.25, saver:0.1,
     look:{ line:'#3fbf6a', hat:'beanie' }, blurb:'Falls over a lot. Gets up hungry.' },
-  { id:'gus', name:'Gus', spot:'field', money:500, likes:['beefbowl', 'springrolls'], fussy:1.35, saver:0.2,
+  { id:'gus', name:'Gus', spot:'field', likes:['beefbowl', 'springrolls'], fussy:1.35, saver:0.2,
     look:{ line:'#5b6cff', mouth:'teeth' }, blurb:'The goalie. Big hands, big lunch.' },
-  { id:'zig', name:'Zig', spot:'field', money:450, likes:['kofta', 'juice'], fussy:1.2, saver:0.2,
+  { id:'zig', name:'Zig', spot:'field', likes:['kofta', 'juice'], fussy:1.2, saver:0.2,
     look:{ line:'#e5484d', eyes:'wink' }, blurb:'Zigs when everyone else zags.' },
 
   // --- Town Square ---
-  { id:'hattie', name:'Hattie', spot:'square', money:600, likes:['sushi', 'veggiebowl'], fussy:1.4, saver:0.2,
+  { id:'hattie', name:'Hattie', spot:'square', likes:['sushi', 'veggiebowl'], fussy:1.4, saver:0.2,
     art:'art/hattie.png', blurb:'Works in the big building by the fountain.' },
-  { id:'royal', name:'Royal Milbil', spot:'square', money:750, likes:['waffle', 'sushi', 'beefbowl'], fussy:1.6, saver:0,
-    look:{ line:'#e0b000', hat:'crown', extra:'cape' }, blurb:'Doesn\'t look at prices. Doesn\'t need to.' },
-  { id:'cosy', name:'Cosy', spot:'square', money:500, likes:['veggiebowl', 'waffle'], fussy:1.3, saver:0.3,
+  { id:'royal', name:'Royal Milbil', spot:'square', likes:['waffle', 'sushi', 'beefbowl'], fussy:1.6, saver:0,
+    look:{ line:'#e0b000', hat:'crown', extra:'cape' }, blurb:'Never looks at the prices before ordering.' },
+  { id:'cosy', name:'Cosy', spot:'square', likes:['veggiebowl', 'waffle'], fussy:1.3, saver:0.3,
     look:{ line:'#3f7fe0', hat:'beanie', extra:'scarf' }, blurb:'Wears a scarf even in summer.' },
-  { id:'biscuit', name:'Biscuit', spot:'square', money:500, likes:['kofta', 'popcake'], fussy:1.25, saver:0.2,
+  { id:'biscuit', name:'Biscuit', spot:'square', likes:['kofta', 'popcake'], fussy:1.25, saver:0.2,
     look:{ line:'#f2b707', hat:'chef' }, blurb:'A cook who\'s too busy to cook their own lunch.' },
 
   // --- The Library ---
-  { id:'brainy', name:'Brainy', spot:'library', money:450, likes:['sushi', 'juice'], fussy:1.2, saver:0.4,
+  { id:'brainy', name:'Brainy', spot:'library', likes:['sushi', 'juice'], fussy:1.2, saver:0.4,
     look:{ line:'#2bb5a0', extra:'glasses' }, blurb:'Checks your prices against the supermarket\'s. Every time.' },
-  { id:'wizzle', name:'Wizzle', spot:'library', money:500, likes:['veggiebowl', 'waffle'], fussy:1.3, saver:0.3,
+  { id:'wizzle', name:'Wizzle', spot:'library', likes:['veggiebowl', 'waffle'], fussy:1.3, saver:0.3,
     look:{ line:'#6a5cff', hat:'wizard' }, blurb:'Reads spell books over lunch.' },
 ];
 export const MILBIL = Object.fromEntries(MILBILS.map(m => [m.id, m]));
+
+// Lunch money. Every morning each milbil turns up with a new amount, anything
+// from $1 to $10. Most get a little, usually $2 to $4 (a lognormal around
+// `median`, `spread` wide), but about one in four (`rich`) gets anything from
+// $5 to $10. With what some saved the day before, they turn up with about $5
+// on average, and more than half with less than that.
+export const MONEY = { min: 100, max: 1000, median: 300, spread: 0.5, rich: 0.25, richFrom: 500 };
 
 // Milbils don't walk around with more than this left over from yesterday.
 export const CARRY_MAX = 600;

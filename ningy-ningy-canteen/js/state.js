@@ -7,7 +7,7 @@
 
 import {
   PRODUCTS, PRODUCT, MILBILS, SPOT, PLACES, UPGRADE, START_MONEY, CARRY_MAX,
-  LIGHTS, JOBS, STEP, PRICE_MAX, round50, fairPrice,
+  LIGHTS, JOBS, STEP, PRICE_MAX, MONEY, round50, fairPrice,
 } from './data.js';
 
 const KEY = 'ningy-ningy-canteen-v1';
@@ -128,6 +128,24 @@ export function rng(seed){
 }
 const pickR = (r, a) => a[Math.floor(r() * a.length)];
 
+const MILBIL_NO = Object.fromEntries(MILBILS.map((m, i) => [m.id, i + 1]));
+
+/**
+ * The new money a milbil gets for a day: $1 to $10, mostly on the low side.
+ * Most get a little; some get anything from $5 to $10. A small amount that
+ * comes out under $1 or over $10 is drawn again.
+ */
+export function lunchMoney(day, id){
+  const r = rng(day * 7907 + MILBIL_NO[id] * 131 + S.salt * 11);
+  if (r() < MONEY.rich) return round50(MONEY.richFrom + r() * (MONEY.max - MONEY.richFrom));
+  for (let tries = 0; tries < 20; tries++){
+    const z = Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
+    const c = round50(MONEY.median * Math.exp(MONEY.spread * z));
+    if (c >= MONEY.min && c <= MONEY.max) return c;
+  }
+  return MONEY.median;
+}
+
 // ---------------------------------------------------------------- the day ---
 
 /**
@@ -154,7 +172,7 @@ export function newDay(){
   for (const m of MILBILS){
     const spot = r() < 0.75 ? m.spot : pickR(r, PLACES.filter(s => s.id !== m.spot)).id;
     const carry = S.town[m.id]?.carry || 0;
-    const cash = carry + Math.max(STEP, m.money + pickR(r, [-50, 0, 0, 50, 100]));
+    const cash = Math.min(MONEY.max, carry + lunchMoney(S.day, m.id));
     let save = 0;
     // Waffle lovers save up for one when they can't quite afford it.
     const wantsWaffle = m.likes.includes('waffle') && isOpen('waffle') && cash < S.prices.waffle;
@@ -239,7 +257,7 @@ export function closeDay(){
     }
     S.town[m.id] = { carry: Math.min(CARRY_MAX, Math.max(0, carry)) };
   }
-  const earned = MILBILS.reduce((n, m) => n + m.money, 0);
+  const earned = MILBILS.reduce((n, m) => n + lunchMoney(S.day + 1, m.id), 0);
   S.summary = {
     day: S.day, sales: t.sales, spent: t.spent, served: t.served,
     left: { ...t.left }, sold: { ...t.sold }, money: S.money, bonus, earned,

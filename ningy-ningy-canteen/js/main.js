@@ -1031,7 +1031,7 @@ function openHelp(){
         <h3>🥡 4. Take their order</h3>
         <p>The milbil at the hatch tells you what they want. Tap that food on the counter to hand it over. When they've got everything, they pay.</p>
         <h3>💰 Milbils and money</h3>
-        <p>Every milbil has a different amount of lunch money — about $4.50 on most days. Some keep a bit back for tomorrow 🐷, and they all get more money overnight.
+        <p>Every day each milbil turns up with a different amount of money: anything from $1 to $10, and $5 on average. Most have less than that — $2, $3 or $4 is the most common — and a few have lots. Some keep a bit back for tomorrow 🐷, and they all get more money overnight.
         Someone with $3 can't buy a $3.50 bowl, however much they'd like to.</p>
         <h3>🔓 New things to sell</h3>
         <p>Serve 10 milbils and Billy's starts selling you Pop Cakes (50c each). Serve 30 and you can get Portable Waffles ($2 each).</p>

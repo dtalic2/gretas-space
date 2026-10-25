@@ -94,18 +94,24 @@ long**.
 
 ## Lunch money
 
-There are 24 milbils, each with their own lunch money: from $3 for Giggle and
-Doodle up to $7.50 for Royal Milbil, about **$4.50** on average.
+There are 24 milbils, and each one turns up with a different amount of money
+every day: anything from **$1 to $10**, and **$5 on average**. Most milbils
+have the lower amounts — $2, $3 or $4 is the most common, and half of them have
+$4.50 or less — while about one in four has more, anything up to $10. Those few
+are what pull the average up to $5.
+
+A milbil with $1 can only buy something that costs $1 or less, however much they'd
+like a Beef Bowl.
 
 - **Saving.** Some mornings a milbil keeps a bit back for tomorrow 🐷. They tell
   you at the hatch ("Has $5.50 · keeping $1.50 for tomorrow") and won't spend
   it today. Waffle lovers save up when they can't quite afford one.
-- **Making more.** Overnight every milbil gets their lunch money again, on top
-  of whatever they saved. A few earn a bit extra too — washing the car,
-  walking the neighbour's dog — and the day's report tells you who.
+- **Making more.** Overnight every milbil gets new money for tomorrow, on top
+  of whatever they saved (but never more than $10 all together). A few earn a
+  bit extra too — washing the car, walking the neighbour's dog — and the day's
+  report tells you who.
 
-Anything a milbil doesn't spend or save goes on lunch somewhere else, so on any
-day they've got about $5 between their lunch money and their savings.
+Anything a milbil doesn't spend or save goes on lunch somewhere else.
 
 ## Milbil Town
 
