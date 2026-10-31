@@ -42,6 +42,40 @@ const mushroom = (x, y) => `<g transform="translate(${x} ${y})">
   <rect x="-1.6" y="0.2" width="3.2" height="3.4" rx="1" fill="#ead8bb"/>
   <path d="M-3 -1 Q0 -3 3 -1" stroke="#9b7b55" stroke-width=".8" fill="none"/></g>`;
 
+/** A tray of spring rolls, `s` big, with a sticker saying how many. */
+function rollTray(at, s, label){
+  const roll = (x, y) => `<g transform="translate(${x} ${y}) scale(${s})">
+    <rect x="-9.5" y="-4.6" width="19" height="9.2" rx="4.6" fill="#e9a43a"/>
+    <path d="M-4.5 -4.2 v8.4 M0.5 -4.2 v8.4" stroke="#c98424" stroke-width="1.2" opacity=".6"/>
+    <ellipse cx="8" cy="0" rx="2" ry="4" fill="#f7cf7a"/>
+    <ellipse cx="-4.5" cy="-2.3" rx="3.2" ry="1" fill="#fff" opacity=".45"/></g>`;
+  return `${SHADOW}
+    <path d="M6 41 H58 L57 44 H7Z" fill="#cfe7f3"/>
+    ${at.map(([x, y]) => roll(x, y)).join('')}
+    <path d="M6 44 H58 L54 56 H10Z" fill="#d8eef9" opacity=".8"/>
+    <circle cx="32" cy="50" r="${label.length > 1 ? 5.4 : 4.6}" fill="#ff5d6c"/>
+    <text x="32" y="52.6" font-size="${label.length > 1 ? 6.6 : 7.5}" font-weight="900" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif">${label}</text>`;
+}
+
+const LOLLY = {
+  raspberry:  ['#e8336d', '#ff8fb1'],
+  orange:     ['#ff9f1c', '#ffd08a'],
+  pineapple:  ['#ffd23f', '#fff1a8'],
+  watermelon: ['#ff5d6c', '#ffb3ba'],
+};
+
+/** A round sour sucker on a stick, `r` big, in one flavour. */
+function lolly(cx, cy, r, flavour, seeds = false){
+  const [c, light] = LOLLY[flavour] || LOLLY.raspberry;
+  const melon = flavour === 'watermelon';
+  return `<rect x="${cx - 1.5}" y="${cy}" width="3" height="${56 - cy}" rx="1.5" fill="#f1e4cf"/>
+    ${melon ? `<circle cx="${cx}" cy="${cy}" r="${r + 2}" fill="#3fae4a"/>` : ''}
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="${c}"/>
+    <path d="M${cx} ${cy} m${-r * 0.55} 0 a${r * 0.55} ${r * 0.55} 0 1 1 ${r * 0.55} ${r * 0.55}" stroke="${light}" stroke-width="${r * 0.18}" fill="none" stroke-linecap="round"/>
+    ${melon && seeds ? [[-6, -4], [5, -5], [-2, 6], [7, 4]].map(([x, y]) => `<ellipse cx="${cx + x}" cy="${cy + y}" rx="1" ry="1.6" fill="#2f2640"/>`).join('') : ''}
+    <ellipse cx="${cx - r * 0.4}" cy="${cy - r * 0.45}" rx="${r * 0.28}" ry="${r * 0.14}" fill="#fff" opacity=".6" transform="rotate(-30 ${cx - r * 0.4} ${cy - r * 0.45})"/>`;
+}
+
 const ICONS = {
   iceblock: () => `${SHADOW}
     <rect x="28.5" y="40" width="7" height="18" rx="3.5" fill="#e3b778"/>
@@ -51,19 +85,46 @@ const ICONS = {
     ${shine(24, 13, 2, 5, 0)}`,
 
   // A clear tray of six: three, then two, then one on top.
-  springrolls: () => {
-    const roll = (x, y) => `<g transform="translate(${x} ${y})">
-      <rect x="-9.5" y="-4.6" width="19" height="9.2" rx="4.6" fill="#e9a43a"/>
-      <path d="M-4.5 -4.2 v8.4 M0.5 -4.2 v8.4" stroke="#c98424" stroke-width="1.2" opacity=".6"/>
-      <ellipse cx="8" cy="0" rx="2" ry="4" fill="#f7cf7a"/>
-      <ellipse cx="-4.5" cy="-2.3" rx="3.2" ry="1" fill="#fff" opacity=".45"/></g>`;
+  springrolls: () => rollTray([[32, 26], [24.5, 34.5], [39.5, 34.5], [17, 43], [32, 43], [47, 43]], 1, '6'),
+
+  // A bigger tray of ten: four, three, two, one.
+  springrolls10: () => rollTray([[32, 19], [26, 26.5], [38, 26.5], [20, 34], [32, 34], [44, 34],
+    [14, 41.5], [26, 41.5], [38, 41.5], [50, 41.5]], 0.8, '10'),
+
+  // Lamb kofta with honey drizzled over it and dripping off.
+  honeykofta: () => `${ICONS.kofta()}
+    <path d="M17 41 q4 -6 8 -3 t8 -5 t8 -6 t7 -5" stroke="#f5b82e" stroke-width="2.6" fill="none" stroke-linecap="round" opacity=".95"/>
+    <path d="M24 39 q1 4 0 6 q-1 2 -2 0 q-1 -3 2 -6Z M37 30 q1 4 0 6 q-1 2 -2 0 q-1 -3 2 -6Z" fill="#f5b82e"/>
+    <path d="M18 40 q4 -5 7 -3" stroke="#fff3c4" stroke-width="1" fill="none" stroke-linecap="round" opacity=".8"/>`,
+
+  // Two pieces of nigiri: rice, with a slice of tuna on top.
+  tunasushi: () => {
+    const nigiri = (x, y) => `<g transform="translate(${x} ${y})">
+      <rect x="-11" y="-3" width="22" height="11" rx="5" fill="#fbf8f0"/>
+      <path d="M-12 -2 Q-11 -9 0 -9 Q11 -9 12 -2 Q0 1 -12 -2Z" fill="#e85a6a"/>
+      <path d="M-7 -6 l3 4 M-1 -7 l3 5 M5 -6 l3 4" stroke="#f7a3ad" stroke-width="1.3" stroke-linecap="round"/>
+      <ellipse cx="-5" cy="-6.5" rx="2.6" ry="1" fill="#fff" opacity=".5"/></g>`;
     return `${SHADOW}
-      <path d="M6 41 H58 L57 44 H7Z" fill="#cfe7f3"/>
-      ${roll(32, 26)}${roll(24.5, 34.5)}${roll(39.5, 34.5)}${roll(17, 43)}${roll(32, 43)}${roll(47, 43)}
-      <path d="M6 44 H58 L54 56 H10Z" fill="#d8eef9" opacity=".8"/>
-      <circle cx="32" cy="50" r="4.6" fill="#ff5d6c"/>
-      <text x="32" y="52.6" font-size="7.5" font-weight="900" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif">6</text>`;
+      <rect x="5" y="42" width="54" height="9" rx="3" fill="#d6a865"/>
+      <rect x="5" y="49" width="54" height="3" rx="1.5" fill="#b8874a"/>
+      ${nigiri(19, 35)}${nigiri(45, 35)}`;
   },
+
+  // A crinkly foil bag of chips with a drumstick on the front.
+  chickenchips: () => `${SHADOW}
+    <path d="M15 17 H49 L52 53 Q52 56 49 56 H15 Q12 56 12 53 Z" fill="#ffc531"/>
+    <path d="M15 10 l3 -3 l3 3 l3 -3 l3 3 l3 -3 l3 3 l3 -3 l3 3 l3 -3 l3 3 l3 -3 l3 3 v8 h-34z" fill="#e5484d"/>
+    <ellipse cx="32" cy="37" rx="12" ry="11" fill="#fff"/>
+    <ellipse cx="29" cy="35" rx="7" ry="5.5" fill="#c9782f" transform="rotate(-30 29 35)"/>
+    <path d="M33 39 L39 45" stroke="#f4ead8" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="40" cy="44" r="1.9" fill="#f4ead8"/><circle cx="38.6" cy="46.2" r="1.7" fill="#f4ead8"/>
+    <path d="M17 24 h30" stroke="#e5484d" stroke-width="2" opacity=".5"/>
+    ${shine(19, 30, 2.2, 6, 0)}`,
+
+  // Four sour suckers fanned out, one of each flavour.
+  sucker: () => `${SHADOW}
+    ${[['raspberry', -24], ['orange', -8], ['pineapple', 8], ['watermelon', 24]].map(([f, a]) =>
+      `<g transform="rotate(${a} 32 56)">${lolly(32, 22, 10.5, f)}</g>`).join('')}`,
 
   kofta: () => `${SHADOW}
     <path d="M9 54 L56 10" stroke="#d9b07a" stroke-width="3.2" stroke-linecap="round"/>
@@ -153,7 +214,11 @@ const ICONS = {
 };
 
 /** A 64×64 SVG of one thing you sell. */
-export function foodSVG(id, cls = 'food'){
-  const draw = ICONS[id];
-  return `<svg class="${cls}" viewBox="0 0 64 64" aria-hidden="true">${draw ? draw() : ''}</svg>`;
+/**
+ * A 64×64 SVG of one thing you sell. A Sour Sucker can be drawn as one
+ * particular flavour.
+ */
+export function foodSVG(id, cls = 'food', flavour = null){
+  const inner = id === 'sucker' && flavour ? `${SHADOW}${lolly(32, 25, 15, flavour, true)}` : ICONS[id]?.() || '';
+  return `<svg class="${cls}" viewBox="0 0 64 64" aria-hidden="true">${inner}</svg>`;
 }

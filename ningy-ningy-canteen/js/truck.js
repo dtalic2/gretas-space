@@ -28,13 +28,36 @@ export function stockSign(n){
     <text x="76.5" y="82.5" font-size="6.6" font-weight="900" text-anchor="middle" fill="#ffffffcc" ${FONT}>LEFT</text>`;
 }
 
+/** Half a watermelon, cut side towards you, sitting on its flat edge. */
+const halfMelon = (x, y, r, rot = 0) => `<g transform="translate(${x} ${y}) rotate(${rot})">
+  <path d="M${-r} 0 A${r} ${r} 0 0 1 ${r} 0Z" fill="#3fae4a"/>
+  <path d="M${-r + 2} 0 A${r - 2} ${r - 2} 0 0 1 ${r - 2} 0Z" fill="#f4fff0"/>
+  <path d="M${-r + 3.5} 0 A${r - 3.5} ${r - 3.5} 0 0 1 ${r - 3.5} 0Z" fill="#ff5d6c"/>
+  ${[[-6, -3], [-1, -6.5], [4.5, -4], [-3, -9], [7, -1.5]].map(([sx, sy]) =>
+    `<ellipse cx="${sx * r / 15}" cy="${sy * r / 15}" rx=".9" ry="1.5" fill="#2f2640"/>`).join('')}
+  <path d="M${-r} 0 H${r}" stroke="#2a8a35" stroke-width="1.2"/></g>`;
+
+/**
+ * The Super Cool Truck: a lightning dash down the side with SUPER COOL in
+ * fizzy writing on it, and half a watermelon on the roof of the cab.
+ */
+function superCool(){
+  const fizz = [[66, 99, 1.4], [72, 96.5, 1], [79, 98.5, 1.6], [104, 97, 1.2], [111, 99, 1.5], [116, 96, 1]]
+    .map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="#fff" stroke-width=".9"/>`).join('');
+  return `<path d="M6 100 H128 L136 95 L133 102 H214 V113 H140 L132 118 L135 111 H6Z" fill="#ff5d8f"/>
+    <path d="M6 100 H128 L136 95" stroke="#ffd23f" stroke-width="1.6" fill="none" stroke-linejoin="round"/>
+    <text x="92" y="110.4" font-size="9.6" font-weight="900" font-style="italic" text-anchor="middle" fill="#fff"
+      stroke="#7a2350" stroke-width="2.2" paint-order="stroke" letter-spacing=".3" ${FONT}>SUPER COOL</text>
+    ${fizz}`;
+}
+
 /**
  * The big truck. `who` is your look; it stands in the hatch.
  * `lights` strings fairy lights along the awning, `umbrella` puts a shade
- * umbrella next to the hatch, and `stock` puts the number of things left on
- * the sign by the hatch.
+ * umbrella next to the hatch, `stock` puts the number of things left on
+ * the sign by the hatch, and `supercool` makes it the Super Cool Truck.
  */
-export function truckSVG(color, who, { lights = false, umbrella = false, stock = 0 } = {}){
+export function truckSVG(color, who, { lights = false, umbrella = false, stock = 0, supercool = false } = {}){
   const dark = shade(color);
   const stripes = Array.from({ length: 6 }, (_, i) => {
     const x = 86 + i * 20, c = i % 2 ? '#ffffff' : '#ff5d6c';
@@ -63,7 +86,7 @@ export function truckSVG(color, who, { lights = false, umbrella = false, stock =
     <rect x="88" y="95" width="114" height="3" rx="1.5" fill="#00000022"/>
     ${stripes}
     ${bulbs}
-    <rect x="8" y="104" width="206" height="7" fill="#ffffff" opacity=".45"/>
+    ${supercool ? superCool() : '<rect x="8" y="104" width="206" height="7" fill="#ffffff" opacity=".45"/>'}
     <circle cx="12" cy="96" r="4.2" fill="#ffe27a"/>
     <rect x="3" y="108" width="20" height="8" rx="3" fill="#cfcfd8"/>
     <rect x="66" y="4" width="146" height="21" rx="9" fill="#fff" stroke="${dark}" stroke-width="2.4"/>
@@ -73,11 +96,12 @@ export function truckSVG(color, who, { lights = false, umbrella = false, stock =
     <g transform="translate(172 122)"><circle r="16" fill="#2b2233"/><circle r="7" fill="#cfcfd8"/><circle r="2.4" fill="#2b2233"/></g>
     <path d="M26 106 a18 18 0 0 1 36 0" fill="none" stroke="${dark}" stroke-width="3"/>
     <path d="M154 106 a18 18 0 0 1 36 0" fill="none" stroke="${dark}" stroke-width="3"/>
+    ${supercool ? halfMelon(39, 51.5, 15, -16) : ''}
   </svg>`;
 }
 
 /** The little truck on the map: inner SVG markup in a 40×28 box, facing left. */
-export function miniTruck(color){
+export function miniTruck(color, supercool = false){
   const dark = shade(color);
   return `<ellipse cx="21" cy="26.5" rx="18" ry="2" fill="#00000030"/>
     <path d="M2 22 V14 Q2 10 6 9 L11 8 V22Z" fill="${color}"/>
@@ -87,5 +111,6 @@ export function miniTruck(color){
     <path d="M15 6 h20 v3 h-20Z" fill="#ff5d6c"/>
     <rect x="12" y="0" width="25" height="4" rx="2" fill="#fff" stroke="${dark}" stroke-width=".8"/>
     <circle cx="9" cy="23" r="3.6" fill="#2b2233"/><circle cx="32" cy="23" r="3.6" fill="#2b2233"/>
-    <circle cx="9" cy="23" r="1.4" fill="#cfcfd8"/><circle cx="32" cy="23" r="1.4" fill="#cfcfd8"/>`;
+    <circle cx="9" cy="23" r="1.4" fill="#cfcfd8"/><circle cx="32" cy="23" r="1.4" fill="#cfcfd8"/>
+    ${supercool ? `<rect x="2" y="17.5" width="37" height="2.2" fill="#ff5d8f"/>${halfMelon(6.5, 9, 4.6, -15)}` : ''}`;
 }

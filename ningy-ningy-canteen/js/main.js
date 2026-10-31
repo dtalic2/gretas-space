@@ -13,14 +13,14 @@
 import {
   PRODUCTS, PRODUCT, SPOT, PLACES, MILBILS, MILBIL, UPGRADES, UPGRADE,
   STEP, PRICE_MAX, DAY_START, DAY_LEN, CLOCK_RATE, DRIVE_RATE, ROAD_SPEED, TURBO,
-  PATIENCE, UMBRELLA, ARRIVE_SPREAD, JINGLE, NAMES, NAME_MAX, COLORS, HATS, TRUCKS,
+  PATIENCE, UMBRELLA, ARRIVE_SPREAD, JINGLE, SUPER_COOL, FLAVOURS, NAMES, NAME_MAX, COLORS, HATS, TRUCKS,
   unitCost, fairPrice, faceFor,
 } from './data.js';
 import {
   S, load, save, wipe, has, you, money, isOpen, openProducts, totalStock, ratio,
   today, newDay, dealOn, shopPrice, buyPack, returnPack, closeDay, nextDay,
 } from './state.js';
-import { decide, orderLine, leaveWords, shockWords } from './orders.js';
+import { decide, orderLine, leaveWords, shockWords, chooseFlavours } from './orders.js';
 import { drawLook } from './milbil.js';
 import { foodSVG } from './food.js';
 import { truckSVG, stockSign } from './truck.js';
@@ -169,8 +169,11 @@ function renderScene(){
 }
 
 function renderTruck(){
-  $('#truckWrap').innerHTML = truckSVG(S.truck, you(), { lights: has('lights'), umbrella: has('umbrella'), stock: totalStock() });
+  $('#truckWrap').innerHTML = truckSVG(S.truck, you(), truckLook());
 }
+
+/** What's on the truck: the upgrades you've bought, and the food sign. */
+const truckLook = () => ({ lights: has('lights'), umbrella: has('umbrella'), supercool: has('supercool'), stock: totalStock() });
 
 /** Keep the sign on the truck showing how much food is left. */
 function renderSign(){
@@ -336,7 +339,9 @@ function renderOrder(){
   const w = today().who[sv.id];
   const chips = sv.plan.lines.flatMap(l => Array.from({ length: l.qty }, (_, i) => {
     const done = (sv.got[l.id] || 0) > i;
-    return `<span class="want ${done ? 'got' : ''}" title="${esc(PRODUCT[l.id].name)}">${foodSVG(l.id)}<i>${done ? '✓' : ''}</i></span>`;
+    const f = PRODUCT[l.id].flavours ? sv.flavours[i] : null;
+    const name = f ? `${FLAVOURS[f].name} ${PRODUCT[l.id].name}` : PRODUCT[l.id].name;
+    return `<span class="want ${done ? 'got' : ''}" title="${esc(name)}">${foodSVG(l.id, 'food', f)}<i>${done ? '✓' : ''}</i></span>`;
   })).join('');
   box.innerHTML = `
     <div class="order-who">
@@ -347,7 +352,7 @@ function renderOrder(){
       </div>
       <span class="order-total">Total<b>${money(sv.plan.total)}</b></span>
     </div>
-    <p class="say">“${esc(orderLine(sv.plan, sv.id))}”</p>
+    <p class="say">“${esc(orderLine(sv.plan, sv.id, sv.flavours))}”</p>
     <div class="order-row"><div class="wants">${chips}</div><span class="muted">Tap the food below to hand it over 👇</span></div>`;
 }
 
@@ -356,7 +361,9 @@ function renderOrder(){
 function renderCounter(){
   const sv = RT.serving;
   const need = (id) => sv ? (sv.plan.lines.find(l => l.id === id)?.qty || 0) - (sv.got[id] || 0) : 0;
-  const items = openProducts().map(p => {
+  // Only what's in the truck: with this many things for sale, empty tiles
+  // just pushed the food you've got off the bottom of the screen.
+  const items = openProducts().filter(p => (S.stock[p.id] || 0) > 0 || need(p.id) > 0).map(p => {
     const n = S.stock[p.id] || 0;
     const f = faceFor(ratio(p));
     return `<button type="button" class="sell ${need(p.id) > 0 ? 'need' : ''} ${n ? '' : 'empty'}" data-id="${p.id}">
@@ -480,6 +487,19 @@ function callCrowd(){
     if (w.spot !== s.id || w.done) continue;
     RT.coming.push({ id: m.id, at: t.clock + 1 + Math.random() * spread });
   }
+  // The Super Cool Truck: half as many again walk over from other places to
+  // see it. They have lunch here today instead.
+  if (has('supercool') && RT.coming.length){
+    const away = MILBILS.filter(m => !t.who[m.id].done && t.who[m.id].spot !== s.id);
+    const extra = Math.min(away.length, Math.max(1, Math.round(RT.coming.length * SUPER_COOL)));
+    for (let i = 0; i < extra; i++){
+      const m = away.splice(Math.floor(Math.random() * away.length), 1)[0];
+      t.who[m.id].spot = s.id;
+      RT.coming.push({ id: m.id, at: t.clock + 4 + Math.random() * spread * 1.3 });
+    }
+    RT.superCool = extra;
+    save();
+  } else RT.superCool = 0;
   RT.coming.sort((a, b) => a.at - b.at);
 }
 
@@ -518,7 +538,7 @@ function takenAback(id, el, pid){
   t.gasped = (t.gasped || 0) + 1;
   say(el, shockWords(pid, id), 2200);
   // If they got to the hatch while gasping, show their order again after.
-  setTimeout(() => { if (RT.serving?.id === id && el.isConnected) say(el, orderBubble(RT.serving.plan)); }, 2300);
+  setTimeout(() => { if (RT.serving?.id === id && el.isConnected) say(el, orderBubble(RT.serving.plan, RT.serving.flavours)); }, 2300);
   el.classList.remove('aback'); void el.offsetWidth; el.classList.add('aback');
   setTimeout(() => el.classList.remove('aback'), 600);
   sfx('gasp');
@@ -554,10 +574,11 @@ function stepUp(){
   const plan = decide(q.id);
   if (plan.leave){ leaveQueue(q, plan.leave); return; }
   q.plan = plan;
-  RT.serving = { id: q.id, plan, got: {} };
+  // `flavours`: which Sour Sucker flavour each one is; `gave`: the ones handed over.
+  RT.serving = { id: q.id, plan, got: {}, flavours: chooseFlavours(q.id, plan), gave: [] };
   RT.paid = null;
   const el = walkerEl(q.id);
-  say(el, orderBubble(plan));
+  say(el, orderBubble(plan, RT.serving.flavours));
   sfx('pick');
   renderOrder();
   renderCounter();
@@ -566,7 +587,9 @@ function stepUp(){
 
 
 /** The little picture of an order over the head of whoever's at the hatch. */
-const orderBubble = (plan) => plan.lines.map(l => `${l.qty > 1 ? `<b>${l.qty}×</b>` : ''}${foodSVG(l.id, 'mini')}`).join('');
+const orderBubble = (plan, flavours = []) => plan.lines.map(l => PRODUCT[l.id].flavours && flavours.length
+  ? flavours.map(f => foodSVG(l.id, 'mini', f)).join('')
+  : `${l.qty > 1 ? `<b>${l.qty}×</b>` : ''}${foodSVG(l.id, 'mini')}`).join('');
 
 /** Tapping food on the counter hands it over. */
 function handOver(id, btn){
@@ -587,6 +610,11 @@ function handOver(id, btn){
     if (el) say(el, line ? 'I only wanted one!' : 'I didn\'t order that!', 1400);
     return;
   }
+  if (p.flavours){
+    // The next flavour they asked for.
+    const f = sv.flavours[sv.gave.length];
+    if (f && S.flavours[id][f] > 0){ S.flavours[id][f]--; sv.gave.push(f); }
+  }
   S.stock[id]--;
   sv.got[id] = (sv.got[id] || 0) + 1;
   sfx('hand');
@@ -601,6 +629,7 @@ function putBack(){
   const sv = RT.serving;
   if (!sv) return;
   for (const [id, n] of Object.entries(sv.got)) S.stock[id] = (S.stock[id] || 0) + n;
+  for (const f of sv.gave) S.flavours.sucker[f]++;
   RT.serving = null;
   save();
 }
@@ -629,7 +658,7 @@ function pay(){
   }
   const words = { bargain: '🤩 Bargain!', happy: pick(['😋 Yum!', '😋 Thanks!', '😋 Yummy!']), pricey: '😕 Bit pricey…' }[sv.plan.mood];
   RT.queue.shift();
-  walkOff(sv.id, `${words}${sv.plan.lines.map(l => foodSVG(l.id, 'mini')).join('')}`);
+  walkOff(sv.id, `${words}${orderBubble(sv.plan, sv.flavours).replace(/<b>\d+×<\/b>/g, '')}`);
   RT.serving = null;
   RT.paid = { id: sv.id, total, given };
   RT.nextServe = performance.now() + 1300;
@@ -646,6 +675,9 @@ function pay(){
   checkUnlocks();
 }
 
+/** "50c each", or "$2.00 for a packet of 4". */
+const priceText = (p) => p.size > 1 ? `${money(p.price)} for a ${p.per} of ${p.size}` : `${short(p.price)} each`;
+
 /** Serving milbils unlocks new things at Billy's. */
 function checkUnlocks(){
   for (const p of PRODUCTS){
@@ -655,7 +687,7 @@ function checkUnlocks(){
     sfx('cheer');
     card(`<div class="unlock-pic">${foodSVG(p.id)}</div>
       <h2>🎉 Unlocked: ${esc(p.plural)}!</h2>
-      <p>You've served ${S.served} milbils, so Billy's Supermarket will sell you <b>${esc(p.plural)}</b> now — <b>${short(p.price)} each</b>.</p>
+      <p>You've served ${S.served} milbils, so Billy's Supermarket will sell you <b>${esc(p.plural)}</b> now — <b>${priceText(p)}</b>.</p>${p.flavours ? `<p>Flavours: ${p.flavours.map(f => FLAVOURS[f].name).join(', ')}.</p>` : ''}
       <p class="muted">${esc(p.blurb)} Buy some next time you're at Billy's, and check the price on your menu board.</p>`,
       [{ label: 'Yum!', cls: 'go' }]).then(() => { renderCounter(); renderHud(); });
   }
@@ -683,7 +715,7 @@ function renderMap(){
   const counts = {};
   for (const s of PLACES) counts[s.id] = hungryAt(s.id);
   const from = RT.mode === 'driving' ? RT.drive.from : t.at;
-  $('#mapBox').innerHTML = mapSVG({ counts, at: from, color: S.truck, selected: RT.mapPick });
+  $('#mapBox').innerHTML = mapSVG({ counts, at: from, color: S.truck, selected: RT.mapPick, supercool: has('supercool') });
   if (RT.mode === 'driving'){
     const d = RT.drive;
     const pos = along(d.r, Math.min(1, d.gone / d.mins) * d.r.len);
@@ -778,7 +810,7 @@ function arrive(){
   callCrowd();
   renderStatus();
   const n = RT.coming.length;
-  toast(n ? `🚚 Parked at ${esc(s.name)}. ${n} milbil${n === 1 ? '' : 's'} heading over!` : `🚚 Parked at ${esc(s.name)}. Nobody hungry here right now.`);
+  toast(n ? `🚚 Parked at ${esc(s.name)}. ${n} milbil${n === 1 ? '' : 's'} heading over!${RT.superCool ? ` 🍉 ${RT.superCool} came from other places to see the Super Cool Truck!` : ''}` : `🚚 Parked at ${esc(s.name)}. Nobody hungry here right now.`);
 }
 
 // ============================================================ end of day ===
@@ -875,13 +907,14 @@ function openShop(){
     const rows = PRODUCTS.map(p => {
       if (!isOpen(p.id)) return `<div class="shop-row locked">
         <div class="pack-pic">${foodSVG(p.id)}</div>
-        <div class="shop-info"><b>🔒 ${esc(p.plural)}</b><small>${short(p.price)} each, once you've served ${p.unlock} milbils (${S.served}/${p.unlock}).</small>
+        <div class="shop-info"><b>🔒 ${esc(p.plural)}</b><small>${priceText(p)}, once you've served ${p.unlock} milbils (${S.served}/${p.unlock}).</small>
           <div class="meter"><i style="width:${Math.min(100, S.served / p.unlock * 100)}%"></i></div></div></div>`;
       // The big price is for one, so it's easy to see the truck charges double.
       // Packs say what the whole pack costs underneath.
       const deal = dealOn(p.id);
       const price = shopPrice(p);
-      const canBack = (t.bought[p.id] || []).length && (S.stock[p.id] || 0) >= p.size;
+      const canBack = (t.bought[p.id] || []).length && (S.stock[p.id] || 0) >= p.size &&
+        (!p.flavours || p.flavours.every(f => S.flavours[p.id][f] > 0));
       const n = S.stock[p.id] || 0;
       return `<div class="shop-row ${deal ? 'deal' : ''}">
         <div class="pack-pic">${foodSVG(p.id)}${p.size > 1 ? `<i>×${p.size}</i>` : ''}</div>
@@ -889,7 +922,8 @@ function openShop(){
           <b>${esc(p.name)}${p.unit ? ` <small>(${esc(p.unit)})</small>` : ''}</b>
           <small>${p.size > 1 ? `${esc(p.inPack)}: <b>${money(price)}</b> for the ${esc(p.per)}` : esc(p.blurb)}</small>
           ${deal ? `<span class="save">🏷️ Save ${short(deal)} on each ${esc(p.pack)}!</span>` : ''}
-          <small class="have">In your truck: <b>${n}</b></small>
+          <small class="have">In your truck: <b>${n}</b>${p.flavours && n ? ` <span class="flav">${p.flavours.map(f =>
+            `<span title="${FLAVOURS[f].name}">${foodSVG(p.id, 'mini', f)}${S.flavours[p.id][f]}</span>`).join('')}</span>` : ''}</small>
         </div>
         <div class="shop-buy">
           <span class="shop-price">${deal ? `<s>${short(p.price / p.size)}</s>` : ''}<b>${short(price / p.size)}</b><small>each</small></span>
@@ -979,7 +1013,7 @@ function openTruck(){
         ${own ? '<span class="tick">✓</span>' : `<button type="button" class="btn gold small" data-act="buy" data-id="${u.id}" ${S.money >= u.cost ? '' : 'disabled'}>${money(u.cost)}</button>`}
       </div>`;
     }).join('');
-    return `<div class="truck-preview">${truckSVG(S.truck, you(), { lights: has('lights'), umbrella: has('umbrella'), stock: totalStock() })}</div>
+    return `<div class="truck-preview">${truckSVG(S.truck, you(), truckLook())}</div>
       <h3>Paint it</h3><div class="swatches">${paints}</div>
       <h3>Make it better</h3>${rows}`;
   };
@@ -1057,7 +1091,10 @@ function openHelp(){
         <p>Every day each milbil turns up with a different amount of money: anything from $1 to $10, and $5 on average. Most have less than that — $2, $3 or $4 is the most common — and a few have lots. Some keep a bit back for tomorrow 🐷, and they all get more money overnight.
         Someone with $3 can't buy a $3.50 bowl, however much they'd like to.</p>
         <h3>🔓 New things to sell</h3>
-        <p>Serve 10 milbils and Billy's starts selling you Pop Cakes (50c each). Serve 30 and you can get Portable Waffles ($2 each).</p>
+        <p>The more milbils you serve, the more Billy's will sell you: ${PRODUCTS.filter(p => p.unlock).sort((a, b) => a.unlock - b.unlock)
+          .map(p => `${p.plural} after ${p.unlock}`).join(', ')}.</p>
+        <h3>🍉 The Super Cool Truck</h3>
+        <p>Save up for it in the 🚚 truck menu: a super cool dash down the side, fizzy writing and half a watermelon on the roof. Milbils come 50% more — half as many again walk over from other places to see it.</p>
       </div>`,
   });
 }

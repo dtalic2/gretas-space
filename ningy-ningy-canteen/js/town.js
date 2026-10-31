@@ -119,14 +119,14 @@ function badge(s, count, here){
  * The whole map. `counts` is hungry milbils per place, `at` is where the
  * truck is parked.
  */
-export function mapSVG({ counts = {}, at, color, selected }){
+export function mapSVG({ counts = {}, at, color, selected, supercool = false }){
   const [tx, ty] = parkAt(at);
   return `<svg class="map" viewBox="0 0 ${MAP_W} ${MAP_H}" font-family="ui-rounded, 'SF Pro Rounded', 'Nunito', 'Trebuchet MS', system-ui, sans-serif">
     ${scenery()}
     ${roads()}
     ${selected && selected !== at ? `<circle class="pick-ring" cx="${SPOT[selected].at[0]}" cy="${SPOT[selected].at[1]}" r="30" fill="none" stroke="#ffc531" stroke-width="5"/>` : ''}
     ${SPOTS.map(s => badge(s, counts[s.id] || 0, s.id === at)).join('')}
-    <g id="mapTruck" transform="translate(${tx - 20} ${ty - 14})"><g class="flip">${miniTruck(color)}</g></g>
+    <g id="mapTruck" transform="translate(${tx - 20} ${ty - 14})"><g class="flip">${miniTruck(color, supercool)}</g></g>
   </svg>`;
 }
 

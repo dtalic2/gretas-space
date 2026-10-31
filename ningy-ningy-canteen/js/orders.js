@@ -15,7 +15,7 @@
 //   - Anything on the board over their limit takes them aback when they first
 //     read it, whether or not they stay (`shock`: the dearest thing).
 
-import { PRODUCTS, PRODUCT, MILBIL, SPOT } from './data.js';
+import { PRODUCTS, PRODUCT, MILBIL, SPOT, FLAVOURS } from './data.js';
 import { S, today, isOpen, ratio, rng, money } from './state.js';
 
 const BARGAIN = 0.75;
@@ -97,7 +97,8 @@ export function decide(id){
   const thirst = 0.45 + (spot.likes?.juice || 0) * 0.25 + likes('juice');
   if (isOpen('juice') && r() < thirst * go && okFor(drink, true)) add(drink);
 
-  const treats = inStock.filter(p => p.kind === 'treat' && okFor(p, true));
+  // Something sweet, or a snack like chips, on the side.
+  const treats = inStock.filter(p => (p.kind === 'treat' || p.kind === 'snack') && okFor(p, true));
   const sweet = (main ? 0.4 : 1) + treats.reduce((n, p) => n + likes(p.id), 0) + (spot.likes?.iceblock || 0) * 0.2;
   if (treats.length && r() < sweet * go) add(pickFrom(treats));
 
@@ -142,11 +143,42 @@ export function decide(id){
 
 const numWord = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven'];
 
-/** "a Beef Bowl and two Juices" */
-export function orderWords(lines){
-  const bits = lines.map(l => {
+/**
+ * Which flavour of Sour Sucker they'd like, for each one in the order. Every
+ * milbil has a favourite and asks for it if it's in the truck; otherwise
+ * they take whichever flavour is there.
+ */
+export function chooseFlavours(id, plan){
+  const out = [];
+  const r = rng(S.day * 61 + MILBILS_INDEX[id] * 7 + S.salt);
+  for (const l of plan.lines){
     const p = PRODUCT[l.id];
-    return l.qty === 1 ? p.a : `${numWord[l.qty] || l.qty} ${p.plural}`;
+    if (!p.flavours) continue;
+    const left = { ...S.flavours[p.id] };
+    const fav = p.flavours[MILBILS_INDEX[id] % p.flavours.length];
+    for (let i = 0; i < l.qty; i++){
+      const have = p.flavours.filter(f => left[f] > 0);
+      const f = left[fav] > 0 && r() < 0.75 ? fav : have[Math.floor(r() * have.length)];
+      if (!f) break;
+      left[f]--;
+      out.push(f);
+    }
+  }
+  return out;
+}
+
+const flavourA = (f) => `${FLAVOURS[f].an ? 'an' : 'a'} ${FLAVOURS[f].name}`;
+
+/** "a Beef Bowl and two Juices", "a Watermelon Sour Sucker" */
+export function orderWords(lines, flavours = []){
+  const bits = lines.flatMap(l => {
+    const p = PRODUCT[l.id];
+    if (p.flavours && flavours.length){
+      const n = {};
+      for (const f of flavours) n[f] = (n[f] || 0) + 1;
+      return Object.entries(n).map(([f, k]) => k === 1 ? `${flavourA(f)} ${p.name}` : `${numWord[k] || k} ${FLAVOURS[f].name} ${p.plural}`);
+    }
+    return [l.qty === 1 ? p.a : `${numWord[l.qty] || l.qty} ${p.plural}`];
   });
   if (bits.length <= 1) return bits.join('');
   return `${bits.slice(0, -1).join(', ')} and ${bits[bits.length - 1]}`;
@@ -155,9 +187,9 @@ export function orderWords(lines){
 const pick = (r, a) => a[Math.floor(r() * a.length)];
 
 /** What they say at the window. */
-export function orderLine(o, id){
+export function orderLine(o, id, flavours = []){
   const r = rng(S.day * 17 + MILBILS_INDEX[id] * 3);
-  const what = orderWords(o.lines);
+  const what = orderWords(o.lines, flavours);
   const cap = what.charAt(0).toUpperCase() + what.slice(1);
   if (o.more) return pick(r, [`Ooh, cheap! ${cap}, please!`, `So cheap! Can I have ${what}?`, `Everything's so cheap! ${cap}, please!`]);
   if (o.less) return pick(r, [`Just ${what}, please. Your prices are a bit high!`,

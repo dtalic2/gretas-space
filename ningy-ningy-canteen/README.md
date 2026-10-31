@@ -49,15 +49,20 @@ underneath.
 | Food | Billy's price, for one | Comes in | Milbils expect |
 | --- | --- | --- | --- |
 | Ice Block | 50c | a packet of 4, $2.00 | $1.00 |
-| Spring Rolls (6-pack) | $2.00 | one 6-pack at a time | $4.00 |
+| Sour Sucker 🔒 | 50c | a packet of 4, one of each flavour, $2.00 | $1.00 |
+| Spring Rolls ×6 | $2.00 | one 6-pack at a time | $4.00 |
+| Spring Rolls ×10 🔒 | $3.00 | one 10-pack at a time | $6.00 |
 | Lamb Kofta | $1.00 | one at a time | $2.00 |
+| Lamb Kofta with Honey 🔒 | $1.50 | one at a time | $3.00 |
 | Beef Bowl | $1.50 | one at a time | $3.00 |
 | Veggie Bowl | $1.50 | one at a time | $3.00 |
 | Avocado Sushi | $1.00 | one at a time | $2.00 |
+| Tuna Sushi 🔒 | $1.50 | one at a time | $3.00 |
 | Regular Pizza | $2.50 | one at a time | $5.00 |
 | Mushroom Pizza | $2.50 | one at a time | $5.00 |
 | XL Pizza | $3.00 | one at a time | $6.00 |
 | Juice | 50c | a pack of 4, $2.00 | $1.00 |
+| Chicken Chips 🔒 | $1.00 | one bag at a time | $2.00 |
 | Pop Cake 🔒 | 50c | one at a time | $1.00 |
 | Portable Waffle 🔒 | $2.00 | one at a time | $4.00 |
 
@@ -67,8 +72,24 @@ on every one you buy. A deal says how much you save on each one — "Save 50c on
 each Beef Bowl" — rather than a percentage. Deals don't change what milbils
 expect to pay: that's always worked out from the normal price.
 
-**Unlocking.** Serve 10 milbils and Billy's starts selling you **Pop Cakes**
-(50c each). Serve 30 and you can get **Portable Waffles** ($2 each).
+**Unlocking.** 🔒 things unlock as you serve more milbils (counting every
+milbil you've ever served):
+
+| Serve | Unlocks |
+| --- | --- |
+| 10 | Pop Cakes |
+| 15 | Chicken Chips |
+| 20 | Sour Suckers |
+| 30 | Portable Waffles |
+| 40 | Lamb Koftas with Honey |
+| 50 | Tuna Sushi |
+| 60 | Spring Rolls ×10 |
+
+**Sour Suckers** come in four flavours — raspberry, orange, pineapple and
+watermelon — and a packet has one of each. Every milbil has a favourite
+flavour and asks for it ("A Watermelon Sour Sucker, please!") if there's one in
+the truck, otherwise whichever flavour you've got. Billy's shows how many of
+each flavour are in your truck.
 
 You can put a pack back the same day for your money back, as long as all of it
 is still in the truck.
@@ -153,6 +174,7 @@ drawn by the game, the way Greta draws milbils.
 | 🎵 Canteen Jingle | $15 | Milbils hear you coming and walk over twice as fast. |
 | 🚀 Turbo Engine | $25 | Drive nearly twice as fast. |
 | 💡 Fairy Lights | $40 | Milbils will pay 15% more before a price feels too high. |
+| 🍉 Super Cool Truck | $50 | A super cool dash down the side with SUPER COOL in fizzy writing, and half a watermelon on the roof. Milbils come 50% more: wherever you park, half as many again walk over from other places to see it. |
 
 The chalkboard on the side of the truck, next to the hatch, always shows how
 much food you've got left to sell. It counts things you can hand over — an ice

@@ -23,6 +23,7 @@ const fresh = () => ({
   money: START_MONEY,
   day: 1,
   stock: {},              // product id -> how many you can sell
+  flavours: {},           // ...and for Sour Suckers, how many of each flavour
   prices: Object.fromEntries(PRODUCTS.map(p => [p.id, fairPrice(p)])),
   unlocked: [],           // locked products you've been told about
   upgrades: [],
@@ -61,6 +62,17 @@ export function load(){
   const stock = {};
   for (const p of PRODUCTS) stock[p.id] = cents(S.stock?.[p.id]);
   S.stock = stock;
+  // Flavours always add up to the stock. If they don't (an old save), share
+  // the stock out between the flavours as evenly as it goes.
+  const flavours = {};
+  for (const p of PRODUCTS.filter(p => p.flavours)){
+    const had = S.flavours?.[p.id] || {};
+    const f = Object.fromEntries(p.flavours.map(k => [k, cents(had[k])]));
+    if (Object.values(f).reduce((a, b) => a + b, 0) !== stock[p.id])
+      p.flavours.forEach((k, i) => { f[k] = Math.floor(stock[p.id] / p.flavours.length) + (i < stock[p.id] % p.flavours.length ? 1 : 0); });
+    flavours[p.id] = f;
+  }
+  S.flavours = flavours;
   const prices = fresh().prices;
   for (const p of PRODUCTS){
     const v = round50(Number(S.prices?.[p.id]) || 0);
@@ -216,6 +228,7 @@ export function buyPack(id){
   const t = today();
   S.money -= cost;
   S.stock[id] = (S.stock[id] || 0) + p.size;
+  if (p.flavours) for (const f of p.flavours) S.flavours[id][f]++;    // one of each
   t.spent += cost;
   t.bought[id] = [...(t.bought[id] || []), cost];
   S.totals.spent += cost;
@@ -229,9 +242,11 @@ export function returnPack(id){
   const t = today();
   const list = t.bought[id] || [];
   if (!list.length || (S.stock[id] || 0) < p.size) return false;
+  if (p.flavours && p.flavours.some(f => !S.flavours[id][f])) return false;    // need one of each back
   const cost = list.pop();
   S.money += cost;
   S.stock[id] -= p.size;
+  if (p.flavours) for (const f of p.flavours) S.flavours[id][f]--;
   t.spent -= cost;
   S.totals.spent -= cost;
   save();
