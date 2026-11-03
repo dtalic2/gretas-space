@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="MilMATHS">
+  <rect width="120" height="120" rx="26" fill="#2f80ed"/>
+  <rect x="34" y="22" width="52" height="70" rx="6" fill="#fffdf8" stroke="#2b2233" stroke-width="3.4"/>
+  <path d="M34 57 H86" stroke="#2b2233" stroke-width="3"/>
+  <circle cx="47" cy="40" r="4" fill="#2b2233"/><circle cx="73" cy="40" r="4" fill="#2b2233"/>
+  <path d="M50 48 Q60 55 70 48" stroke="#2b2233" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <g stroke="#2b2233" stroke-width="3.4" stroke-linecap="round" fill="none">
+    <path d="M44 68 L52 76 M52 68 L44 76"/>
+    <path d="M62 72 H78 M70 64 V80"/>
+  </g>
+  <g stroke="#ffc531" stroke-width="4.5" stroke-linecap="round">
+    <path d="M22 44 L12 34"/><path d="M98 44 L108 34"/>
+  </g>
+  <path d="M46 92 L44 108 M74 92 L76 108" stroke="#fffdf8" stroke-width="4" stroke-linecap="round"/>
+</svg>

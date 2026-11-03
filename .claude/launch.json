@@ -81,6 +81,15 @@
         "8133"
       ],
       "port": 8133
+    },
+    {
+      "name": "milmaths",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "milmaths/serve.py",
+        "8134"
+      ],
+      "port": 8134
     }
   ]
 }
