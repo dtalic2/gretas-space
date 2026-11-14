@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#dbe7ff">
+  <title>MilMATHS</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-theme="day">
+  <header class="hud">
+    <button type="button" id="meBtn" class="me" aria-label="You and your progress">
+      <span class="me-pic" id="meAvatar"></span>
+      <span class="me-info"><b id="meName">You</b><small id="meRank">Counter</small></span>
+    </button>
+    <div class="hud-right">
+      <button type="button" class="pill xp" id="xpPill" title="XP to spend">✨<b id="xpNum">0</b></button>
+      <button type="button" class="pill clock" id="clockPill" title="Time left today">⏱<b id="clockNum">–</b></button>
+    </div>
+  </header>
+
+  <nav class="tools">
+    <button type="button" class="round" id="dayBtn" title="Today">📅</button>
+    <button type="button" class="round" id="helpBtn" title="How MilMATHS works">❓</button>
+    <button type="button" class="round" id="setBtn" title="Settings">⚙️</button>
+  </nav>
+
+  <main id="view"></main>
+
+  <nav class="tabbar" id="tabbar" role="tablist">
+    <button type="button" class="tab" data-tab="home" role="tab"><i>🏠</i><span>Home</span></button>
+    <button type="button" class="tab" data-tab="library" role="tab"><i>📚</i><span>Library</span><em id="libBadge"></em></button>
+    <button type="button" class="tab" data-tab="milbils" role="tab"><i>👾</i><span>Milbils</span><em id="milBadge"></em></button>
+  </nav>
+
+  <div id="lesson" class="screen plain" hidden></div>
+  <div id="reader" class="screen plain" hidden></div>
+  <div id="result" class="screen" hidden></div>
+
+  <div id="sheet" class="sheet" hidden></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <div id="welcome" class="screen welcome" hidden>
+    <div class="welcome-card">
+      <h1>Mil<span>MATHS</span></h1>
+      <div class="welcome-milbil" id="welcomeMilbil"></div>
+      <p class="lead">Four stages. Forty lessons. Four tests. One milbil who sits with you the whole way.</p>
+      <p>Each stage teaches a harder piece of the <b>Australian Curriculum</b> than the one
+        before — place value, then times tables and fractions, then decimals and measuring,
+        then algebra. Every question you answer earns <b>XP</b>, and XP buys milbils in the shop
+        or parts to build one of your own. Finish a lesson and the next one opens; pass the
+        stage test and the next stage does.</p>
+      <label class="name-row">
+        <span>What shall we call you?</span>
+        <span class="name-input">
+          <input id="nameInput" maxlength="14" autocomplete="off" spellcheck="false" placeholder="Your name">
+          <button type="button" id="nameDice" aria-label="Pick a name for me">🎲</button>
+        </span>
+      </label>
+      <label class="name-row">
+        <span>Where do you live? <small>(for the public holidays)</small></span>
+        <span class="sel"><select id="stateInput"></select></span>
+      </label>
+      <button type="button" id="startBtn" class="btn go big">Start Stage 1 →</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

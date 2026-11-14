@@ -1,0 +1,15 @@
+{
+  "name": "MilMATHS",
+  "short_name": "MilMATHS",
+  "description": "Four stages of Australian Curriculum maths, forty lessons, sixteen books and a shop full of milbils to spend your XP on.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#eef4ff",
+  "theme_color": "#dbe7ff",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
