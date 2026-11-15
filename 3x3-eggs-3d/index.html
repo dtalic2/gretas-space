@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#9fd9ff">
+<title>Egg Heist 3D</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+<div id="flash"></div>
+<div id="vignette"></div>
+
+<!-- ============ LOADING ============ -->
+<div id="boot">
+  <div class="boot-inner">
+    <div class="boot-mark">🥚</div>
+    <div class="boot-title">Egg Heist</div>
+    <div class="boot-sub">steal it · run home · hatch it</div>
+    <div class="boot-bar"><i id="bootBar"></i></div>
+    <div class="boot-msg" id="bootMsg">Waking up…</div>
+  </div>
+</div>
+
+<!-- ============ HUD ============ -->
+<div id="hud" class="hidden">
+
+  <div class="hud-top">
+    <div class="hud-group">
+      <div class="chip coin"><span class="ico">🪙</span><b id="coins">0</b></div>
+      <div class="chip eggs"><span class="ico">🥚</span><b id="eggs">0/1</b></div>
+      <div class="chip dex"><span class="ico">🐣</span><b id="dex">0</b></div>
+    </div>
+    <div class="hud-group right">
+      <div class="chip place" id="placeChip">Meadow Hollow</div>
+      <button class="chip btn" id="btnSound" title="Sound (M)">🔊</button>
+      <button class="chip btn" id="btnPause" title="Pause (Esc)">⏸</button>
+    </div>
+  </div>
+
+  <!-- how loud you are being, and how much sprint is left -->
+  <div class="meters">
+    <div class="meter noise"><span>👂</span><div class="track"><i id="noiseBar"></i></div></div>
+    <div class="meter stam"><span>⚡</span><div class="track"><i id="stamBar"></i></div></div>
+  </div>
+
+  <div class="banner hidden" id="banner"></div>
+  <div class="prompt hidden" id="prompt"></div>
+
+  <div class="toasts" id="toasts"></div>
+  <div class="pops" id="pops"></div>
+
+  <!-- touch controls, shown only on a touch device -->
+  <div class="touch hidden" id="touch">
+    <div class="stick" id="stick"><i id="stickKnob"></i></div>
+    <div class="buttons">
+      <button class="tbtn act" id="btnAct">E</button>
+      <button class="tbtn jump" id="btnJump">⤒</button>
+      <button class="tbtn sneak" id="btnSneak">🤫</button>
+      <button class="tbtn run" id="btnRun">💨</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ START ============ -->
+<div id="start" class="overlay hidden">
+  <div class="card wide">
+    <div class="title-row">
+      <div class="big-mark">🥚</div>
+      <div>
+        <h1>Egg Heist</h1>
+        <p class="sub">Creep up on a sleeping giant. Take one egg. Get home.</p>
+      </div>
+    </div>
+
+    <div class="banner-stats">
+      <div><small>🪙 Coins</small><b id="startCoins">0</b></div>
+      <div><small>🐣 Animals</small><b id="startDex">0</b></div>
+      <div><small>📈 Per minute</small><b id="startIncome">0</b></div>
+    </div>
+
+    <h2>Who are you today?</h2>
+    <div class="profile-grid" id="profileGrid"></div>
+
+    <h2>Where to?</h2>
+    <div class="biome-row" id="biomeRow"></div>
+
+    <h2>Which tables?</h2>
+    <div class="table-grid" id="tableGrid"></div>
+
+    <button class="big-btn" id="btnPlay">Start the raid</button>
+    <div class="row-btns">
+      <button class="ghost-btn" id="btnDex">🐣 Collection</button>
+      <button class="ghost-btn" id="btnShop">🛒 Shop</button>
+      <button class="ghost-btn" id="btnHelp">? How to play</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ HATCHING ============ -->
+<div id="hatch" class="overlay hidden">
+  <div class="card narrow">
+    <div class="egg-stage"><div class="egg" id="hatchEgg">🥚</div></div>
+    <p class="sub" id="hatchSub">Answer to crack it open</p>
+    <div class="q-big" id="qText">7 × 8</div>
+    <div class="q-entry" id="qEntry"><span id="qTyped"></span><i class="caret"></i></div>
+    <div class="pad" id="pad"></div>
+    <div class="q-note" id="qNote"></div>
+  </div>
+</div>
+
+<!-- ============ REVEAL ============ -->
+<div id="reveal" class="overlay hidden">
+  <div class="card narrow center">
+    <div class="rarity-flag" id="revealRarity">Common</div>
+    <canvas id="revealArt" width="220" height="220"></canvas>
+    <h1 id="revealName">Meadow Chick</h1>
+    <p class="sub" id="revealNote">Added to your pen.</p>
+    <button class="big-btn" id="btnRevealOk">Nice</button>
+  </div>
+</div>
+
+<!-- ============ COLLECTION ============ -->
+<div id="dexScreen" class="overlay hidden">
+  <div class="card wide">
+    <button class="x" id="dexClose">✕</button>
+    <h1>Collection</h1>
+    <p class="sub" id="dexSub">0 of 56 found</p>
+    <div class="dex-grid" id="dexGrid"></div>
+  </div>
+</div>
+
+<!-- ============ SHOP ============ -->
+<div id="shopScreen" class="overlay hidden">
+  <div class="card wide">
+    <button class="x" id="shopClose">✕</button>
+    <h1>Shop</h1>
+    <p class="sub">Every purchase costs one times-tables question. <b id="shopCoins">0 🪙</b></p>
+    <h2>Kit</h2>
+    <div class="shop-list" id="upgradeList"></div>
+    <h2>New ground</h2>
+    <div class="shop-list" id="biomeList"></div>
+  </div>
+</div>
+
+<!-- ============ HELP ============ -->
+<div id="help" class="overlay hidden">
+  <div class="card">
+    <button class="x" id="helpClose">✕</button>
+    <h1>How to play</h1>
+    <ol class="help">
+      <li>Every nest has a <b>giant asleep beside it</b>. Walk over and press <b>E</b> to take an egg.</li>
+      <li>The giant is listening. The faster you move the more noise you make — <b>crouch</b> to creep, and stand near a tree or rock to muffle it. The ring over its head is how close it is to waking.</li>
+      <li>The moment you lift an egg, <b>it wakes up and chases you</b>. Run.</li>
+      <li>Your <b>pen</b> is the fenced ring in the middle. Giants stop at the gate. Get inside and you are safe.</li>
+      <li>Caught outside? You only drop the egg. Nothing else is lost, so it is always worth a try.</li>
+      <li>Stand on the <b>stump</b> in your pen and press <b>E</b> to hatch. Answer the question and the egg cracks open.</li>
+      <li>Your animals live in the pen and <b>earn coins every minute</b>. Spend coins on boots, quiet socks, a bigger basket, and new places to raid.</li>
+    </ol>
+    <h2>Controls</h2>
+    <div class="keys">
+      <div><b>W A S D</b> move</div>
+      <div><b>Shift</b> sprint</div>
+      <div><b>Ctrl / C</b> creep</div>
+      <div><b>Space</b> jump</div>
+      <div><b>E</b> steal &amp; hatch</div>
+      <div><b>Drag</b> look around</div>
+    </div>
+    <p class="foot">On a phone: the stick on the left, the buttons on the right, and drag anywhere else to look.</p>
+  </div>
+</div>
+
+<!-- ============ PAUSED ============ -->
+<div id="paused" class="overlay hidden">
+  <div class="card narrow">
+    <h1>Paused</h1>
+    <div class="stats" id="pauseStats"></div>
+    <button class="big-btn" id="btnResume">Back to it</button>
+    <button class="ghost-btn wide" id="btnQuit">Leave the raid</button>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

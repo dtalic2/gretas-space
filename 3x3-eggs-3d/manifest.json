@@ -1,0 +1,15 @@
+{
+  "name": "Egg Heist 3D",
+  "short_name": "Egg Heist",
+  "description": "Creep up on a sleeping giant, steal an egg, run home, and answer a times-tables question to hatch it.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#9fd9ff",
+  "theme_color": "#9fd9ff",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

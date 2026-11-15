@@ -99,6 +99,15 @@
         "8135"
       ],
       "port": 8135
+    },
+    {
+      "name": "egg-heist",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "3x3-eggs-3d/serve.py",
+        "8136"
+      ],
+      "port": 8136
     }
   ]
 }
