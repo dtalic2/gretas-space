@@ -34,12 +34,14 @@ You start at Stage 1, lesson 1, and nothing else in the game is reachable.
 | 📐 | **3 · Decimals, Measuring and Shape** | Year 5 · Number, Measurement & Space | Decimals, percentages, metric units, perimeter and area, angles, time |
 | 🧮 | **4 · Algebra, Integers and Chance** | Year 6–7 · Algebra, Number & Probability | Order of operations, negative numbers, powers, algebra, equations, ratio, probability, averages |
 
-**40 lessons and 4 tests — 348 questions.** Every lesson names the curriculum
+**40 lessons and 4 tests — 345 questions.** Every lesson names the curriculum
 code it comes from, so a grown-up can see exactly where it sits.
 
 ## One lesson at a time
 
-- Each lesson has between **4 and 10 questions**.
+- Each lesson has between **4 and 10 questions**. Stage 1 is pitched gently on
+  purpose — it is where a new player meets the three-wrong rule for the first
+  time, so its numbers stay small and its check-up is only eight questions.
 - The lesson you are on is the green one. Everything below it is locked.
 - Every question gives you **two goes**. Get it wrong twice and MilMATHS shows
   you the answer and explains it, which still earns a little.
@@ -243,7 +245,7 @@ milmaths/
 ├── art/                 Greta's drawings: Chomp, Petal, Sunny, Hattie, Scoop
 ├── css/style.css        three themes out of one set of variables
 └── js/
-    ├── curriculum.js    4 stages, 40 lessons, 4 tests, 348 questions
+    ├── curriculum.js    4 stages, 40 lessons, 4 tests, 345 questions
     ├── books.js         the 16 comics, their cast and their pictures
     ├── shop.js          18 milbils, 39 workshop parts, 12 features, 8 ranks
     ├── clock.js         holidays, recommendations and the countdown
@@ -259,9 +261,9 @@ MilMATHS again** wipes it, keeping only your name and your state.
 
 ### Checking the maths
 
-The question bank is plain data, so it can be checked by machine. 113 of the 348
+The question bank is plain data, so it can be checked by machine. 111 of the 345
 questions are bare arithmetic, and those are re-computed from the question text
-and compared with the stored answer; the structure of all 348 is checked at the
+and compared with the stored answer; the structure of all 345 is checked at the
 same time — choices in range, no duplicate options, 4–10 questions a lesson and
 10–20 a test, every question explained. The comics are checked the same way:
 every character named in a panel exists, every picture referenced is drawn, and
