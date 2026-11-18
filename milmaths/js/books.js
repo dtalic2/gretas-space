@@ -181,13 +181,15 @@ Object.assign(ART, {
      ${label(56 + i * 52, 34, '+3', 11)}`).join('')}
   <text x="160" y="118" font-size="12" fill="${MUTE}" text-anchor="middle">counting by 3s is the same hop, over and over</text>`, 320, 126),
 
+  // Shallow trapezoid pans, so the labels sit inside them with room to spare.
   balance: () => box(`
-  <path d="M160 96 V40 M120 40 H200" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>
-  <path d="M140 96 H180" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>
-  ${[120, 200].map(x => `<path d="M${x} 40 L${x - 26} 66 H${x + 26} Z" fill="var(--tint)" stroke="${INK}" stroke-width="2.2"/>`).join('')}
-  <text x="120" y="60" font-size="15" fill="${INK}" text-anchor="middle" font-weight="900">x + 7</text>
-  <text x="200" y="60" font-size="15" fill="${INK}" text-anchor="middle" font-weight="900">12</text>
-  <text x="160" y="116" font-size="12" fill="${MUTE}" text-anchor="middle">take 7 off BOTH sides and it still balances</text>`, 320, 124),
+  <path d="M160 100 V34 M104 34 H216" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>
+  <path d="M136 100 H184" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>
+  ${[104, 216].map(x => `<path d="M${x} 34 V44" stroke="${INK}" stroke-width="2"/>
+     <path d="M${x - 38} 44 H${x + 38} L${x + 28} 72 H${x - 28} Z" fill="var(--tint)" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>`).join('')}
+  <text x="104" y="64" font-size="17" fill="${INK}" text-anchor="middle" font-weight="900">x + 7</text>
+  <text x="216" y="64" font-size="17" fill="${INK}" text-anchor="middle" font-weight="900">12</text>
+  <text x="160" y="118" font-size="12" fill="${MUTE}" text-anchor="middle">take 7 off BOTH sides and it still balances</text>`, 320, 126),
 });
 
 // ================================================================== comics ===

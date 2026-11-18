@@ -116,8 +116,8 @@ chalk on the Blackboard theme without a second copy of anything.
 | **+150** | passing a stage test for the first time |
 
 A clean run of MilMATHS — every lesson, every comic, every test, nothing wrong —
-pays well over **12,000 XP**, and there is still more than that on the shelves
-if you want all of it. You cannot have everything in one pass.
+pays about **10,500 XP**, and there is still more than that on the shelves if
+you want all of it. You cannot have everything in one pass.
 
 Spending never costs you a rank. MilMATHS keeps two numbers: the XP in your
 pocket, which goes down when you buy something, and every XP you have *ever*
@@ -276,7 +276,7 @@ every character named in a panel exists, every picture referenced is drawn, and
 there is exactly one comic in front of every odd-numbered lesson in every stage.
 
 The game has also been played end to end in a real browser — all 80 lessons and
-all 4 tests, in order, answering every question correctly — to confirm that the
+all 4 tests, in order, answering every question correctly (240 stars out of 240) — to confirm that the
 stages unlock in the right order and that nothing can be reached early. The
 awkward paths were driven too: three wrong in a lesson, four wrong in a test, a
 reload in the middle, and a save two days old.
