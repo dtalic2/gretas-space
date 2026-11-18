@@ -1,0 +1,71 @@
+{
+ "plate": 180.0,
+ "baseT": 2.0,
+ "topT": 1.0,
+ "colours": {
+  "base": "#F3F2EC",
+  "top": "#0E8A4F"
+ },
+ "pieces": [
+  {
+   "id": "badge-annie",
+   "title": "Annie badge",
+   "w": 76.0,
+   "h": 30.0,
+   "x": 48.0,
+   "y": 120.5,
+   "stl": "print/stl/badge-annie.stl",
+   "file": "print/badge-annie.3mf"
+  },
+  {
+   "id": "badge-zoe",
+   "title": "Zoe badge",
+   "w": 76.0,
+   "h": 30.0,
+   "x": 132.0,
+   "y": 120.5,
+   "stl": "print/stl/badge-zoe.stl",
+   "file": "print/badge-zoe.3mf"
+  },
+  {
+   "id": "badge-greta",
+   "title": "Greta badge",
+   "w": 76.0,
+   "h": 30.0,
+   "x": 48.0,
+   "y": 82.5,
+   "stl": "print/stl/badge-greta.stl",
+   "file": "print/badge-greta.3mf"
+  },
+  {
+   "id": "badge-louisa",
+   "title": "Louisa badge",
+   "w": 76.0,
+   "h": 30.0,
+   "x": 132.0,
+   "y": 82.5,
+   "stl": "print/stl/badge-louisa.stl",
+   "file": "print/badge-louisa.3mf"
+  },
+  {
+   "id": "tag-cadet",
+   "title": "Cadet tag",
+   "w": 76.0,
+   "h": 15.0,
+   "x": 48.0,
+   "y": 52.0,
+   "stl": "print/stl/tag-cadet.stl",
+   "file": "print/tag-cadet.3mf"
+  },
+  {
+   "id": "tag-junior",
+   "title": "Junior tag",
+   "w": 76.0,
+   "h": 15.0,
+   "x": 132.0,
+   "y": 52.0,
+   "stl": "print/stl/tag-junior.stl",
+   "file": "print/tag-junior.3mf"
+  }
+ ]
+}

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>First Aid Badges</title>
+<meta name="description" content="3D-printable name badges and Cadet and Junior tags for the first aid club, made for the Bambu Lab A1 mini.">
+<link rel="icon" href="icon.svg">
+<style>
+  :root {
+    --bg: #f4f5f1;
+    --card: #ffffff;
+    --ink: #1d2320;
+    --muted: #5d6762;
+    --line: #dde1dc;
+    --green: #0e8a4f;
+    --green-ink: #0b6f40;
+    --stage: radial-gradient(120% 90% at 50% 20%, #fbfbf8 0%, #e3e6e0 100%);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141716;
+      --card: #1c201e;
+      --ink: #e9ece8;
+      --muted: #9ba5a0;
+      --line: #2e3431;
+      --green: #2fb36f;
+      --green-ink: #5fd394;
+      --stage: radial-gradient(120% 90% at 50% 20%, #2a2f2c 0%, #151817 100%);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 980px; margin: 0 auto; padding: 28px 16px 56px; }
+  h1 { font-size: clamp(1.7rem, 4vw, 2.3rem); line-height: 1.15; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h1 .cross { display: inline-block; width: 0.9em; height: 0.9em; vertical-align: -0.08em; margin-right: 0.3em; }
+  h2 { font-size: 1.2rem; margin: 40px 0 12px; }
+  p { margin: 0 0 12px; }
+  .lede { color: var(--muted); max-width: 46em; margin-bottom: 20px; }
+  a { color: var(--green-ink); }
+
+  .stage {
+    position: relative;
+    border-radius: 16px;
+    background: var(--stage);
+    border: 1px solid var(--line);
+    overflow: hidden;
+  }
+  #view { display: block; width: 100%; height: min(62vh, 560px); min-height: 300px; touch-action: none; cursor: grab; }
+  #view:active { cursor: grabbing; }
+  .views { position: absolute; top: 12px; left: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .views button, .look {
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+  .views button {
+    border: 1px solid var(--line);
+    background: color-mix(in srgb, var(--card) 88%, transparent);
+    backdrop-filter: blur(6px);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 0.9rem;
+  }
+  .views button[aria-pressed="true"] { background: #0e8a4f; border-color: #0e8a4f; color: #fff; }
+  .hint {
+    position: absolute; bottom: 10px; right: 12px; margin: 0; pointer-events: none;
+    font-size: 0.8rem; color: var(--muted);
+    background: color-mix(in srgb, var(--card) 85%, transparent); border-radius: 999px; padding: 3px 10px;
+  }
+
+  .get { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin: 20px 0 0; }
+  .primary {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: #0e8a4f; color: #fff; text-decoration: none; font-weight: 600;
+    padding: 12px 20px; border-radius: 12px;
+  }
+  .primary:hover { filter: brightness(1.08); }
+  .get .also { color: var(--muted); font-size: 0.95rem; }
+
+  #pieces { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+  .piece { display: flex; align-items: stretch; background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .look { flex: 1; text-align: left; background: none; border: 0; padding: 12px 14px; display: flex; flex-direction: column; }
+  .look:hover .title, .look[aria-pressed="true"] .title { color: var(--green-ink); }
+  .look .title { font-weight: 600; }
+  .look .size { color: var(--muted); font-size: 0.88rem; }
+  .files { display: flex; align-items: center; gap: 4px; padding-right: 10px; }
+  .files a { font-size: 0.88rem; font-weight: 600; text-decoration: none; padding: 6px 8px; border-radius: 8px; }
+  .files a:hover { background: color-mix(in srgb, var(--green) 12%, transparent); }
+
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+  .box { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+  .box h3 { margin: 0 0 8px; font-size: 1.02rem; }
+  ol, ul.plain { margin: 0; padding-left: 1.3em; }
+  li + li { margin-top: 6px; }
+  .note { color: var(--muted); font-size: 0.93rem; }
+  dl.facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; }
+  dl.facts dt { color: var(--muted); }
+  dl.facts dd { margin: 0; }
+  code { font-size: 0.92em; }
+  footer { margin-top: 44px; color: var(--muted); font-size: 0.9rem; }
+
+  /* ?shot=... : just the picture, for making preview images */
+  body.shot main > :not(.stage), body.shot .views, body.shot .hint { display: none; }
+  body.shot main { max-width: none; padding: 0; }
+  body.shot .stage { border: 0; border-radius: 0; }
+  body.shot #view { height: 100vh; }
+</style>
+</head>
+<body>
+<main>
+  <h1><svg class="cross" viewBox="0 0 64 64" aria-hidden="true"><rect x="4" y="4" width="56" height="56" rx="12" fill="#0e8a4f"/><path d="M26 14h12v12h12v12H38v12H26V38H14V26h12z" fill="#fff"/></svg>First Aid Club badges</h1>
+  <p class="lede">Name badges for Annie, Zoe, Greta and Louisa, and a tag each for Cadets and Juniors.
+    White with raised green details, ready to print on a Bambu Lab A1 mini.</p>
+
+  <div class="stage">
+    <canvas id="view" aria-label="3D view of the badges and tags on the print bed"></canvas>
+    <div class="views">
+      <button type="button" data-view="set" aria-pressed="true">All pieces</button>
+      <button type="button" data-view="plate" aria-pressed="false">From above</button>
+    </div>
+    <p class="hint">Drag to turn · scroll or pinch to zoom</p>
+  </div>
+
+  <div class="get">
+    <a class="primary" href="print/first-aid-badges-plate.3mf" download>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 20h16"/></svg>
+      Print file for the whole set (.3mf)
+    </a>
+    <span class="also">All six pieces on one plate. Or <a href="print/first-aid-badges-files.zip" download>download every file (.zip)</a>.</span>
+  </div>
+
+  <h2>The pieces</h2>
+  <p class="note">Tap one to look at it closely. Each has its own file, for printing spares or more tags.</p>
+  <ul id="pieces"></ul>
+
+  <h2>Printing on the A1 mini</h2>
+  <div class="cols">
+    <div class="box">
+      <h3>With the AMS lite</h3>
+      <ol>
+        <li>Open the <code>.3mf</code> in Bambu Studio. Pick the <b>Bambu Lab A1 mini</b>, <b>0.20mm Standard</b>, and the Textured PEI plate.</li>
+        <li>Put white PLA in AMS slot 1 and green in slot 2.</li>
+        <li>Slice. In the preview, drag the layer slider to <b>layer 11 (2.20 mm)</b>, click the <b>+</b> next to it and choose <b>Change filament → 2</b>.</li>
+        <li>Print. It swaps to green once, for the top millimetre.</li>
+      </ol>
+    </div>
+    <div class="box">
+      <h3>Without an AMS</h3>
+      <ol>
+        <li>Open the <code>.3mf</code> in Bambu Studio and slice it with white loaded.</li>
+        <li>In the preview, go to <b>layer 11 (2.20 mm)</b>, right-click the <b>+</b> and choose <b>Add pause</b>.</li>
+        <li>Print. When it pauses after the white plate, unload the white, load the green from the printer's screen, and resume.</li>
+      </ol>
+    </div>
+  </div>
+  <p class="note" style="margin-top:12px">Each piece is two parts, <i>base</i> and <i>top</i>, so you can also set the colours per part in Bambu Studio's object list instead of at a layer. The STL files are one solid each, for any other slicer.</p>
+
+  <h2>Details</h2>
+  <div class="cols">
+    <div class="box">
+      <dl class="facts">
+        <dt>Name badge</dt><dd>76 × 30 mm, 3 mm thick</dd>
+        <dt>Cadet, Junior</dt><dd>76 × 15 mm, 3 mm thick</dd>
+        <dt>Layers</dt><dd>2 mm white plate, 1 mm raised green</dd>
+        <dt>Plastic</dt><dd>Under 35 g for the set, about 5 g of it green</dd>
+        <dt>Lettering</dt><dd>Inter ExtraBold</dd>
+      </dl>
+    </div>
+    <div class="box">
+      <h3>Wearing them</h3>
+      <p>The backs are flat, so a stick-on or glued bar pin (25–30 mm) works, or a 45 × 13 mm magnetic badge back for clothes you don't want pinned.</p>
+      <p class="note">The Cadet tag is a solid green bar and the Junior tag is white with a green frame, so the two are easy to tell apart across a room.</p>
+    </div>
+  </div>
+
+  <footer>
+    The cross is the green and white first aid sign. The red cross on white is a protected emblem, so it isn't used here.
+    The files are made by <code>tools/make_badges.py</code>: change the names at the top and run it again for more badges.
+  </footer>
+</main>
+<script type="module" src="js/viewer.js"></script>
+</body>
+</html>

@@ -90,6 +90,18 @@
         "8134"
       ],
       "port": 8134
+    },
+    {
+      "name": "first-aid-badges",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8135",
+        "--directory",
+        "first-aid-badges"
+      ],
+      "port": 8135
     }
   ]
 }
