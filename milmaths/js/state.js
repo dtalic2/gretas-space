@@ -177,7 +177,7 @@ export const testPassed = (stage) => !!testRecord(stage)?.passed;
 
 /** Every lesson in a stage finished — which is what opens the test. */
 export const lessonsDone = (stage) => (STAGE[stage]?.lessons || []).filter(l => isDone(stage, l.n)).length;
-export const stageDone = (stage) => lessonsDone(stage) === 10;
+export const stageDone = (stage) => lessonsDone(stage) === (STAGE[stage]?.lessons.length ?? 0);
 export const testOpen = (stage) => stageDone(stage);
 
 /** Stage 1 is always open. After that you have to pass the test before it. */
@@ -335,7 +335,7 @@ export function finishLesson(stage, n, { clean, of }){
  * Mark a stage test.
  *
  * More than PASS_WRONG wrong and the whole stage has to be done again — the
- * ten lessons lock and must be worked through from the start. XP already
+ * twenty lessons lock and must be worked through from the start. XP already
  * earned, books already read and anything bought stay exactly where they are.
  */
 export function finishTest(stage, { right, of }){
@@ -365,7 +365,7 @@ export function finishTest(stage, { right, of }){
   return { passed, firstPass, right, wrong, of, paid, replay: !!before?.passed };
 }
 
-/** Lock a stage's ten lessons again. Nothing else is touched. */
+/** Lock a stage's twenty lessons again. Nothing else is touched. */
 export function redoStage(stage){
   for (const l of STAGE[stage]?.lessons || []) delete S.done[lessonKey(stage, l.n)];
   saveNow();

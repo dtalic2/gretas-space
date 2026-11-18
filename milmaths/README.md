@@ -1,6 +1,6 @@
 # 🧮 MilMATHS
 
-Four stages of maths, ten lessons and a test each, and one milbil who sits
+Four stages of maths, thirty rows and a test each, and one milbil who sits
 beside you the whole way through. Every stage teaches a harder slice of the
 **Australian Curriculum** than the one before, every question you answer earns
 **XP**, and XP buys milbils in the shop — or the parts to build one of your own.
@@ -20,7 +20,7 @@ python3 milmaths/serve.py      # http://localhost:8134
 | | | |
 | --- | --- | --- |
 | 🏠 | **Home** | Your stage: the lesson you are on, the comics in front of it, the test at the end, and the time scale for today. |
-| 📚 | **Library** | All sixteen comics. Anything you have unlocked can be read again whenever you like. |
+| 📚 | **Library** | All forty comics. Anything you have unlocked can be read again whenever you like. |
 | 👾 | **Milbils** | The shop, the workshop where you build your own, and the features. |
 
 ## The four stages
@@ -34,14 +34,19 @@ You start at Stage 1, lesson 1, and nothing else in the game is reachable.
 | 📐 | **3 · Decimals, Measuring and Shape** | Year 5 · Number, Measurement & Space | Decimals, percentages, metric units, perimeter and area, angles, time |
 | 🧮 | **4 · Algebra, Integers and Chance** | Year 6–7 · Algebra, Number & Probability | Order of operations, negative numbers, powers, algebra, equations, ratio, probability, averages |
 
-**40 lessons and 4 tests — 345 questions.** Every lesson names the curriculum
-code it comes from, so a grown-up can see exactly where it sits.
+**Every stage is thirty rows: twenty lessons with a comic in front of every
+other one.** The stage test sits at the end, after all thirty. That is 80
+lessons, 40 comics and 4 tests across the game — **472 questions**. Every
+lesson names the curriculum code it comes from, so a grown-up can see exactly
+where it sits.
 
 ## One lesson at a time
 
-- Each lesson has between **4 and 10 questions**. Stage 1 is pitched gently on
-  purpose — it is where a new player meets the three-wrong rule for the first
-  time, so its numbers stay small and its check-up is only eight questions.
+- Each lesson has **five or six questions** — short on purpose, because a
+  lesson is failed by getting three wrong and because fifteen minutes after
+  school does not stretch far.
+- Stage 1 is pitched gently throughout: it is where a new player meets the
+  three-wrong rule for the first time, so its numbers stay small.
 - The lesson you are on is the green one. Everything below it is locked.
 - Every question gives you **two goes**. Get it wrong twice and MilMATHS shows
   you the answer and explains it, which still earns a little.
@@ -65,13 +70,13 @@ you earned on the way through is yours either way.
 
 ## The stage test
 
-At the end of every stage there is a **test of fifteen questions**, on exactly
+At the end of every stage there is a **test of twelve to fifteen questions**, on exactly
 the material the stage taught but asked harder: bigger numbers, two steps
 instead of one, a fact turned round. It is not a lesson:
 
 - **One go** at each question.
 - **Scratch pad only** — no hints, no number line, no times table poster.
-- **More than three wrong and the whole stage starts again.** All ten lessons
+- **More than three wrong and the whole stage starts again.** All twenty lessons
   unlock and have to be worked through from lesson 1.
 
 Failing costs you lessons and nothing else. Your XP, your comics, your milbils
@@ -82,12 +87,13 @@ redo simply pay no XP the second time.
 
 ## The comics
 
-Sixteen of them, one in front of lessons **1, 4, 7 and 10** of every stage. Each
-is a two- or three-page comic in which milbils you have met in the other games
-work the idea out loud before you are asked to use it — Chomp counting the
-biscuit jar for place value, Giggle trying to take the biggest slice to learn
-that 1/8 is smaller than 1/4, Chomp and Wizzle falling out over a café bill to
-learn BIDMAS.
+Forty of them — ten a stage, one in front of lessons **1, 3, 5, 7, 9, 11, 13,
+15, 17 and 19**, so each comic sets up the two lessons that follow it. Each is a
+two- or three-page comic in which milbils you have met in the other games work
+the idea out loud before you are asked to use it — Chomp counting the biscuit
+jar for place value, Giggle trying to take the biggest slice to learn that 1/8
+is smaller than 1/4, Chomp and Wizzle falling out over a café bill to learn
+BIDMAS, Snooze counting sheep to get to sleep.
 
 The first time you open one is worth 15 XP, the comic in front of a lesson opens
 by itself the first time you start that lesson, and every one of them lives in
@@ -110,8 +116,8 @@ chalk on the Blackboard theme without a second copy of anything.
 | **+150** | passing a stage test for the first time |
 
 A clean run of MilMATHS — every lesson, every comic, every test, nothing wrong —
-pays about **6,900 XP**, and there is a great deal more than that on the
-shelves. You cannot have everything in one pass.
+pays well over **12,000 XP**, and there is still more than that on the shelves
+if you want all of it. You cannot have everything in one pass.
 
 Spending never costs you a rank. MilMATHS keeps two numbers: the XP in your
 pocket, which goes down when you buy something, and every XP you have *ever*
@@ -245,8 +251,8 @@ milmaths/
 ├── art/                 Greta's drawings: Chomp, Petal, Sunny, Hattie, Scoop
 ├── css/style.css        three themes out of one set of variables
 └── js/
-    ├── curriculum.js    4 stages, 40 lessons, 4 tests, 345 questions
-    ├── books.js         the 16 comics, their cast and their pictures
+    ├── curriculum.js    4 stages, 80 lessons, 4 tests, 472 questions
+    ├── books.js         the 40 comics, their cast and their pictures
     ├── shop.js          18 milbils, 39 workshop parts, 12 features, 8 ranks
     ├── clock.js         holidays, recommendations and the countdown
     ├── state.js         everything saved, and all the locking rules
@@ -261,15 +267,15 @@ MilMATHS again** wipes it, keeping only your name and your state.
 
 ### Checking the maths
 
-The question bank is plain data, so it can be checked by machine. 111 of the 345
+The question bank is plain data, so it can be checked by machine. 165 of the 472
 questions are bare arithmetic, and those are re-computed from the question text
-and compared with the stored answer; the structure of all 345 is checked at the
+and compared with the stored answer; the structure of all 472 is checked at the
 same time — choices in range, no duplicate options, 4–10 questions a lesson and
 10–20 a test, every question explained. The comics are checked the same way:
 every character named in a panel exists, every picture referenced is drawn, and
-there is exactly one comic in front of lessons 1, 4, 7 and 10 of every stage.
+there is exactly one comic in front of every odd-numbered lesson in every stage.
 
-The game has also been played end to end in a real browser — all 40 lessons and
+The game has also been played end to end in a real browser — all 80 lessons and
 all 4 tests, in order, answering every question correctly — to confirm that the
 stages unlock in the right order and that nothing can be reached early. The
 awkward paths were driven too: three wrong in a lesson, four wrong in a test, a

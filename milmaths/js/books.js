@@ -1,6 +1,7 @@
 // ---------- The comic books ----------
 //
-// Sixteen comics, four to a stage, sitting in front of lessons 1, 4, 7 and 10.
+// Forty comics, ten to a stage, sitting in front of every other lesson — so
+// each one sets up the two lessons that follow it.
 // Every one is a scene from somewhere else on this account — the Milbil Café,
 // the Lunchbox, the Garden, Ningy-Ningy's truck — with milbils you have met
 // before working the idea out loud before you are asked to use it.
@@ -155,12 +156,65 @@ export const ART = {
 
 export const artFor = (name) => (name && ART[name]) ? ART[name]() : '';
 
+// Three more pictures, for the comics added when the stages grew to twenty
+// lessons each.
+
+Object.assign(ART, {
+
+  angles: () => box(`
+  <g stroke="${INK}" stroke-width="3" fill="none" stroke-linecap="round">
+    <path d="M40 86 H96 M40 86 V30"/>
+    <path d="M150 86 H260"/>
+    <path d="M205 86 L252 46" />
+  </g>
+  <path d="M40 72 h14 v14" fill="none" stroke="${INK}" stroke-width="2.4"/>
+  <path d="M225 86 A20 20 0 0 0 218 71" fill="none" stroke="var(--accent)" stroke-width="2.6"/>
+  <path d="M170 86 A20 20 0 0 1 190 66" fill="none" stroke="var(--accent)" stroke-width="2.6"/>
+  ${label(68, 108, 'a right angle · 90°', 12, INK)}
+  ${label(205, 108, 'these two add to 180°', 12, INK)}`, 320, 118),
+
+  hops: () => box(`
+  <line x1="24" y1="78" x2="296" y2="78" stroke="${INK}" stroke-width="2.5"/>
+  ${[0,1,2,3,4,5].map(i => `<line x1="${30 + i * 52}" y1="70" x2="${30 + i * 52}" y2="86" stroke="${INK}" stroke-width="2.5"/>
+     ${label(30 + i * 52, 102, String(i * 3), 12, INK)}`).join('')}
+  ${[0,1,2,3,4].map(i => `<path d="M${30 + i * 52} 74 Q${56 + i * 52} 38 ${82 + i * 52} 74" fill="none" stroke="var(--accent)" stroke-width="2.6"/>
+     ${label(56 + i * 52, 34, '+3', 11)}`).join('')}
+  <text x="160" y="118" font-size="12" fill="${MUTE}" text-anchor="middle">counting by 3s is the same hop, over and over</text>`, 320, 126),
+
+  balance: () => box(`
+  <path d="M160 96 V40 M120 40 H200" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>
+  <path d="M140 96 H180" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>
+  ${[120, 200].map(x => `<path d="M${x} 40 L${x - 26} 66 H${x + 26} Z" fill="var(--tint)" stroke="${INK}" stroke-width="2.2"/>`).join('')}
+  <text x="120" y="60" font-size="15" fill="${INK}" text-anchor="middle" font-weight="900">x + 7</text>
+  <text x="200" y="60" font-size="15" fill="${INK}" text-anchor="middle" font-weight="900">12</text>
+  <text x="160" y="116" font-size="12" fill="${MUTE}" text-anchor="middle">take 7 off BOTH sides and it still balances</text>`, 320, 124),
+});
+
 // ================================================================== comics ===
+//
+// Ten to a stage, in front of lessons 1, 3, 5, 7, 9, 11, 13, 15, 17 and 19.
 
 export const BOOKS = [
 
 // ---------------------------------------------------------------- stage 1 ---
-{ id:'s1b1', stage:1, before:1, icon:'📗', name:'The Biscuit Jar',
+{ id:'s1b1', stage:1, before:1, icon:'📗', name:'How Many Sheep?',
+  teaches:'Counting on and back', where:'Snooze’s bedroom, half past nine',
+  pages:[
+    { scene:'Snooze cannot sleep. Sprouty has been dragged in to help.', panels:[
+      { who:'snooze', say:'Fifty-seven sheep. Fifty-eight. Fifty-nine. …Then what?' },
+      { who:'sprouty', say:'Sixty. The ones column was full, so it rolls over and the tens tick up.' },
+      { who:'snooze', say:'And after ninety-nine?' },
+      { who:'sprouty', say:'Both columns are full, so BOTH roll over and a hundreds column opens. A hundred.' },
+    ]},
+    { scene:'Sprouty turns the light off. Snooze turns it back on.', panels:[
+      { who:'snooze', say:'What if I count backwards instead?' },
+      { who:'sprouty', say:'Same thing in reverse. Before 40 is 39 — the tens drop one and the ones fill back up to 9.' },
+      { who:'snooze', say:'Three hundred… two hundred and ninety-nine… two hundred and ninety-eight…' },
+      { cap:'Snooze was asleep by two hundred and ninety-one.' },
+    ]},
+  ]},
+
+{ id:'s1b2', stage:1, before:3, icon:'📙', name:'The Biscuit Jar',
   teaches:'Place value', where:'Milbil Café, a Tuesday morning',
   pages:[
     { scene:'Chomp has been staring at the jar on the counter for some time.', panels:[
@@ -173,7 +227,7 @@ export const BOOKS = [
       { art:'placevalue', cap:'A digit is worth whatever column it is standing in.' },
       { who:'chomp', say:'The 4 is standing in the hundreds. The 7 is in the tens. The 2 is in the ones.' },
       { who:'sprouty', say:'So it is 400 and 70 and 2, all pushed together.' },
-      { who:'chomp', say:'Exactly. Move a digit one column to the left and it is worth ten times more.' },
+      { who:'chomp', say:'Exactly. Move a digit one column left and it is worth ten times more.' },
     ]},
     { scene:'Sprouty writes 309 in the steam. Chomp eats a biscuit.', panels:[
       { who:'sprouty', say:'Then what is the nought in 309 for? It is worth nothing!' },
@@ -183,8 +237,25 @@ export const BOOKS = [
     ]},
   ]},
 
-{ id:'s1b2', stage:1, before:4, icon:'📙', name:'Too Many in the Box',
-  teaches:'Carrying and borrowing', where:'Milbil Lunchbox, 7:40 in the morning',
+{ id:'s1b3', stage:1, before:5, icon:'📘', name:'Who Has More?',
+  teaches:'Comparing numbers', where:'The Milbil Café counter, both tills open',
+  pages:[
+    { scene:'Chomp and Giggle have counted their coins and disagree.', panels:[
+      { who:'giggle', say:'I have 508. You have 580. Mine looks longer!' },
+      { who:'chomp', say:'They are the same length. Start at the LEFT and compare.' },
+      { who:'chomp', say:'Five hundreds each — a draw. Next column: you have 0 tens, I have 8.' },
+      { who:'giggle', say:'Oh. You win on the tens, so you win. Bother.' },
+    ]},
+    { scene:'Hattie arrives with 805 and ends the argument.', panels:[
+      { who:'hattie', say:'Eight hundreds. I do not even need to look at the rest.' },
+      { who:'chomp', say:'That is the trick — the leftmost column that differs decides it.' },
+      { who:'giggle', say:'And if the hundreds tie, you move to the tens. Then the ones.' },
+      { cap:'Left to right, column by column, stop at the first difference.' },
+    ]},
+  ]},
+
+{ id:'s1b4', stage:1, before:7, icon:'📕', name:'Too Many in the Box',
+  teaches:'Adding, and carrying', where:'Milbil Lunchbox, 7:40 in the morning',
   pages:[
     { scene:'Toothy is counting crackers into a lunchbox and has run out of room.', panels:[
       { who:'toothy', say:'Forty-seven in this bag, thirty-eight in that one. Seven and eight is fifteen.' },
@@ -198,16 +269,60 @@ export const BOOKS = [
       { who:'toothy', say:'Eighty-five crackers. That is a lot of crackers.' },
       { who:'hattie', say:'It is the same trick every time. A full column trades upwards.' },
     ]},
-    { scene:'Later. Toothy has eaten some and is trying to work out how many are left.', panels:[
-      { who:'toothy', say:'Seventy-one take forty-six. But one take six is... not allowed.' },
-      { who:'hattie', say:'Then you borrow. Break one of the seven tens into ten ones.' },
-      { who:'toothy', say:'Eleven take six is five. Six tens take four tens is two. Twenty-five!' },
-      { who:'hattie', say:'Check it backwards: 25 and 46 should come back to 71. It does.' },
-      { cap:'Checking takes five seconds and catches nearly every mistake.' },
+  ]},
+
+{ id:'s1b5', stage:1, before:9, icon:'📗', name:'The Disappearing Lollies',
+  teaches:'Subtracting', where:'The school playground, first break',
+  pages:[
+    { scene:'Freckles started with a full bag. Toothy has been helping.', panels:[
+      { who:'freckles', say:'I had fifteen. Now I have eight. How many did you eat?' },
+      { who:'toothy', say:'Work it out. Fifteen take away eight.' },
+      { who:'freckles', say:'Fifteen take five is ten, then two more is eight. So… seven.' },
+      { who:'toothy', say:'Correct. Hopping to the nearest ten first makes it much easier.' },
+    ]},
+    { scene:'Freckles checks the answer rather than trusting it.', panels:[
+      { who:'freckles', say:'Seven plus eight should come back to fifteen. It does.' },
+      { who:'toothy', say:'Subtracting is only adding backwards. Every take-away can be checked that way.' },
+      { who:'freckles', say:'And fifteen take away fifteen would be nothing at all.' },
+      { cap:'Take a number away from itself and nothing is left. Including lollies.' },
     ]},
   ]},
 
-{ id:'s1b3', stage:1, before:7, icon:'📘', name:'Which Signpost is Nearer?',
+{ id:'s1b6', stage:1, before:11, icon:'📙', name:'Next Door Will Lend You One',
+  teaches:'Borrowing', where:'Milbil Town, the corner shop',
+  pages:[
+    { scene:'Scoop is working out the change and has hit a wall.', panels:[
+      { who:'scoop', say:'Seventy-one take forty-six. But one take six is… not allowed.' },
+      { who:'hattie', say:'Not allowed in that column, no. So go next door and borrow.' },
+      { who:'hattie', say:'Break one of the seven tens into ten ones. Now the ones column holds eleven.' },
+      { who:'scoop', say:'Eleven take six is five. And the tens are down to six, take four, is two.' },
+    ]},
+    { scene:'Scoop writes 25 on the receipt and stares at it suspiciously.', panels:[
+      { who:'scoop', say:'Twenty-five. Are you sure?' },
+      { who:'hattie', say:'Add it back. Twenty-five and forty-six.' },
+      { who:'scoop', say:'…Seventy-one. All right, I believe you.' },
+      { cap:'Borrowing is just place value being helpful. A ten is always ten ones if you need it to be.' },
+    ]},
+  ]},
+
+{ id:'s1b7', stage:1, before:13, icon:'📘', name:'Hopping Along',
+  teaches:'Number patterns', where:'The hopscotch grid behind the school',
+  pages:[
+    { scene:'Sporty is hopping. Sprouty is keeping score.', panels:[
+      { who:'sporty', say:'Twelve! Fifteen! Eighteen! …What comes next?' },
+      { art:'hops', cap:'Every hop is the same size, so the pattern does the work.' },
+      { who:'sprouty', say:'Twenty-one. You are adding three every time.' },
+      { who:'sporty', say:'I did not even have to think about it.' },
+    ]},
+    { scene:'Sprouty draws a second grid, going the other way.', panels:[
+      { who:'sprouty', say:'Now hop BACK by fours. Forty, thirty-six, thirty-two…' },
+      { who:'sporty', say:'Twenty-eight. Backwards is the same hop, in reverse.' },
+      { who:'sprouty', say:'Counting by 25s is my favourite. Twenty-five, fifty, seventy-five…' },
+      { who:'sporty', say:'A hundred! That is four 25c coins. A whole dollar of hopping.' },
+    ]},
+  ]},
+
+{ id:'s1b8', stage:1, before:15, icon:'📕', name:'Which Signpost is Nearer?',
   teaches:'Rounding', where:'The road into Milbil Town',
   pages:[
     { scene:'Sporty and Snooze are walking. There is a signpost each way.', panels:[
@@ -220,7 +335,7 @@ export const BOOKS = [
       { who:'snooze', say:'Fifty is nearer. That is the whole rule. Pick the nearer signpost.' },
       { who:'sporty', say:'What if we were on exactly 45? Dead in the middle?' },
       { who:'snooze', say:'Then maths picks for you. A half always rounds up. 45 goes to 50.' },
-      { who:'sporty', say:'So 85 goes to 90 and 650 goes to 700.' },
+      { who:'sporty', say:'So 85 goes to 90 and 250 goes to 300.' },
     ]},
     { scene:'Sporty jogs ahead. Snooze does not.', panels:[
       { who:'snooze', say:'Shortcut: for the nearest ten, look at the ones digit. 0 to 4 down, 5 to 9 up.' },
@@ -230,8 +345,8 @@ export const BOOKS = [
     ]},
   ]},
 
-{ id:'s1b4', stage:1, before:10, icon:'📕', name:'The Queue at Billy\'s',
-  teaches:'Australian money, and everything in Stage 1', where:"Billy's, lunchtime, a long queue",
+{ id:'s1b9', stage:1, before:17, icon:'📗', name:'The Queue at Billy’s',
+  teaches:'Australian money', where:"Billy's, lunchtime, a long queue",
   pages:[
     { scene:'Giggle is at the front with a handful of coins.', panels:[
       { who:'giggle', say:'I have four fifty-cent coins. Is that enough for a two dollar roll?' },
@@ -243,14 +358,25 @@ export const BOOKS = [
       { cap:'Coins: 5c · 10c · 20c · 50c · $1 · $2.  Notes: $5 · $10 · $20 · $50 · $100.' },
       { who:'scoop', say:'$3.50 means three dollars and fifty cents. The dot is the fence between them.' },
       { who:'giggle', say:'So $3.50 and $1.20 is $4.70. Dollars with dollars, cents with cents.' },
-      { who:'scoop', say:'And change from a ten for a $6.40 book? Count up. 60c to seven, three more to ten.' },
-      { who:'giggle', say:'$3.60!' },
+      { who:'scoop', say:'And change from a five for a $3.50 book? Count up. 50c to four, one more to five.' },
+      { who:'giggle', say:'$1.50!' },
     ]},
-    { scene:'The queue has not moved. Scoop uses the time.', panels:[
-      { cap:'Everything in Stage 1, while you wait:' },
-      { who:'scoop', say:'A digit is worth its column. Add and subtract by columns, trading when one overflows.' },
-      { who:'scoop', say:'Round by looking one place to the right. Doubling is adding to itself; halving cuts in two.' },
-      { who:'scoop', say:'Even numbers end in 0, 2, 4, 6 or 8. Everything else is odd. Next, please.' },
+  ]},
+
+{ id:'s1b10', stage:1, before:19, icon:'📙', name:'Fair Shares',
+  teaches:'Odd, even, doubles and halves', where:'The park, one bag of grapes',
+  pages:[
+    { scene:'Giggle and Toothy are splitting a bag down the middle.', panels:[
+      { who:'giggle', say:'Thirty-six grapes, two of us. Does that work?' },
+      { who:'toothy', say:'It ends in a six, so it is even. Even numbers always split in two.' },
+      { who:'giggle', say:'Eighteen each. And if there had been thirty-seven?' },
+      { who:'toothy', say:'Odd. One left over, and an argument.' },
+    ]},
+    { scene:'Toothy explains the only digit that matters.', panels:[
+      { who:'toothy', say:'You only ever look at the LAST digit. 0, 2, 4, 6, 8 is even. Everything else is odd.' },
+      { who:'giggle', say:'So 471 is odd, even though it is enormous?' },
+      { who:'toothy', say:'Enormous and odd. Doubling is the opposite job — 45 and 45 makes 90.' },
+      { cap:'Doubling puts two together. Halving cuts one in two. They undo each other.' },
     ]},
   ]},
 
@@ -260,7 +386,7 @@ export const BOOKS = [
   pages:[
     { scene:'Sprouty is planting. Chomp is watching, eating a carrot.', panels:[
       { who:'sprouty', say:'Six rows. Four carrots in each row. How many carrots did I plant?' },
-      { who:'chomp', say:'Four plus four plus four plus four plus four plus four...' },
+      { who:'chomp', say:'Four plus four plus four plus four plus four plus four…' },
       { who:'sprouty', say:'Or you could know that six fours are twenty-four and go and sit down.' },
       { art:'array', cap:'That is all a times table is: adding somebody has already done for you.' },
     ]},
@@ -270,26 +396,88 @@ export const BOOKS = [
       { who:'chomp', say:'So learning one of them gets you the other free. Half the work.' },
       { who:'sprouty', say:'Suddenly I like times tables slightly more.' },
     ]},
-    { scene:'Sprouty lists the easy ones on a seed packet.', panels:[
-      { cap:'×10 — stick a zero on.  ×5 — half of the ×10.  ×2 — just doubling.' },
-      { cap:'×4 — double, then double again.  ×9 — a ×10 with one lot taken off.' },
-      { who:'sprouty', say:'7 × 9? Seventy, take one seven away. Sixty-three.' },
-      { who:'chomp', say:'That leaves hardly any to actually learn by heart.' },
+  ]},
+
+{ id:'s2b2', stage:2, before:3, icon:'📗', name:'The Free Ones',
+  teaches:'The 5 and 10 times tables', where:'Milbil Café, counting the till',
+  pages:[
+    { scene:'Royal is stacking coins. Giggle is meant to be helping.', panels:[
+      { who:'royal', say:'Seven piles of ten. How much is that?' },
+      { who:'giggle', say:'Seventy. You just stick a zero on.' },
+      { who:'royal', say:'Correct, and that is the whole ten times table. It never gets harder.' },
+      { who:'giggle', say:'What about the fives? Those are harder.' },
+    ]},
+    { scene:'Royal splits each pile of ten in half.', panels:[
+      { who:'royal', say:'A five is half a ten. So do the ten first, then halve it.' },
+      { who:'royal', say:'Nine fives? Nine tens is ninety. Half of ninety is forty-five.' },
+      { who:'giggle', say:'Twelve fives — a hundred and twenty, halved — sixty!' },
+      { cap:'Two tables learned, and only one of them needed learning.' },
     ]},
   ]},
 
-{ id:'s2b2', stage:2, before:4, icon:'📗', name:'Thirteen Spring Rolls',
+{ id:'s2b3', stage:2, before:5, icon:'📙', name:'Double, Double',
+  teaches:'The 4 times table', where:'Milbil Cooking, a very large batch',
+  pages:[
+    { scene:'Chef Bil is quadrupling a recipe. Freckles is lost.', panels:[
+      { who:'freckles', say:'Four times six. I do not know my fours.' },
+      { who:'chef', say:'Then do not use them. Double six.' },
+      { who:'freckles', say:'Twelve.' },
+      { who:'chef', say:'Double it again.' },
+    ]},
+    { scene:'Freckles looks at the answer with some suspicion.', panels:[
+      { who:'freckles', say:'Twenty-four. …That is four sixes?' },
+      { who:'chef', say:'Doubling twice IS multiplying by four. Two twos make a four.' },
+      { who:'freckles', say:'Then eights would be doubling three times. 7 → 14 → 28 → 56.' },
+      { cap:'×2 is double. ×4 is double twice. ×8 is double three times. No tables required.' },
+    ]},
+  ]},
+
+{ id:'s2b4', stage:2, before:7, icon:'📕', name:'The Hard One',
+  teaches:'The 7 times table', where:'The library, revision club',
+  pages:[
+    { scene:'Brainy has written the seven times table on the board. Toothy is appalled.', panels:[
+      { who:'toothy', say:'The sevens have no tricks at all. None.' },
+      { who:'brainy', say:'They have fewer than most. But you already know most of them.' },
+      { who:'brainy', say:'7 × 2, 7 × 5, 7 × 10 came free with the easy tables. 7 × 3 and 7 × 4 you have done.' },
+      { who:'toothy', say:'So what is actually left?' },
+    ]},
+    { scene:'Brainy rubs out everything already known.', panels:[
+      { who:'brainy', say:'7 × 6, 7 × 7, 7 × 8, 7 × 9. Four facts. That is the whole problem.' },
+      { who:'toothy', say:'Four! I was expecting twelve.' },
+      { who:'brainy', say:'And 7 × 8 is 56 — five, six, seven, eight. The answer comes in order.' },
+      { cap:'Most of any times table is already learned by the time you get to it.' },
+    ]},
+  ]},
+
+{ id:'s2b5', stage:2, before:9, icon:'📗', name:'The Nine Trick',
+  teaches:'The 9 times table', where:'Milbil Go, outside the animal shop',
+  pages:[
+    { scene:'Starry is buying nine of something and refuses to use a calculator.', panels:[
+      { who:'starry', say:'Nine lots of seven. Watch this.' },
+      { who:'sunny', say:'You do not know it, do you.' },
+      { who:'starry', say:'I do not need to. TEN lots of seven is seventy. Easy.' },
+      { who:'starry', say:'Then take one seven back off. Sixty-three.' },
+    ]},
+    { scene:'Sunny tries it and is annoyed at how well it works.', panels:[
+      { who:'sunny', say:'Nine nines. Ninety take nine… eighty-one.' },
+      { who:'starry', say:'Nine twelves. A hundred and twenty take twelve.' },
+      { who:'sunny', say:'A hundred and eight. This is cheating.' },
+      { cap:'A nine is always a ten with one lot handed back. Every single time.' },
+    ]},
+  ]},
+
+{ id:'s2b6', stage:2, before:11, icon:'📘', name:'Thirteen Spring Rolls',
   teaches:'Dividing, and remainders', where:'The Ningy-Ningy Canteen truck',
   pages:[
     { scene:'Four milbils and one paper bag.', panels:[
       { who:'chef', say:'Twenty-four spring rolls, four of you. Work it out.' },
-      { who:'freckles', say:'Twenty-four shared between four... six each.' },
+      { who:'freckles', say:'Twenty-four shared between four… six each.' },
       { who:'chef', say:'How did you know that so fast?' },
       { who:'freckles', say:'Because 6 × 4 is 24. Dividing is the times table running backwards.' },
     ]},
     { scene:'Chef Bil holds up a smaller bag.', panels:[
       { who:'chef', say:'Right. This bag has thirteen. Still four of you.' },
-      { who:'freckles', say:'Three each... and one left over in the bag.' },
+      { who:'freckles', say:'Three each… and one left over in the bag.' },
       { who:'chef', say:'That leftover has a name. It is the remainder.' },
       { cap:'13 ÷ 4 = 3 remainder 1.' },
     ]},
@@ -301,7 +489,41 @@ export const BOOKS = [
     ]},
   ]},
 
-{ id:'s2b3', stage:2, before:7, icon:'📙', name:'Cutting Up the Pizza',
+{ id:'s2b7', stage:2, before:13, icon:'📕', name:'Rows That Work',
+  teaches:'Factors', where:'Milbil Café, laying out the chairs',
+  pages:[
+    { scene:'Twelve chairs and a floor plan.', panels:[
+      { who:'cosy', say:'Twelve chairs. I want them in equal rows. What are my options?' },
+      { who:'brainy', say:'Any arrangement that comes out exactly. Two rows of six. Three rows of four.' },
+      { who:'cosy', say:'Four rows of three. Six rows of two. One long row of twelve.' },
+      { who:'brainy', say:'Those numbers are the FACTORS of 12: 1, 2, 3, 4, 6 and 12.' },
+    ]},
+    { scene:'Cosy tries five rows and it does not work.', panels:[
+      { who:'cosy', say:'Five rows leaves two chairs over.' },
+      { who:'brainy', say:'Then 5 is not a factor of 12. A factor has to divide in exactly, with nothing left.' },
+      { who:'cosy', say:'So 24 would have 1, 2, 3, 4, 6, 8, 12 and 24. Eight of them.' },
+      { cap:'Factors always come in pairs — one short row and one long one.' },
+    ]},
+  ]},
+
+{ id:'s2b8', stage:2, before:15, icon:'📗', name:'Where the Tables Meet',
+  teaches:'Multiples', where:'Milbil Town, two bus stops',
+  pages:[
+    { scene:'Two buses. One comes every three minutes, one every four.', panels:[
+      { who:'scoop', say:'The green bus is at 3, 6, 9, 12, 15 minutes…' },
+      { who:'hattie', say:'And the red one at 4, 8, 12, 16…' },
+      { who:'scoop', say:'They both turn up at twelve minutes. Together.' },
+      { who:'hattie', say:'Because 12 is in both times tables. It is a multiple of 3 AND of 4.' },
+    ]},
+    { scene:'They wait. The buses arrive together, as predicted.', panels:[
+      { who:'scoop', say:'So a multiple is anything IN a times table.' },
+      { who:'hattie', say:'And a factor is a number that divides into it. Same facts, opposite way round.' },
+      { who:'scoop', say:'42 is a multiple of 7, and 7 is a factor of 42.' },
+      { cap:'Twelve is the first place the 3s and the 4s ever meet.' },
+    ]},
+  ]},
+
+{ id:'s2b9', stage:2, before:17, icon:'📙', name:'Cutting Up the Pizza',
   teaches:'What a fraction is', where:'Milbil Café, Friday night',
   pages:[
     { scene:'One pizza. Several opinions.', panels:[
@@ -324,8 +546,8 @@ export const BOOKS = [
     ]},
   ]},
 
-{ id:'s2b4', stage:2, before:10, icon:'📕', name:'Same Thing, Different Name',
-  teaches:'Equivalent fractions, and everything in Stage 2', where:'The library, revising',
+{ id:'s2b10', stage:2, before:19, icon:'📕', name:'Same Thing, Different Name',
+  teaches:'Equivalent fractions', where:'The library, revising',
   pages:[
     { scene:'Brainy has written four fractions on the board and is pleased about it.', panels:[
       { who:'brainy', say:'One half. Two quarters. Five tenths. Fifty hundredths.' },
@@ -339,13 +561,6 @@ export const BOOKS = [
       { who:'brainy', say:'Go the other way and you are simplifying. 6/9 both divide by 3, so it is 2/3.' },
       { who:'snooze', say:'Fine. It is the same amount. I am still not impressed.' },
     ]},
-    { scene:'Brainy lists Stage 2 before the test.', panels:[
-      { cap:'Multiplying is lots-of, and it works both ways round.' },
-      { cap:'Dividing is sharing, and it undoes multiplying.' },
-      { cap:'A remainder is always smaller than the number you divided by.' },
-      { cap:'A factor divides in exactly. A multiple is in the times table.' },
-      { who:'brainy', say:'And a fraction: divide by the bottom, multiply by the top.' },
-    ]},
   ]},
 
 // ---------------------------------------------------------------- stage 3 ---
@@ -358,12 +573,6 @@ export const BOOKS = [
       { who:'scoop', say:'The columns keep going. They just get ten times smaller each time.' },
       { art:'decimal', cap:'Ones, then tenths, then hundredths.' },
     ]},
-    { scene:'Sunny writes two numbers down and gets them the wrong way round.', panels:[
-      { who:'sunny', say:'0.45 is longer than 0.5, so it is bigger.' },
-      { who:'scoop', say:'Longer is not bigger. Line the dots up and read left to right.' },
-      { cap:'0.50 against 0.45 — five tenths beats four tenths, so 0.5 wins.' },
-      { who:'scoop', say:'Writing a nought on the end to match the lengths makes it obvious.' },
-    ]},
     { scene:'Scoop cuts the plank.', panels:[
       { who:'scoop', say:'A decimal is only a fraction with the line taken out.' },
       { cap:'0.1 = 1/10 · 0.25 = 1/4 · 0.5 = 1/2 · 0.75 = 3/4' },
@@ -372,7 +581,58 @@ export const BOOKS = [
     ]},
   ]},
 
-{ id:'s3b2', stage:3, before:4, icon:'📘', name:'Everything Half Price',
+{ id:'s3b2', stage:3, before:3, icon:'📘', name:'Longer Is Not Bigger',
+  teaches:'Comparing decimals', where:'Milbil Go, the long jump pit',
+  pages:[
+    { scene:'Two jumps have been measured and there is a dispute.', panels:[
+      { who:'sporty', say:'I jumped 0.45 metres. You jumped 0.5. Mine has more numbers, so I win.' },
+      { who:'starry', say:'That is not how it works. Line the dots up.' },
+      { who:'starry', say:'Write mine as 0.50. Now compare the first column after the dot.' },
+      { who:'sporty', say:'…Five tenths against four tenths. You win.' },
+    ]},
+    { scene:'Starry writes both on the board with matching lengths.', panels:[
+      { cap:'0.50   ← five tenths' },
+      { cap:'0.45   ← four tenths' },
+      { who:'starry', say:'Adding noughts on the end changes nothing, and makes it obvious.' },
+      { who:'sporty', say:'So 0.09 is the smallest of all, because it has no tenths whatsoever.' },
+    ]},
+  ]},
+
+{ id:'s3b3', stage:3, before:5, icon:'📙', name:'Line Up the Dots',
+  teaches:'Adding and subtracting decimals', where:'The Ningy-Ningy till, end of the day',
+  pages:[
+    { scene:'Chef Bil is adding up takings and has written the numbers crookedly.', panels:[
+      { who:'chef', say:'Three twenty-five and one fifty. I keep getting different answers.' },
+      { who:'scoop', say:'Because your dots are not lined up. Everything hangs off the dot.' },
+      { who:'scoop', say:'Write 1.5 as 1.50 so both have two columns after it.' },
+      { who:'chef', say:'3.25 and 1.50… four seventy-five.' },
+    ]},
+    { scene:'Scoop rules a vertical line straight through both dots.', panels:[
+      { who:'scoop', say:'Hundredths under hundredths, tenths under tenths, ones under ones.' },
+      { who:'chef', say:'And taking away? Ten take two thirty-five.' },
+      { who:'scoop', say:'Same rule. 7.65. Check it by adding back — 7.65 and 2.35 makes ten.' },
+      { cap:'Line up the dots and a decimal sum is an ordinary sum.' },
+    ]},
+  ]},
+
+{ id:'s3b4', stage:3, before:7, icon:'📕', name:'Everything Slides Over',
+  teaches:'Multiplying and dividing by 10, 100 and 1000', where:'Milbil Garden, the seed scales',
+  pages:[
+    { scene:'Sprouty is weighing out seed and needs a hundred times as much.', panels:[
+      { who:'sprouty', say:'Point six of a kilo, times a hundred. Do I add two noughts?' },
+      { who:'brainy', say:'Careful. The DIGITS move, not the dot. Everything slides two columns left.' },
+      { who:'brainy', say:'0.6 → 6 → 60.' },
+      { who:'sprouty', say:'Sixty kilos. That is a great deal of seed.' },
+    ]},
+    { scene:'Brainy takes the bag back off Sprouty.', panels:[
+      { who:'brainy', say:'Dividing slides them the other way. 72 ÷ 10 is 7.2.' },
+      { who:'sprouty', say:'And 9 ÷ 1000? Three columns right — 0.9, 0.09, 0.009.' },
+      { who:'brainy', say:'Exactly. The noughts are just holding the empty columns open.' },
+      { cap:'Never "add a nought". Slide the digits and let the columns do the work.' },
+    ]},
+  ]},
+
+{ id:'s3b5', stage:3, before:9, icon:'📗', name:'Everything Half Price',
   teaches:'Percentages', where:'Milbil Café, the end-of-day sale',
   pages:[
     { scene:'A big handwritten sign in the window: 50% OFF.', panels:[
@@ -395,7 +655,24 @@ export const BOOKS = [
     ]},
   ]},
 
-{ id:'s3b3', stage:3, before:7, icon:'📙', name:'Fence It or Turf It',
+{ id:'s3b6', stage:3, before:11, icon:'📘', name:'How Long Is a Milbil?',
+  teaches:'Metric units', where:'The school hall, measuring everybody',
+  pages:[
+    { scene:'Scoop has a tape and a clipboard. Chomp is standing very straight.', panels:[
+      { who:'scoop', say:'Eighty-five centimetres. Which is nought point eight five metres.' },
+      { who:'chomp', say:'How do you keep swapping between them so easily?' },
+      { who:'scoop', say:'Because the names tell you. CENTI means a hundredth. A hundred cm to a metre.' },
+      { who:'scoop', say:'MILLI means a thousandth. KILO means a thousand.' },
+    ]},
+    { scene:'Chomp checks it against the bag of flour in the kitchen.', panels:[
+      { who:'chomp', say:'So a KILOgram is a thousand grams. And a MILLIlitre is a thousandth of a litre.' },
+      { who:'scoop', say:'Which makes 1.5 litres 1500 mL, and 2.4 km 2400 m.' },
+      { who:'chomp', say:'Three prefixes and I never have to memorise a conversion again.' },
+      { cap:'milli = a thousandth · centi = a hundredth · kilo = a thousand' },
+    ]},
+  ]},
+
+{ id:'s3b7', stage:3, before:13, icon:'📕', name:'Fence It or Turf It',
   teaches:'Perimeter and area', where:'Milbil Garden, a new vegetable patch',
   pages:[
     { scene:'Sprouty has a roll of fencing and a roll of turf and one rectangle of dirt.', panels:[
@@ -410,16 +687,44 @@ export const BOOKS = [
       { who:'sprouty', say:'Twenty metres of fence and twenty-four square metres of turf. Different numbers.' },
       { who:'scoop', say:'Different KINDS of number. One is a line, one is a surface.' },
     ]},
-    { scene:'Sprouty checks the labels on the rolls.', panels:[
-      { cap:'10 mm = 1 cm · 100 cm = 1 m · 1000 m = 1 km' },
-      { cap:'1000 g = 1 kg · 1000 mL = 1 L' },
-      { who:'scoop', say:'Milli is a thousandth. Centi is a hundredth. Kilo is a thousand.' },
-      { who:'sprouty', say:'Spot those three and you never have to memorise a conversion again.' },
+  ]},
+
+{ id:'s3b8', stage:3, before:15, icon:'📗', name:'The Corner of the Page',
+  teaches:'Angles', where:'The art room, one very wonky shelf',
+  pages:[
+    { scene:'Cosy is holding a shelf up. Hattie is holding a piece of paper against it.', panels:[
+      { who:'hattie', say:'Use the corner of this page. That corner is exactly ninety degrees.' },
+      { who:'cosy', say:'And if it matches, the shelf is straight?' },
+      { who:'hattie', say:'Then it is a right angle. Four of them make a full turn — three hundred and sixty.' },
+      { art:'angles', cap:'A right angle is 90°. A straight line is two of them: 180°.' },
+    ]},
+    { scene:'Hattie names the other kinds while Cosy holds the shelf.', panels:[
+      { who:'hattie', say:'Under ninety is ACUTE — a sharp little angle.' },
+      { who:'hattie', say:'Between ninety and a hundred and eighty is OBTUSE — wide open.' },
+      { who:'cosy', say:'And this shelf is about a hundred and ten, which is obtuse and also wrong.' },
+      { cap:'Right 90° · straight line 180° · all the way round 360°.' },
     ]},
   ]},
 
-{ id:'s3b4', stage:3, before:10, icon:'📕', name:'The 15:45 Train',
-  teaches:'Time, and everything in Stage 3', where:'Milbil Town station',
+{ id:'s3b9', stage:3, before:17, icon:'📙', name:'Half Past What?',
+  teaches:'Telling the time', where:'The kitchen, waiting for a cake',
+  pages:[
+    { scene:'Chef Bil has put a cake in. Giggle is already asking.', panels:[
+      { who:'giggle', say:'It went in at ten to eleven. It takes forty-five minutes. When is it out?' },
+      { who:'chef', say:'Hop to the next whole hour first. Ten-forty to eleven is twenty minutes.' },
+      { who:'giggle', say:'So twenty-five minutes left over. Eleven twenty-five.' },
+      { who:'chef', say:'Hopping to the hour makes every one of these easy.' },
+    ]},
+    { scene:'Giggle sits down in front of the oven to wait.', panels:[
+      { who:'giggle', say:'Forty-five minutes is a very long time.' },
+      { who:'chef', say:'Sixty minutes to an hour, sixty seconds to a minute, twenty-four hours to a day.' },
+      { who:'giggle', say:'So five minutes is three hundred seconds. I shall count them.' },
+      { cap:'Giggle got to forty-one.' },
+    ]},
+  ]},
+
+{ id:'s3b10', stage:3, before:19, icon:'📕', name:'The 15:45 Train',
+  teaches:'24-hour time', where:'Milbil Town station',
   pages:[
     { scene:'Cosy is reading the departures board. It is all 24-hour time.', panels:[
       { who:'cosy', say:'Fifteen forty-five. There is no such time as quarter to sixteen.' },
@@ -433,11 +738,11 @@ export const BOOKS = [
       { who:'brainy', say:'Then 11:00 to 11:25 is twenty-five more. Forty-five minutes.' },
       { who:'cosy', say:'Forty-five minutes on a cold platform. Marvellous.' },
     ]},
-    { scene:'Brainy revises Stage 3 out loud. Cosy pulls the scarf up.', panels:[
-      { cap:'Decimals: line up the dots, then add column by column.' },
-      { cap:'×10 moves every digit one column left; ÷10 moves it one right.' },
-      { cap:'Per cent means out of 100. Perimeter = all the way round; area = long × short.' },
-      { who:'brainy', say:'A right angle is 90°, a straight line 180°, all the way round 360°.' },
+    { scene:'Brainy revises the measuring half of the stage. Cosy pulls the scarf up.', panels:[
+      { cap:'Perimeter = all the way round. Area = long × short, in square units.' },
+      { cap:'A right angle is 90°, a straight line 180°, a full turn 360°.' },
+      { cap:'milli = a thousandth · centi = a hundredth · kilo = a thousand' },
+      { who:'brainy', say:'And the train is late, which is a measurement nobody enjoys.' },
     ]},
   ]},
 
@@ -455,7 +760,7 @@ export const BOOKS = [
       { art:'bidmas', cap:'Brackets, Indices, Divide and Multiply, Add and Subtract.' },
       { who:'wizzle', say:'Multiplying happens before adding. 4 × 2 = 8, then 3 + 8 = 11.' },
       { who:'chomp', say:'So I went left to right and that was the mistake.' },
-      { who:'wizzle', say:'Divide and multiply are equal partners — do whichever comes first. Same for add and subtract.' },
+      { who:'wizzle', say:'Divide and multiply are equal partners — do whichever comes first.' },
     ]},
     { scene:'Chomp writes it again, with brackets this time.', panels:[
       { who:'chomp', say:'(3 + 4) × 2. Now it IS fourteen.' },
@@ -465,8 +770,25 @@ export const BOOKS = [
     ]},
   ]},
 
-{ id:'s4b2', stage:4, before:4, icon:'📗', name:'A Perfectly Square Patio',
-  teaches:'Powers and square roots', where:'Milbil Town 3D, a building site',
+{ id:'s4b2', stage:4, before:3, icon:'📗', name:'Below Zero',
+  teaches:'Negative numbers', where:'The freezer room behind the café',
+  pages:[
+    { scene:'Cosy is reading the thermometer and is not happy about it.', panels:[
+      { who:'cosy', say:'Minus twelve. That is below nothing. How can there be less than nothing?' },
+      { who:'snooze', say:'The number line does not stop at zero. It carries straight on underneath.' },
+      { art:'numberline', cap:'Keep walking left past the nought and the numbers go negative.' },
+      { who:'snooze', say:'Minus twelve is twelve steps below zero. Minus five is only five.' },
+    ]},
+    { scene:'Cosy works out which is colder and gets it backwards first.', panels:[
+      { who:'cosy', say:'So minus twelve is BIGGER than minus five, because twelve is bigger.' },
+      { who:'snooze', say:'Other way. The further below zero, the smaller — and the colder.' },
+      { who:'cosy', say:'So minus one is nearly warm, and minus nine is miserable.' },
+      { who:'snooze', say:'And if it rises five degrees from minus three, you land on two. Up through the nought.' },
+    ]},
+  ]},
+
+{ id:'s4b3', stage:4, before:5, icon:'📙', name:'A Perfectly Square Patio',
+  teaches:'Squares, cubes and roots', where:'Milbil Town 3D, a building site',
   pages:[
     { scene:'Sunny is laying tiles. Starry is supervising from a deckchair.', panels:[
       { who:'sunny', say:'Five tiles across and five tiles down. How many tiles is that?' },
@@ -477,7 +799,7 @@ export const BOOKS = [
     { scene:'Starry does not get up.', panels:[
       { who:'starry', say:'5² means 5 × 5. The little 2 counts how many fives you multiply together.' },
       { who:'starry', say:'2³ means 2 × 2 × 2, which is eight. Two cubed, because it makes a cube.' },
-      { who:'sunny', say:'So 5² is twenty-five, not ten. The little number is a count, not a thing you times by.' },
+      { who:'sunny', say:'So 5² is twenty-five, not ten. The little number is a count, not a times.' },
       { cap:'Square numbers: 1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144.' },
     ]},
     { scene:'Sunny has forty-nine tiles left over.', panels:[
@@ -488,8 +810,59 @@ export const BOOKS = [
     ]},
   ]},
 
-{ id:'s4b3', stage:4, before:7, icon:'📙', name:'One Part Cordial',
-  teaches:'Ratio and rate', where:'The Ningy-Ningy Canteen truck, a hot day',
+{ id:'s4b4', stage:4, before:7, icon:'📕', name:'A Letter in a Hat',
+  teaches:'Letters for numbers', where:'Milbil Café, a very mysterious order',
+  pages:[
+    { scene:'Wizzle has ordered something but will not say how many.', panels:[
+      { who:'wizzle', say:'I want some cakes. They are four dollars each. How much will it be?' },
+      { who:'royal', say:'How many cakes?' },
+      { who:'wizzle', say:'I shall not say. Call it n.' },
+      { who:'royal', say:'Then it costs 4n dollars. Four times n, whatever n turns out to be.' },
+    ]},
+    { scene:'Wizzle is slightly disappointed to have been outmanoeuvred.', panels:[
+      { who:'royal', say:'A letter is just a number wearing a hat. You can do arithmetic with it anyway.' },
+      { who:'wizzle', say:'And if I tell you n is five?' },
+      { who:'royal', say:'Then swap the letter out: 4 × 5 = 20. Twenty dollars.' },
+      { cap:'4n always means 4 × n. The times sign is left out to keep it tidy.' },
+    ]},
+  ]},
+
+{ id:'s4b5', stage:4, before:9, icon:'📗', name:'Swapping the Letter Out',
+  teaches:'Substituting and simplifying', where:'The library, homework club',
+  pages:[
+    { scene:'Brainy has written 2x − 4 on the board and will not explain it.', panels:[
+      { who:'toothy', say:'What is 2x − 4? I cannot do it, there is a letter in it.' },
+      { who:'brainy', say:'You can once you know what x is. Say x is ten.' },
+      { who:'toothy', say:'Then 2x is twenty. Twenty take four is sixteen.' },
+      { who:'brainy', say:'That is substituting. The letter leaves, the number arrives, and it is ordinary maths.' },
+    ]},
+    { scene:'Brainy writes 3n + 2n underneath.', panels:[
+      { who:'toothy', say:'Three ns and two ns. Can I add those without knowing n?' },
+      { who:'brainy', say:'Yes — you are counting ns, not multiplying them. Five ns. 5n.' },
+      { who:'toothy', say:'But 3n + 2a I could not touch.' },
+      { cap:'Only matching letters add up. Three apples and two apples is five apples; three apples and two pears is not.' },
+    ]},
+  ]},
+
+{ id:'s4b6', stage:4, before:11, icon:'📘', name:'Keep Both Sides Equal',
+  teaches:'Solving equations', where:'The science room, one pair of scales',
+  pages:[
+    { scene:'Scoop has balanced a mystery parcel and seven weights against twelve weights.', panels:[
+      { who:'scoop', say:'The parcel plus seven balances twelve. How heavy is the parcel?' },
+      { who:'starry', say:'Take seven off. But take it off BOTH sides, or it tips.' },
+      { art:'balance', cap:'Whatever you do to one side, do to the other.' },
+      { who:'scoop', say:'Twelve take seven is five. The parcel is five.' },
+    ]},
+    { scene:'Starry sets up a harder one.', panels:[
+      { who:'starry', say:'Now: 2x + 1 = 11. Two parcels and a weight against eleven.' },
+      { who:'scoop', say:'Take the one off both sides — 2x = 10.' },
+      { who:'scoop', say:'Then halve both sides. x = 5.' },
+      { who:'starry', say:'Undo the adding first, the multiplying second. Backwards through the sum.' },
+    ]},
+  ]},
+
+{ id:'s4b7', stage:4, before:13, icon:'📙', name:'One Part Cordial',
+  teaches:'Ratio', where:'The Ningy-Ningy Canteen truck, a hot day',
   pages:[
     { scene:'Chef Bil is making a very large jug of cordial.', panels:[
       { who:'chef', say:'One part cordial to four parts water. One to four.' },
@@ -497,40 +870,68 @@ export const BOOKS = [
       { who:'chef', say:'Right. Now do two cups of cordial.' },
       { who:'toothy', say:'Eight cups of water. Four times as much water, always.' },
     ]},
-    { scene:'Royal turns up with twenty dollars and a problem.', panels:[
-      { who:'royal', say:'Share this twenty dollars between the two of you, one to three.' },
-      { who:'toothy', say:'One dollar and three dollars?' },
-      { who:'royal', say:'No. Add the numbers first: 1 + 3 is FOUR parts. Each part is $20 ÷ 4 = $5.' },
-      { art:'ratio', cap:'One gets one part. The other gets three. $5 and $15.' },
-    ]},
-    { scene:'Chef Bil drives off.', panels:[
+    { scene:'Chef Bil tidies the recipe card.', panels:[
       { who:'chef', say:'A ratio simplifies like a fraction. 4:8 both divide by four — that is 1:2.' },
       { who:'chef', say:'10:15 both divide by five. 2:3. Same mix, smaller numbers.' },
-      { who:'toothy', say:'And the truck did 120 km in two hours, so that is 60 km every hour.' },
-      { cap:'A rate is just a ratio where the two sides measure different things. The slash means "per".' },
+      { who:'toothy', say:'So the numbers can change as long as the mix does not.' },
+      { cap:'A ratio is about the relationship, not the amount.' },
     ]},
   ]},
 
-{ id:'s4b4', stage:4, before:10, icon:'📕', name:'The Last Book',
-  teaches:'Chance and averages, and everything in Stage 4', where:'Milbil Café, one dice and five scores',
+{ id:'s4b8', stage:4, before:15, icon:'📕', name:'Add the Parts First',
+  teaches:'Sharing in a ratio, and rate', where:'Outside the truck, with twenty dollars',
+  pages:[
+    { scene:'Royal has money to split and is enjoying the suspense.', panels:[
+      { who:'royal', say:'Share this twenty dollars between the two of you, one to three.' },
+      { who:'toothy', say:'One dollar and three dollars?' },
+      { who:'royal', say:'No. Add the numbers FIRST: 1 + 3 is four parts. Each part is $20 ÷ 4 = $5.' },
+      { art:'ratio', cap:'One gets one part. The other gets three. $5 and $15.' },
+    ]},
+    { scene:'The truck drives off and Royal changes the subject.', panels:[
+      { who:'royal', say:'That truck did 120 km in two hours. How fast?' },
+      { who:'toothy', say:'Sixty kilometres every hour.' },
+      { who:'royal', say:'Which is a RATE — a ratio where the two sides measure different things.' },
+      { cap:'The slash means "per". Per hour, per cake, per kilogram.' },
+    ]},
+  ]},
+
+{ id:'s4b9', stage:4, before:17, icon:'📗', name:'What Are the Odds?',
+  teaches:'Probability', where:'The school fete, the lucky dip',
+  pages:[
+    { scene:'A bucket, five tickets, and a queue.', panels:[
+      { who:'sporty', say:'Two red tickets and three blue. What is my chance of a red?' },
+      { who:'brainy', say:'The ones you want over all the ones there are. Two out of five. 2/5.' },
+      { who:'sporty', say:'And a coin? Heads?' },
+      { who:'brainy', say:'One face out of two. A half. Which is also fifty per cent.' },
+    ]},
+    { scene:'Sporty tries to find the limits.', panels:[
+      { who:'sporty', say:'What is the chance of rolling a seven on a normal dice?' },
+      { who:'brainy', say:'Nought. There is no seven, so it cannot happen.' },
+      { who:'sporty', say:'And something certain?' },
+      { who:'brainy', say:'One. Chance runs from 0 to 1 and never leaves that stretch.' },
+    ]},
+  ]},
+
+{ id:'s4b10', stage:4, before:19, icon:'📙', name:'The Last Book',
+  teaches:'Averages, and everything in Stage 4', where:'Milbil Café, one dice and five scores',
   pages:[
     { scene:'Starry rolls a dice. Brainy writes everything down.', panels:[
-      { who:'brainy', say:'Chance runs from 0 to 1. Nought is impossible, one is certain.' },
-      { who:'starry', say:'And a three on this dice?' },
-      { who:'brainy', say:'One face you want, six faces there are. One sixth.' },
-      { cap:'Probability = the ones you want ÷ all the ones there are.' },
-    ]},
-    { scene:'Five scores on the board: 3, 7, 7, 9, 14.', panels:[
+      { who:'brainy', say:'Five scores on the board: 3, 7, 7, 9 and 14.' },
+      { who:'starry', say:'And four different ways to sum them up, apparently.' },
       { who:'brainy', say:'Mean: add them all, divide by how many. Forty over five is eight.' },
-      { who:'brainy', say:'Median: in order, take the middle one. Seven.' },
-      { who:'brainy', say:'Mode: the one that turns up most. Also seven.' },
+      { who:'brainy', say:'Median: put them in order, take the middle one. Seven.' },
+    ]},
+    { scene:'Brainy will not stop.', panels:[
+      { who:'brainy', say:'Mode: the one that turns up most often. Also seven.' },
       { who:'brainy', say:'Range: biggest take smallest. Fourteen take three is eleven.' },
+      { who:'starry', say:'Mean, median, mode, range. Four answers to one pile of numbers.' },
+      { who:'brainy', say:'Because they answer four different questions about it.' },
     ]},
     { scene:'Last page of the last book.', panels:[
       { cap:'BIDMAS: brackets, indices, divide and multiply, add and subtract.' },
       { cap:'Negative numbers carry on below zero. −9 is smaller than −1.' },
-      { cap:'In algebra 4a means 4 × a, and only matching letters add up: 3n + 2n = 5n.' },
-      { cap:'To solve an equation, undo what was done to x, doing the same to both sides.' },
+      { cap:'In algebra 4n means 4 × n, and only matching letters add up.' },
+      { cap:'To solve an equation, undo what was done to x — on both sides.' },
       { who:'starry', say:'That is the lot. Go and sit the test.' },
     ]},
   ]},
