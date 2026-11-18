@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#efe8ff">
+  <title>Milbil Books</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="hud">
+    <div class="brand">
+      <span class="brand-pic" id="brandCast"></span>
+      <h1>Milbil <span>Books</span></h1>
+    </div>
+    <div class="hud-right">
+      <button type="button" class="round" id="helpBtn" aria-label="How it works" title="How it works">❓</button>
+      <button type="button" class="round" id="setBtn" aria-label="Settings" title="Settings">⚙️</button>
+    </div>
+  </header>
+
+  <main id="view"></main>
+
+  <nav class="tabbar" id="tabbar" role="tablist">
+    <button type="button" class="tab" data-tab="create" role="tab"><i>✏️</i><span>Create</span></button>
+    <button type="button" class="tab" data-tab="library" role="tab"><i>📚</i><span>Library</span></button>
+  </nav>
+
+  <div id="editor" class="screen" hidden></div>
+  <div id="reader" class="screen" hidden></div>
+
+  <div id="welcome" class="screen welcome" hidden>
+    <div class="welcome-card">
+      <h1>Milbil <span>Books</span></h1>
+      <div class="welcome-cast" id="welcomeCast"></div>
+      <p class="lead">Make your own comic books, starring milbils.</p>
+      <p>Pull the panels on a page to the size you want, put milbils in them, give them speech
+        bubbles, and draw anything you like in any colour. The pages number themselves. When a
+        book is finished, tap <b>✓ Done</b> and it goes on the shelf in the <b>Library</b> — and
+        you can open it up and <b>✏️ Edit</b> it again whenever you like.</p>
+      <label class="name-row">
+        <span>What's your name? <small>(it goes on the cover of your books)</small></span>
+        <span class="name-input">
+          <input id="nameInput" maxlength="30" autocomplete="off" spellcheck="false" placeholder="Your name">
+          <button type="button" id="nameDice" aria-label="Pick a name for me">🎲</button>
+        </span>
+      </label>
+      <button type="button" id="startBtn" class="btn go big">Let's make a book →</button>
+    </div>
+  </div>
+
+  <div id="sheet" class="sheet" hidden></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

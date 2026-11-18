@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="Milbil Books">
+  <rect width="120" height="120" rx="26" fill="#7b5cff"/>
+  <!-- an open book -->
+  <path d="M14 34 Q37 26 60 36 V96 Q37 86 14 94Z" fill="#fffdf8" stroke="#2b2233" stroke-width="3.4" stroke-linejoin="round"/>
+  <path d="M106 34 Q83 26 60 36 V96 Q83 86 106 94Z" fill="#fffdf8" stroke="#2b2233" stroke-width="3.4" stroke-linejoin="round"/>
+  <!-- a panel on the left page, with a milbil in it -->
+  <rect x="21" y="40" width="32" height="40" rx="2" fill="#bfe9ff" stroke="#2b2233" stroke-width="2.4"/>
+  <rect x="29" y="52" width="16" height="22" rx="2" fill="#fff" stroke="#ff6fae" stroke-width="2.6"/>
+  <path d="M29 63 H45" stroke="#ff6fae" stroke-width="2"/>
+  <circle cx="34" cy="57.5" r="1.6" fill="#2b2233"/><circle cx="40" cy="57.5" r="1.6" fill="#2b2233"/>
+  <!-- a speech bubble on the right page -->
+  <ellipse cx="83" cy="52" rx="16" ry="10" fill="#fff" stroke="#2b2233" stroke-width="2.6"/>
+  <path d="M75 59 L70 68 L81 61" fill="#fff" stroke="#2b2233" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M77 50 H89 M77 55 H85" stroke="#2b2233" stroke-width="2.2" stroke-linecap="round"/>
+  <!-- a pencil scribble -->
+  <path d="M70 80 Q78 72 86 80 T100 78" stroke="#ffc531" stroke-width="3.6" fill="none" stroke-linecap="round"/>
+  <!-- sparkles -->
+  <g stroke="#ffc531" stroke-width="4" stroke-linecap="round"><path d="M60 12 V22"/><path d="M42 16 L46 24"/><path d="M78 16 L74 24"/></g>
+</svg>
