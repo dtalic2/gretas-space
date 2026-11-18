@@ -223,7 +223,7 @@ function stageHTML(st, cur){
           <b>Stage ${st.id} · ${esc(st.name)}</b>
           <small>${esc(st.year)}</small>
         </div>
-        <span class="stage-score">${testPassed(st.id) ? '✓' : `${done}/10`}</span>
+        <span class="stage-score">${testPassed(st.id) ? '✓' : `${done}/${st.lessons.length}`}</span>
       </header>
       <p class="stage-blurb">${open ? esc(st.blurb)
         : `Pass the Stage ${st.id - 1} test and this opens up.`}</p>
@@ -272,7 +272,7 @@ function testRowHTML(st, cur){
       <b>Stage ${st.id} Test</b>
       <small>${passed ? `Passed · best ${t.best}/${t.of}`
         : open ? `${test.qs.length} questions · more than ${PASS_WRONG} wrong and the stage starts again`
-        : 'Finish all ten lessons first'}${t && !passed ? ` · last go ${t.of - t.wrong}/${t.of}` : ''}</small>
+        : 'Finish all twenty lessons first'}${t && !passed ? ` · last go ${t.of - t.wrong}/${t.of}` : ''}</small>
     </span>
     <span class="row-end">${passed ? '🏅' : isNow ? '<i class="go-dot">▶</i>' : open ? '›' : ''}</span>
   </li>`;
@@ -294,7 +294,7 @@ function paintLibrary(){
   el.view.innerHTML = `
     <section class="lib-top card">
       <h2>📚 The Library</h2>
-      <p>Sixteen comic books, four to a stage. Every one is milbils you have met in the other
+      <p>Forty comic books, ten to a stage — one in front of every other lesson. Every one is milbils you have met in the other
         games working an idea out loud, and you can read any of them again whenever you like —
         reading one a second time is free and pays nothing.</p>
       <p class="muted">${c.books} of ${c.booksOf} read.</p>
@@ -305,7 +305,7 @@ function paintLibrary(){
         <header class="stage-top">
           <span class="stage-icon">${open ? st.icon : '🔒'}</span>
           <div class="stage-txt"><b>Stage ${st.id} · ${esc(st.short)}</b><small>${esc(st.year)}</small></div>
-          <span class="stage-score">${booksOf(st.id).filter(b => S.read.includes(b.id)).length}/4</span>
+          <span class="stage-score">${booksOf(st.id).filter(b => S.read.includes(b.id)).length}/${booksOf(st.id).length}</span>
         </header>
         <div class="shelf">${booksOf(st.id).map(b => {
           const can = bookOpen(b);
@@ -505,7 +505,7 @@ async function openTest(stage){
     <ul class="tally">
       <li><b>One go</b> at each question</li>
       <li>Scratch pad only — no hints, no poster</li>
-      <li><b>${PASS_WRONG} wrong is still a pass.</b> More than that and all ten lessons of
+      <li><b>${PASS_WRONG} wrong is still a pass.</b> More than that and all twenty lessons of
         Stage ${stage} open up again and have to be done over.</li>
     </ul>
     ${again ? '<p class="muted">You have already passed this one, so nothing can go wrong and nothing is paid.</p>' : ''}`,
@@ -587,7 +587,7 @@ function lessonResultHTML(l, res){
       ${res.replay ? '' : `<p class="result-why">${res.perfect
         ? `All ${res.of} first time, so that's the ${XP.perfect} XP bonus as well.`
         : 'Go back over it any time — the stars can still go up, even though the XP cannot.'}</p>`}
-      ${toTest ? `<p class="result-unlock">📝 <b>That's all ten lessons.</b> The Stage ${l.stage} test is open.</p>` : ''}
+      ${toTest ? `<p class="result-unlock">📝 <b>That's all twenty lessons.</b> The Stage ${l.stage} test is open.</p>` : ''}
       <div class="result-btns">
         <button type="button" class="btn ghost" data-r="map">The map</button>
         ${toTest ? '<button type="button" class="btn go" data-r="test">Sit the test →</button>'
@@ -612,7 +612,7 @@ function testResultHTML(test, res){
         <li><b>${res.wrong}</b> wrong — more than ${PASS_WRONG} is a fail</li>
         <li><b>${fmt(res.paid)}</b> XP, and you keep every bit of it</li>
       </ul>
-      <p class="result-why">All ten lessons of Stage ${test.stage} have opened up again. Work
+      <p class="result-why">All twenty lessons of Stage ${test.stage} have opened up again. Work
         back through them — they pay no XP the second time, but the stars still count, and the
         test will be waiting at the end.</p>
       <div class="result-btns">
@@ -730,13 +730,13 @@ function openMe(){
       <h4 class="sheet-h">Where you are</h4>
       <p class="sheet-note">${
         cur.kind === 'done' ? 'Everything in MilMATHS is finished. That is the lot.'
-        : cur.kind === 'test' ? `The <b>Stage ${cur.stage} test</b>. All ten lessons are behind you.`
+        : cur.kind === 'test' ? `The <b>Stage ${cur.stage} test</b>. All twenty lessons are behind you.`
         : `Stage ${cur.stage}, lesson ${cur.n} — <b>${esc(cur.lesson.name)}</b>.`}</p>
       <div class="bars">${STAGES.map(st => {
-        const done = lessonsDone(st.id);
+        const done = lessonsDone(st.id), of = st.lessons.length;
         return `<div class="bar-row"><span>${st.icon} Stage ${st.id}</span>
-          <span class="bar"><i style="width:${done * 10}%;background:${st.colour}"></i></span>
-          <b>${testPassed(st.id) ? '🏅' : `${done}/10`}</b></div>`;
+          <span class="bar"><i style="width:${(done / of) * 100}%;background:${st.colour}"></i></span>
+          <b>${testPassed(st.id) ? '🏅' : `${done}/${of}`}</b></div>`;
       }).join('')}</div>
       <h4 class="sheet-h">Ranks</h4>
       <div class="list tight">${RANKS.map(r => `<article class="buy wide${S.total >= r.at ? '' : ' shut'}">
@@ -882,7 +882,8 @@ function openHelp(){
     render: () => `
       <h4 class="sheet-h">Four stages, four tests</h4>
       <p class="sheet-note">Each stage is a harder slice of the Australian Curriculum than the
-        one before. Ten lessons, then a test — and you cannot touch the next stage until you
+        one before. Twenty lessons with a comic in front of every other one, then a test — and
+        you cannot touch the next stage until you
         pass that test.</p>
       <div class="list tight">${STAGES.map(st => `<article class="buy wide${stageOpen(st.id) ? '' : ' shut'}">
         <span class="buy-icon">${stageOpen(st.id) ? st.icon : '🔒'}</span>
@@ -897,8 +898,8 @@ function openHelp(){
           and so does everything behind it until you come back and do better.</li>
       </ul>
       <h4 class="sheet-h">The stage test</h4>
-      <p class="sheet-note">Fifteen questions, one go each, scratch pad only. <b>More than
-        ${PASS_WRONG} wrong and all ten lessons of that stage open up again</b> and have to be
+      <p class="sheet-note">Twelve to fifteen questions, one go each, scratch pad only. <b>More than
+        ${PASS_WRONG} wrong and all twenty lessons of that stage open up again</b> and have to be
         done over. Your XP, your comics and anything you have bought are never touched.</p>
       <h4 class="sheet-h">XP</h4>
       <ul class="tally flat">
@@ -916,7 +917,7 @@ function openHelp(){
       <h4 class="sheet-h">The three tabs</h4>
       <ul class="tally flat">
         <li>🏠 <b>Home</b> — your stage, and the lesson you are on</li>
-        <li>📚 <b>Library</b> — all sixteen comics, readable any time</li>
+        <li>📚 <b>Library</b> — all forty comics, readable any time</li>
         <li>👾 <b>Milbils</b> — the shop, the workshop and the features</li>
       </ul>`,
   });
