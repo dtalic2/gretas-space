@@ -90,6 +90,15 @@
         "8134"
       ],
       "port": 8134
+    },
+    {
+      "name": "milbil-books",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "milbil-books/serve.py",
+        "8135"
+      ],
+      "port": 8135
     }
   ]
 }

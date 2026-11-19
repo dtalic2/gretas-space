@@ -1,0 +1,15 @@
+{
+  "name": "Milbil Books",
+  "short_name": "Milbil Books",
+  "description": "Make comic books starring milbils: panels you can resize, speech bubbles, drawing in any colour, and a library for the finished books.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f6f1ff",
+  "theme_color": "#efe8ff",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
