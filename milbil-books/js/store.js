@@ -113,6 +113,7 @@ const DEFAULTS = () => ({
   open: null,                 // the book being edited when the tab was closed
   pen: { c: '#2b2233', w: 14, g: false, b: false },
   rubber: 44,
+  readSpeed: 'normal',        // how fast Read Aloud reads: slow, normal or fast
   recent: ['#2b2233', '#e5484d', '#2f6fe0', '#4cbb4a', '#ffc531'],
 });
 
@@ -129,6 +130,7 @@ export function loadSettings(){
   settings.pen.w = Math.max(3, Math.min(90, Number(settings.pen.w) || 14));
   settings.rubber = Math.max(10, Math.min(140, Number(settings.rubber) || 44));
   if (!Array.isArray(settings.recent) || !settings.recent.length) settings.recent = DEFAULTS().recent;
+  if (!['slow', 'normal', 'fast'].includes(settings.readSpeed)) settings.readSpeed = 'normal';
   return settings;
 }
 

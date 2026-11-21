@@ -4,13 +4,15 @@
 // tap the arrows or use the arrow keys to turn the page. After the last page
 // comes The End.
 //
-// The ✏️ Edit button along the bottom opens the book straight back up in Create,
-// whenever you like. 🔊 reads the book aloud with the browser's own voice,
-// lighting up each bubble as it goes.
+// Along the bottom: 🔊 Read Aloud, which reads the whole book out from wherever
+// you are (see aloud.js), lighting up each bubble and caption as it goes and
+// turning the pages itself; and ✏️ Edit, which opens the book straight back up
+// in Create, whenever you like.
 
 import { allPages } from './model.js';
 import { PageView } from './view.js';
-import { $, esc, sfx, plural } from './ui.js';
+import { linesFor, say, wake, hush, canSpeak } from './aloud.js';
+import { $, esc, sfx, plural, toast } from './ui.js';
 
 export class Reader {
   constructor(root, hooks){
@@ -23,7 +25,6 @@ export class Reader {
         <header class="rd-top">
           <button type="button" class="ed-btn" data-act="close" aria-label="Back to the library">✕</button>
           <div class="rd-name"><b></b><small></small></div>
-          <button type="button" class="ed-btn" data-act="read" aria-label="Read it to me" title="Read it to me">🔊</button>
           <button type="button" class="ed-btn" data-act="bin" aria-label="Throw this book away" title="Throw this book away">🗑️</button>
         </header>
         <section class="rd-stage">
@@ -38,7 +39,10 @@ export class Reader {
             <div class="rd-dots"></div>
             <button type="button" class="rd-step" data-act="next" aria-label="Next page">›</button>
           </div>
-          <button type="button" class="btn go big rd-edit" data-act="edit">✏️ Edit this book</button>
+          <div class="rd-btns">
+            <button type="button" class="btn big rd-read" data-act="read">🔊 Read Aloud</button>
+            <button type="button" class="btn go big rd-edit" data-act="edit">✏️ Edit this book</button>
+          </div>
         </footer>
       </div>`;
     this.nameEl = $('.rd-name b', root);
@@ -48,7 +52,7 @@ export class Reader {
     this.endEl = $('.rd-end', root);
     this.dotsEl = $('.rd-dots', root);
     this.readBtn = $('[data-act="read"]', root);
-    if (!('speechSynthesis' in window)) this.readBtn.hidden = true;
+    if (!canSpeak()) this.readBtn.hidden = true;
 
     root.addEventListener('click', (e) => {
       const b = e.target.closest('[data-act]');
@@ -61,7 +65,7 @@ export class Reader {
       if (act === 'bin') this.hooks.bin(this.book);
       if (act === 'read') this.toggleReading();
       if (act === 'again'){ this.stopReading(); this.show(0, 1); }
-      if (act === 'dot') this.show(+b.dataset.i, +b.dataset.i > this.at ? 1 : -1);
+      if (act === 'dot'){ this.stopReading(); this.show(+b.dataset.i, +b.dataset.i > this.at ? 1 : -1); }
     });
 
     // Swipe to turn. A tap on the left or right third of the page turns too.
@@ -189,60 +193,46 @@ export class Reader {
     else this.startReading();
   }
 
-  /** What there is to say on a page, top to bottom, left to right. */
-  lines(i){
-    const pages = allPages(this.book);
-    if (i === 0) return [{ text: `${this.book.title || 'My Book'}.${this.book.author ? ` By ${this.book.author}.` : ''}` }];
-    const page = pages[i];
-    if (!page) return [];
-    const out = [];
-    const panels = [...page.panels].sort((a, b) => a.y - b.y || a.x - b.x);
-    for (const p of panels){
-      for (const t of [...p.words].sort((a, b) => a.y - b.y || a.x - b.x)) out.push({ id: t.id, text: t.text });
-    }
-    return out;
+  paintReadBtn(){
+    this.readBtn.classList.toggle('on', !!this.reading);
+    this.readBtn.textContent = this.reading ? '⏹ Stop reading' : '🔊 Read Aloud';
   }
 
-  voice(){
-    const all = speechSynthesis.getVoices();
-    return all.find(v => /en[-_]AU/i.test(v.lang)) || all.find(v => /en[-_]GB/i.test(v.lang)) ||
-      all.find(v => /^en/i.test(v.lang)) || null;
-  }
-
+  /** Read from this page to the end — or from the cover, if it's already The End. */
   startReading(){
-    if (!('speechSynthesis' in window)) return;
+    if (!canSpeak()){ toast("Sorry — this browser can't read aloud."); return; }
+    wake();
     this.reading = { token: Symbol('read') };
-    this.readBtn.classList.add('on');
+    this.paintReadBtn();
     if (this.at >= this.count - 1) this.show(0, 1);
     this.readPage(this.reading.token);
   }
 
   readPage(token){
     if (this.reading?.token !== token) return;
-    const queue = this.lines(this.at);
+    const queue = linesFor(this.book, this.at);
+    const words = queue.length;
     const next = () => {
       if (this.reading?.token !== token) return;
       this.host.querySelectorAll('.btxt.speaking').forEach(el => el.classList.remove('speaking'));
       const line = queue.shift();
       if (!line){
-        // End of the page: turn over and carry on, or stop at The End.
-        if (this.at >= this.count - 2){ this.show(this.count - 1, 1); this.stopReading(); return; }
+        // End of the page: turn over and carry on. A page with no words on it
+        // gets a little longer, to look at the pictures.
         setTimeout(() => {
           if (this.reading?.token !== token) return;
+          if (this.at >= this.count - 2){
+            this.show(this.count - 1, 1);
+            say({ title: true, text: 'The End.' }, () => { if (this.reading?.token === token) this.stopReading(); });
+            return;
+          }
           this.show(this.at + 1, 1);
           setTimeout(() => this.readPage(token), 450);
-        }, 500);
+        }, words ? 700 : 2400);
         return;
       }
       if (line.id) this.host.querySelector(`.btxt[data-say="${line.id}"]`)?.classList.add('speaking');
-      const u = new SpeechSynthesisUtterance(line.text);
-      const v = this.voice();
-      if (v) u.voice = v;
-      u.rate = 0.95;
-      u.pitch = 1.1;
-      u.onend = () => setTimeout(next, 250);
-      u.onerror = () => setTimeout(next, 250);
-      speechSynthesis.speak(u);
+      say(line, () => setTimeout(next, 280));
     };
     next();
   }
@@ -250,8 +240,8 @@ export class Reader {
   stopReading(){
     if (!this.reading) return;
     this.reading = null;
-    this.readBtn.classList.remove('on');
-    try { speechSynthesis.cancel(); } catch {}
+    hush();
+    this.paintReadBtn();
     this.host.querySelectorAll('.btxt.speaking').forEach(el => el.classList.remove('speaking'));
   }
 }
