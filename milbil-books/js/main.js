@@ -373,6 +373,10 @@ function helpSheet(){
       <li><b>↩️ Undo</b> takes back anything. Pages number themselves.</li>
       <li><b>📜 Caption</b>: words with nobody talking, like a storyteller — "Once upon a time…". Pick a
         panel and put it in a strip along the top, along the bottom, or in a box you can move anywhere.</li>
+      <li><b>Bigger or smaller words</b>: tap a bubble or caption, then drag its pink dot, or tap ➕ and ➖.</li>
+      <li><b>⚙️ Settings</b> (in the row above the tools) shows everything in a panel — milbils and what they
+        say, captions, and the drawing — and copies or moves the ones you tick into another panel, on this
+        page or any other.</li>
       <li><b>✓ Done</b> puts your book in the 📚 Library. Open it there and tap <b>✏️ Edit</b> at the bottom to
         change it whenever you like.</li>
       <li><b>🔊 Read Aloud</b> reads your book to you: the captions, and every bubble with who said it, each

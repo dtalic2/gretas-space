@@ -94,7 +94,7 @@ export class Reader {
     }, { passive: false });
 
     addEventListener('keydown', (e) => {
-      if (!this.book || document.querySelector('.card-wrap')) return;
+      if (!this.book || document.querySelector('.card-wrap.show')) return;
       if (e.key === 'ArrowRight' || e.key === ' '){ e.preventDefault(); this.turn(1); }
       if (e.key === 'ArrowLeft'){ e.preventDefault(); this.turn(-1); }
       if (e.key === 'Escape') this.hooks.close();

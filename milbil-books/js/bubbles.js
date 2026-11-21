@@ -39,18 +39,24 @@ export const KINDS = [
 
 let meter = null;
 
-/** How wide words can be, and how tall, in page units. `max` overrides MAX_W. */
+/**
+ * How wide words can be, and how tall, in page units. `size` is the writing's
+ * size in page units (or 's', 'm', 'l'). Bigger writing is allowed to be wider
+ * in step, so a bubble made bigger keeps the same words on each line. `max`
+ * overrides all that.
+ */
 export function measure(text, kind = 'say', size = 'm', max = null){
+  const px = typeof size === 'number' ? size : (TEXT_SIZE[size] || TEXT_SIZE.m);
   if (!meter){
     meter = document.createElement('div');
     meter.className = 'meter';
     meter.setAttribute('aria-hidden', 'true');
     document.body.appendChild(meter);
   }
-  max = Math.round(max ?? (MAX_W[kind] || MAX_W.say));
+  max = Math.round(max ?? (MAX_W[kind] || MAX_W.say) * px / TEXT_SIZE.m);
   const el = document.createElement('div');
   el.className = `btxt ${kind}`;
-  el.style.cssText = `position:static;font-size:${TEXT_SIZE[size] || TEXT_SIZE.m}px;max-width:${max}px;width:max-content`;
+  el.style.cssText = `position:static;font-size:${px}px;max-width:${max}px;width:max-content`;
   el.textContent = text || ' ';
   meter.replaceChildren(el);
 

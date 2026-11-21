@@ -23,7 +23,7 @@
 // Panels and milbils are kept between redraws rather than rebuilt, so dragging
 // one about doesn't make Greta's pictures flicker.
 
-import { PAGE_W, PAGE_H, TEXT_SIZE, box, mbWidth, bgCss, findMilbil, isStrip } from './model.js';
+import { PAGE_W, PAGE_H, box, mbWidth, bgCss, findMilbil, isStrip, fontSize } from './model.js';
 import { castHTML } from './cast.js';
 import { bubbleSVG } from './bubbles.js';
 import { paintInk, drawStroke, usesLayer } from './ink.js';
@@ -175,7 +175,7 @@ export class PageView {
         const tw = t.w + 8;
         texts.push(`<div class="btxt ${t.kind}"${this.edit ? ` data-w="${t.id}"` : ''} data-say="${t.id}" style="` +
           `left:${pct(t.x - tw / 2, PAGE_W)};top:${pct(t.y - t.h / 2, PAGE_H)};width:${pct(tw, PAGE_W)};` +
-          `font-size:${cq(TEXT_SIZE[t.size] || TEXT_SIZE.m)}">${esc(t.text)}</div>`);
+          `font-size:${cq(fontSize(t))}">${esc(t.text)}</div>`);
       }
     }
     this.bubsEl.innerHTML = shapes.join('');
