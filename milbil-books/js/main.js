@@ -13,14 +13,14 @@
 // A book is a draft until you tap ✓ Done in the editor; then it goes on the
 // shelf in the Library. Editing it again later doesn't take it off the shelf.
 
-import { openStore, onLateOpen, loadBooks, putBook, removeBook, removeTrack, trackIds, settings, loadSettings, saveSettings, storageMode } from './store.js';
+import { openStore, onLateOpen, loadBooks, putBook, removeBook, removeTrack, getTrack, trackIds, settings, loadSettings, saveSettings, storageMode } from './store.js';
 import { makeCopy, copyName, readCopy, restoreSounds } from './backup.js';
 import { newBook, repairBook, COVER_COLOURS } from './model.js';
 import { CAST, castHTML } from './cast.js';
 import { Editor, pickTitle } from './editor.js';
 import { Reader } from './reader.js';
 import { Studio } from './studio.js';
-import { trackName, clock, Player } from './tracks.js';
+import { trackName, clock, seenIn, missingNote, Player } from './tracks.js';
 import { tidyClips } from './voice.js';
 import { PageView } from './view.js';
 import { canSpeak, SPEEDS, say, wake } from './aloud.js';
@@ -174,15 +174,33 @@ function paintSounds(){
           <b>${esc(trackName(b))}</b>
           <small>${b.author ? `by ${esc(b.author)} · ` : ''}<span class="trk-time">${clock(b.track.secs)}</span></small>
           <span class="trk-bar" aria-hidden="true"><i></i></span>
+          <span class="trk-note"${missingNote(b) ? '' : ' hidden'}>📄 ${esc(missingNote(b))}</span>
           <span class="trk-btns">
             <button type="button" class="btn go trk-play" data-act="play" data-id="${b.id}">▶️ Listen</button>
             <button type="button" class="btn ghost" data-act="along" data-id="${b.id}">📖 Read along</button>
+            <button type="button" class="btn ghost trk-rec${missingNote(b) ? ' due' : ''}" data-act="rerecord" data-id="${b.id}">🔴 New recording</button>
           </span>
         </div>
       </div>`).join('')}</div>`;
   for (const b of list) coverInto($(`[data-cover-of="${b.id}"]`, view), b);
   // the newest is the one most likely to be played: have it ready for the first tap
   tunes.load(list[0].id);
+  // A soundtrack from before the game kept count of its pages: find out which
+  // it has, so it can say if the book has more now.
+  (async () => {
+    for (const b of list.filter(x => !Array.isArray(x.track.seen))){
+      const t = await getTrack(b.id).catch(() => null);
+      if (!t || !b.track) continue;
+      b.track.seen = seenIn(t);
+      await save(b);
+      const row = $(`.trk[data-id="${b.id}"]`, view), note = missingNote(b);
+      if (!row || !note) continue;
+      const el = row.querySelector('.trk-note');
+      el.textContent = `📄 ${note}`;
+      el.hidden = false;
+      row.querySelector('.trk-rec')?.classList.add('due');
+    }
+  })();
   // tidy away any that have lost their sound (a browser that cleared its storage, say)
   trackIds().then(ids => {
     const lost = list.filter(b => !ids.has(b.id));
@@ -231,6 +249,7 @@ view.addEventListener('click', (e) => {
     case 'bin': if (book) binBook(book); break;
     case 'play': if (book?.track) playTune(book); break;
     case 'along': if (book?.track){ openReader(book); reader.listen(); } break;
+    case 'rerecord': if (book){ tunes.pause(); sheet.close(); studio.open(book); } break;
   }
 });
 
@@ -489,7 +508,9 @@ function helpSheet(){
       <li><b>🎙️ Soundtrack</b> (at the top while you're changing a book) records <i>you</i> reading it out loud.
         Turn the pages as you read. It's called after the book — a book called Chomp has the Chomp Soundtrack
         — and it's in <b>🎧 Soundtracks</b> to listen to whenever there isn't time to read, with the pages
-        turning by themselves if you tap <b>📖 Read along</b>.</li>
+        turning by themselves if you tap <b>📖 Read along</b>. Added pages since? <b>🔴 Record a new one</b>
+        (in the studio, or <b>New recording</b> in 🎧 Soundtracks) replaces it — the game says which pages the
+        old one is missing, ✕ Cancel keeps the old one, and Undo brings it back.</li>
     </ul>`,
   });
 }
@@ -612,7 +633,10 @@ async function boot(){
   loadSettings();
   setSound(settings.sound);
   sheet = new Sheet($('#sheet'));
-  studio = new Studio($('#studio'), { save, close: () => editor.renderTop() });
+  // The studio opens over the editor (🎙️ Soundtrack) or straight from 🎧
+  // Soundtracks (🔴 New recording); whichever it was, that's brought up to date after.
+  const afterStudio = () => { if (editor.isOpen) editor.renderTop(); else paint(); };
+  studio = new Studio($('#studio'), { save, close: afterStudio, changed: afterStudio });
   editor = new Editor($('#editor'), sheet, { save, back, done, studio: (book) => { sheet.close(); studio.open(book); } });
   reader = new Reader($('#reader'), {
     close: () => reader.close(),

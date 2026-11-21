@@ -330,8 +330,20 @@ from the cover, turning the pages as you go (swipe, or ‹ and ›). A red dot a
 clock show it's recording, and a bar jumps about with your voice. Tap **⏹ Stop**
 and it's saved. **▶️ Listen** plays it back there and then.
 
-**🔴 Record again** makes a new one in its place (it asks first); 🗑️ throws it
-away. A book with a soundtrack has a little red dot on its 🎙️ button.
+**Replacing it.** A soundtrack can always be replaced by a new one — after
+adding pages to the book, say. The game keeps count of which pages each
+soundtrack has (every page that was showing while it was recorded), and when
+the book has pages its soundtrack hasn't, it says so: adding a page says the
+soundtrack doesn't have it yet, the 🎙️ button's dot turns from red to amber,
+and the studio and 🎧 Soundtracks both say "📄 Page 3 isn't in the soundtrack
+yet."
+
+**🔴 Record a new one** in the studio — or **🔴 New recording** under the
+soundtrack in 🎧 Soundtracks, which opens the studio straight from the list —
+records the whole book again. The old one stays until the new one is finished:
+while recording, **✕ Cancel** throws the new one away and keeps the old one,
+and once ⏹ Stop has saved the new one, **Undo** brings the old one back. 🗑️
+throws a soundtrack away altogether.
 
 **Listening.** **🎧 Soundtracks** lists every book that has one, newest first.
 **▶️ Listen** plays it right there, with a bar showing how far through it is —
@@ -439,9 +451,18 @@ Soundtracks were checked with the browser's pretend microphone (it beeps): the
 countdown, the clock and the level bar, three page turns written down, the
 recording saved with the book, played back in the studio with the pages
 turning, in 🎧 Soundtracks with ▶️ and pause, and read along in the reader all
-the way to The End; skipping by tapping a page dot; recording again (it asks),
-throwing it away, a reload, the microphone being refused, and a book thrown away
-taking its soundtrack with it.
+the way to The End; skipping by tapping a page dot; a new recording cancelled
+part way (the old one kept), throwing it away, a reload, the microphone being
+refused, and a book thrown away taking its soundtrack with it.
+
+Replacing one was checked by recording a soundtrack of a cover and two pages,
+adding a third page (the toast, the amber dot, the studio's "Page 3 isn't in
+the soundtrack yet"), cancelling a new recording part way (the old one exactly
+as it was), recording a new one all the way through (it takes the old one's
+place and nothing is missing), Undo (the old one back, page 3 missing again),
+🔴 New recording from 🎧 Soundtracks (the studio opens on its own, and closing
+it goes back to the list, now with nothing missing), and a soundtrack from
+before the game kept count finding out which pages it has.
 
 Voices on bubbles were checked the same way: a voice recorded on Chomp's bubble
 and played back in the card, its 🔊 playing in the editor and going out when it

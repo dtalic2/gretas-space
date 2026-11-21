@@ -7,13 +7,16 @@
 // Chomp — to listen to in 🎧 Soundtracks, where the pages turn by themselves
 // in the same places they were turned while it was recorded.
 //
-// Recording again replaces it (after asking). It all stays on the device: the
-// browser records the sound and keeps it, like the books.
+// 🔴 Record a new one replaces it — after adding pages to the book, say: the
+// studio says which pages the soundtrack doesn't have yet. The old one stays
+// until the new one is finished (✕ Cancel keeps it), and Undo brings it back
+// afterwards. It all stays on the device: the browser records the sound and
+// keeps it, like the books.
 
 import { allPages } from './model.js';
 import { PageView } from './view.js';
-import { putTrack, removeTrack } from './store.js';
-import { trackName, clock, pageAt, Player } from './tracks.js';
+import { putTrack, getTrack, removeTrack } from './store.js';
+import { trackName, clock, pageAt, seenIn, missingNote, Player } from './tracks.js';
 import { Mic, canRecord, micTrouble } from './mic.js';
 import { $, esc, card, toast, sfx } from './ui.js';
 
@@ -22,7 +25,7 @@ const MAX_SECS = 20 * 60;          // a long book read slowly is still well unde
 export class Studio {
   constructor(root, hooks){
     this.root = root;
-    this.hooks = hooks;              // { save(book), close() }
+    this.hooks = hooks;              // { save(book), close(), changed(book) }
     this.book = null;
     this.at = 0;
     this.state = 'idle';             // idle | asking | countdown | recording | saving | playing
@@ -69,6 +72,7 @@ export class Studio {
         case 'next': this.turn(1); break;
         case 'record': this.record(); break;
         case 'stop': this.stop(); break;
+        case 'scrap': this.scrap(); break;
         case 'cancel': this.cancel(); break;
         case 'listen': this.listen(); break;
         case 'quiet': this.player.pause(); break;
@@ -115,7 +119,17 @@ export class Studio {
     this.fit();
     this.show(0);
     this.setState('idle');
-    if (book.track) this.player.load(book.id);       // ready to play from the first tap
+    if (book.track){
+      // ready to play from the first tap — and, for a soundtrack from before
+      // the game kept count, find out which pages it has
+      this.player.load(book.id).then((t) => {
+        if (t && this.book === book && book.track && !Array.isArray(book.track.seen)){
+          book.track.seen = seenIn(t);
+          this.hooks.save(book);
+          if (this.state === 'idle') this.paint();
+        }
+      });
+    }
     sfx('open');
   }
 
@@ -186,16 +200,19 @@ export class Studio {
     if (!b) return;
     const s = this.state, has = !!b.track;
     this.nameEl.textContent = `🎙️ ${trackName(b)}`;
-    this.subEl.textContent = s === 'recording' ? 'Recording — read your book out loud'
+    this.subEl.textContent = s === 'recording' ? (this.replacing ? 'Recording a new one — read your book out loud' : 'Recording — read your book out loud')
       : s === 'playing' ? 'Listening' : has ? `${clock(b.track.secs)} long` : 'Read your book out loud';
     this.binBtn.hidden = !has || s !== 'idle';
     const btn = (act, label, cls = '') => `<button type="button" class="btn big ${cls}" data-act="${act}">${label}</button>`;
     let say = '', btns = '';
     if (s === 'idle'){
-      say = has ? `Listen to <b>${esc(trackName(b))}</b> here, or any time in 🎧 Soundtracks.`
+      const missing = has ? missingNote(b) : '';
+      say = missing ? `<span class="sd-missing">📄 ${missing} Tap <b>🔴 Record a new one</b> to read the whole book again.</span>`
+        : has ? `Listen to <b>${esc(trackName(b))}</b> here, or any time in 🎧 Soundtracks — or record a new one in its place.`
         : !canRecord() ? "Sorry — this browser can't record sound."
         : "Tap <b>🔴 Record</b>, then read your book out loud. Turn the pages as you go: when somebody listens, they'll turn by themselves.";
-      btns = has ? btn('listen', '▶️ Listen', 'go') + btn('record', '🔴 Record again', 'rec-again') : canRecord() ? btn('record', '🔴 Record', 'rec') : '';
+      btns = has ? btn('listen', '▶️ Listen', missing ? 'ghost' : 'go') + (canRecord() ? btn('record', '🔴 Record a new one', missing ? 'rec' : 'rec-again') : '')
+        : canRecord() ? btn('record', '🔴 Record', 'rec') : '';
     } else if (s === 'asking'){
       say = 'Asking to use the microphone…';
       btns = btn('cancel', 'Cancel', 'ghost');
@@ -203,8 +220,9 @@ export class Studio {
       say = 'Get ready to read from the cover…';
       btns = btn('cancel', 'Cancel', 'ghost');
     } else if (s === 'recording'){
-      say = `<span class="sd-rec"><i class="sd-dot"></i> Recording <b class="sd-time">0:00</b></span><span class="sd-level"><i></i></span>`;
-      btns = btn('stop', '⏹ Stop', 'stop');
+      say = `<span class="sd-rec"><i class="sd-dot"></i> Recording <b class="sd-time">0:00</b></span><span class="sd-level"><i></i></span>` +
+        (this.replacing ? '<small class="sd-keep">The old soundtrack stays until you tap ⏹ Stop.</small>' : '');
+      btns = btn('stop', '⏹ Stop', 'stop') + btn('scrap', '✕ Cancel', 'ghost');
     } else if (s === 'saving'){
       say = 'Saving…';
     } else if (s === 'playing'){
@@ -223,14 +241,9 @@ export class Studio {
     if (!canRecord()){ toast("Sorry — this browser can't record sound."); sfx('nope'); return; }
     this.player.pause();
     const mic = new Mic();                // from the tap, before anything is waited for
-
-    if (this.book.track){
-      const ok = await card(`<h3>🎙️ Record it again?</h3>
-        <p>The new recording will take the place of the one you made before (${clock(this.book.track.secs)} long).</p>`,
-      [{ label: 'Keep the old one', cls: 'ghost', value: null }, { label: '🔴 Record a new one', cls: 'go', value: 'go' }]);
-      if (ok !== 'go' || !this.book){ mic.close(); return; }
-    }
-
+    // A new one doesn't take the old one's place until it's finished: ✕ Cancel
+    // keeps the old one, and Undo brings it back afterwards.
+    this.replacing = !!this.book.track;
     this.setState('asking');
     this.mic = mic;
     try { await mic.open(); }
@@ -298,6 +311,21 @@ export class Studio {
     if (this.state === 'playing') this.player.pause();
   }
 
+  /** ✕ Cancel, part way through: throw this recording away. Any soundtrack there was before stays. */
+  async scrap(){
+    if (this.state !== 'recording') return;
+    const had = !!this.book.track;
+    const ok = await card(`<h3>✕ Throw this recording away?</h3>
+      <p>${had ? 'The soundtrack you made before stays just as it was.' : "There won't be a soundtrack — you can record one any time."}</p>`,
+    [{ label: 'Keep recording', cls: 'ghost', value: null }, { label: 'Throw it away', cls: 'danger', value: 'scrap' }]);
+    if (ok !== 'scrap' || this.state !== 'recording') return;
+    this.mic?.close();                  // stopped without saving anything
+    this.mic = null;
+    this.setState('idle');
+    sfx('bin');
+    toast(had ? 'Thrown away — the old soundtrack is still there.' : 'Recording thrown away.');
+  }
+
   async save(r){
     const book = this.book;
     if (!book) return;
@@ -307,18 +335,38 @@ export class Studio {
       this.setState('idle');
       return;
     }
+    // the one there was, kept for Undo
+    const before = book.track ? { meta: { ...book.track }, track: await getTrack(book.id).catch(() => null) } : null;
     const secs = Math.max(1, r.secs);
     const track = { id: book.id, mime: r.mime, data: r.data, secs, pages: this.turns, at: Date.now() };
     const kept = await putTrack(track);
-    book.track = { secs, at: track.at };
+    book.track = { secs, at: track.at, seen: seenIn(track) };
     book.updated = Date.now();
     this.hooks.save(book);
     this.player.use(track);
     if (this.book !== book) return;
     this.setState('idle');
     sfx('cheer');
-    toast(kept ? `🎙️ <b>${esc(trackName(book))}</b> is saved! It's in 🎧 Soundtracks.`
-      : "⚠️ This browser won't keep the soundtrack after the page is closed.", { ms: 5000 });
+    if (!kept) toast("⚠️ This browser won't keep the soundtrack after the page is closed.", { ms: 5000 });
+    else if (before?.track?.data){
+      toast(`🎙️ The new <b>${esc(trackName(book))}</b> is saved, in place of the old one.`,
+        { ms: 9000, undo: () => this.putBack(book, before) });
+    } else toast(`🎙️ <b>${esc(trackName(book))}</b> is saved! It's in 🎧 Soundtracks.`, { ms: 5000 });
+  }
+
+  /** Undo a new soundtrack: the one there was before it comes back. */
+  async putBack(book, before){
+    await putTrack(before.track);
+    book.track = before.meta;
+    book.updated = Date.now();
+    this.hooks.save(book);
+    if (this.book === book){
+      this.player.use(before.track);
+      if (this.state === 'idle') this.paint();
+    }
+    this.hooks.changed?.(book);
+    sfx('undo');
+    toast('↩️ The old soundtrack is back.');
   }
 
   // ------------------------------------------------------------- listening

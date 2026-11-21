@@ -40,7 +40,7 @@ import { $, esc, toast, card, sfx } from './ui.js';
 import { settings, saveSettings } from './store.js';
 import { STYLES, styleOf, titleStyle, fontReady, loadFonts } from './styles.js';
 import { bindVoiceRow, playWords, clips } from './voice.js';
-import { clock } from './tracks.js';
+import { clock, missingPages } from './tracks.js';
 
 const HISTORY = 120;
 const TAP = 7;       // px a finger can wander and still count as a tap
@@ -175,6 +175,7 @@ export class Editor {
     this.past = [];
     this.future = [];
     this.lastPanel = null;
+    this.toldTrack = false;
     // straight back to the page you were on, if the tab was closed in the middle
     this.pageId = allPages(book).some(p => p.id === page) ? page : book.pages[0].id;
     this.root.hidden = false;
@@ -261,6 +262,7 @@ export class Editor {
   renderTop(){
     this.nameEl.textContent = this.book.title || 'My Book';
     this.recBtn.classList.toggle('has', !!this.book.track);      // a little dot: it has a soundtrack
+    this.recBtn.classList.toggle('stale', !!missingPages(this.book)?.length);   // ...amber: pages it hasn't got
     this.undoBtn.disabled = !this.past.length;
     this.redoBtn.disabled = !this.future.length;
   }
@@ -647,7 +649,11 @@ export class Editor {
     this.changed(page.id);
     if (this.mode !== 'move') this.setMode('move', { quiet: true });
     this.go(page.id);
-    toast(`Page ${at + 1} added.`);
+    if (this.book.track && !this.toldTrack){
+      // once: the soundtrack won't have this page until a new one is recorded
+      this.toldTrack = true;
+      toast(`Page ${at + 1} added. The soundtrack doesn't have it yet — when the book's ready, 🎙️ Soundtrack can record a new one.`, { ms: 6000 });
+    } else toast(`Page ${at + 1} added.`);
   }
 
   pageMenu(){
