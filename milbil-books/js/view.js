@@ -13,6 +13,7 @@
 //   speech bubbles (SVG), then the words in them (HTML)
 //   ink drawn in front
 //   the page number
+//   🔊 buttons: voices on bubbles, and sound buttons (see voice.js)
 //   the editor's selection handles
 //
 // Everything is placed in percentages of the page, and text is sized in --cq
@@ -23,12 +24,13 @@
 // Panels and milbils are kept between redraws rather than rebuilt, so dragging
 // one about doesn't make Greta's pictures flicker.
 
-import { PAGE_W, PAGE_H, box, mbWidth, bgCss, findMilbil, isStrip, fontSize } from './model.js';
+import { PAGE_W, PAGE_H, box, mbWidth, bgCss, findMilbil, isStrip, isSound, voiceOnly, bodyHalf, fontSize, clamp } from './model.js';
 import { castHTML } from './cast.js';
 import { bubbleSVG } from './bubbles.js';
 import { paintInk, drawStroke, usesLayer } from './ink.js';
 import { esc } from './ui.js';
 import { wordsStyle, titleStyle, TITLE_STYLE } from './styles.js';
+import { clips, clipsOn, playWords } from './voice.js';
 
 const pct = (v, of) => `${(v / of * 100).toFixed(3)}%`;
 /** A size in page units, as CSS: some hundredths of the page's width. */
@@ -64,6 +66,23 @@ export function titleFontSize(title, st){
   }
 }
 
+/**
+ * Where the 🔊 on some words goes, and how big it is, in page units: on a
+ * bubble's edge, up and to the right of the words; on a strip's inner edge at
+ * its right-hand end; on a caption box's corner. Words with no words, only a
+ * voice, have a big one in the middle instead, and a sound button is all 🔊.
+ */
+export function badgeAt(t){
+  const fs = fontSize(t);
+  if (isSound(t)) return { x: t.x, y: t.y, d: t.w };
+  if (voiceOnly(t)) return { x: t.x, y: t.y, d: Math.round(fs * 1.6) };
+  const d = Math.round(clamp(fs * 1.3, 56, 140));
+  if (isStrip(t)) return { x: t.x + t.sw / 2 - d / 2 - 14, y: t.at === 'top' ? t.y + t.sh / 2 : t.y - t.sh / 2, d };
+  const { rx, ry } = bodyHalf(t);
+  if (t.kind === 'caption') return { x: t.x + rx - 4, y: t.y - ry + 4, d };
+  return { x: t.x + rx * 0.8, y: t.y - ry * 0.8, d };
+}
+
 export class PageView {
   constructor(host, { edit = false, thumb = false } = {}){
     this.edit = edit;
@@ -81,13 +100,23 @@ export class PageView {
       <div class="pg-words"></div>
       <canvas class="pg-ink front"></canvas>
       <div class="pg-num"></div>
+      <div class="pg-snd"></div>
       <div class="pg-sel"></div>`;
     [, this.titleEl, this.bgsEl, this.backInk, this.panelsEl, this.bubsEl,
-      this.wordsEl, this.frontInk, this.numEl, this.selEl] = el.children;
+      this.wordsEl, this.frontInk, this.numEl, this.sndEl, this.selEl] = el.children;
     this.panelEls = new Map();
     this.mbEls = new Map();
     this.flags = {};          // panel id -> extra class: 'lift' while dragging out, 'drop', 'grew'
     host.appendChild(el);
+
+    // A tap on a 🔊 plays it — in the reader, the studio, anywhere but the
+    // editor (which has its own fingers on the page) and the little pictures.
+    if (!edit && !thumb){
+      el.addEventListener('click', (e) => {
+        const b = e.target.closest('.snd[data-voice]');
+        if (b && this.page){ e.stopPropagation(); playWords(this.page, b.dataset.voice, this.el); }
+      });
+    }
 
     // Ink is pixels, so it needs redrawing whenever the page changes size.
     this.inkSize = 0;
@@ -191,9 +220,11 @@ export class PageView {
   }
 
   renderWords(page){
-    const shapes = [], texts = [];
+    const shapes = [], texts = [], snds = [];
     for (const p of page.panels){
       for (const t of p.words){
+        if (t.voice || isSound(t)) snds.push(this.soundHTML(t));
+        if (isSound(t)) continue;
         const speaker = t.from ? findMilbil(page, t.from) : null;
         shapes.push(bubbleSVG(t, speaker, { hit: this.edit }));
         const tw = t.w + 8;
@@ -205,6 +236,19 @@ export class PageView {
     }
     this.bubsEl.innerHTML = shapes.join('');
     this.wordsEl.innerHTML = texts.join('');
+    this.sndEl.innerHTML = snds.join('');
+    if (!this.thumb && snds.length) clips.warm(clipsOn(page));       // ready for the first tap
+  }
+
+  /** One 🔊. A button to tap, except in the little pictures, which can't be tapped. */
+  soundHTML(t){
+    const { x, y, d } = badgeAt(t);
+    const tag = this.thumb ? 'span' : 'button';
+    const name = isSound(t) ? 'Play the sound' : 'Play the voice';
+    return `<${tag}${tag === 'button' ? ` type="button" aria-label="${name}"` : ''} class="snd${isSound(t) ? ' big' : ''}${voiceOnly(t) && !isSound(t) ? ' mid' : ''}"` +
+      ` data-voice="${t.id}"${this.edit ? ` data-w="${t.id}"` : ''}` +
+      ` style="left:${pct(x - d / 2, PAGE_W)};top:${pct(y - d / 2, PAGE_H)};width:${pct(d, PAGE_W)};height:${pct(d, PAGE_H)};` +
+      `font-size:${cq(d * 0.5)}">🔊</${tag}>`;
   }
 
   // ------------------------------------------------------------------ ink ---

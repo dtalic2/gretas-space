@@ -11,9 +11,12 @@
 //   page   { id, kind?:'cover', panels[], ink[] }
 //   panel  { id, x, y, w, h, bg, cast[], words[] }   x/y/w/h in grid squares
 //   milbil { id, who, x, y, h, flip }                x = middle, y = feet, page units
-//   words  { id, kind, text, fs, font?, x, y, w, h, from }   x/y = middle, w/h = the text,
+//   words  { id, kind, text, fs, font?, voice?, x, y, w, h, from }   x/y = middle, w/h = the text,
 //          fs = how big the writing is (older books have size: 's' | 'm' | 'l'),
-//          font = its text style (see styles.js); Comic if none
+//          font = its text style (see styles.js); Comic if none,
+//          voice = { id, secs }: somebody's own voice saying it (see voice.js).
+//          kind 'sound' is a 🔊 sound button rather than words: no text, just a
+//          voice, and w = h = how big the button is
 //          captions also have a fill colour, and `at`: 'top' or 'bottom' for a
 //          strip along that edge of the panel, or nothing for a box that moves
 //   ink    { c, w, g, b, e, p[] }                     see ink.js
@@ -403,8 +406,18 @@ export const fontSize = (t) => clamp(Number(t.fs) || TEXT_SIZE[t.size] || TEXT_S
 /** A caption that runs along the top or the bottom of its panel. */
 export const isStrip = (t) => t.kind === 'caption' && (t.at === 'top' || t.at === 'bottom');
 
+/** A 🔊 sound button: a voice to tap, with no bubble or words round it. */
+export const isSound = (t) => t.kind === 'sound';
+
+/** Words with a voice but nothing written: the bubble just has a big 🔊 in it. */
+export const voiceOnly = (t) => !!t.voice && !t.text?.trim();
+
+/** How wide and tall a sound button is, for writing this big. */
+export const soundSize = (fs) => Math.round(fs * 2.3);
+
 /** Half the size of a bubble's body: the oval around the words. */
 export function bodyHalf(t){
+  if (isSound(t)) return { rx: t.w / 2, ry: t.h / 2 };
   if (isStrip(t)) return { rx: (t.sw ?? t.w + 2 * CAP_PADX) / 2, ry: (t.sh ?? t.h + 2 * CAP_PADY) / 2 };
   if (t.kind === 'caption') return { rx: t.w / 2 + CAP_PADX, ry: t.h / 2 + CAP_PADY + 2 };
   if (t.kind === 'think') return { rx: t.w / 2 * 1.25 + 16, ry: t.h / 2 * 1.25 + 14 };
@@ -417,6 +430,7 @@ export const bumpRadius = (rx, ry) => clamp(Math.min(rx, ry) * 0.36, 16, 42);
 export function extent(t){
   const { rx, ry } = bodyHalf(t);
   if (isStrip(t)) return { rx, ry };
+  if (isSound(t)) return { rx: rx + 4, ry: ry + 4 };
   if (t.kind === 'think'){ const r = bumpRadius(rx, ry); return { rx: rx + r, ry: ry + r }; }
   if (t.kind === 'shout') return { rx: rx * 1.26, ry: ry * 1.26 };
   return { rx: rx + 5, ry: ry + 5 };
@@ -442,7 +456,9 @@ export function placeWords(p, t, m){
   const { rx, ry } = extent(t);
   const strip = (at) => p.words.reduce((n, o) => n + (isStrip(o) && o.at === at && o !== t ? o.sh || 0 : 0), 0);
   const top = B.y + strip('top'), bottom = B.y + B.h - strip('bottom');
-  const want = m ? { x: m.x, y: m.y - m.h - ry - 26 } : { x: B.x + rx + 18, y: top + ry + 18 };
+  // above the speaker's head; a caption box in the top left; a sound button in the top right
+  const want = m ? { x: m.x, y: m.y - m.h - ry - 26 }
+    : isSound(t) ? { x: B.x + B.w - rx - 18, y: top + ry + 18 } : { x: B.x + rx + 18, y: top + ry + 18 };
 
   const span = (lo, hi, n, also) => {
     if (hi <= lo) return [(lo + hi) / 2];
@@ -666,7 +682,10 @@ export function repairBook(b){
         if (t.fs != null) t.fs = Math.round(clamp(+t.fs || TEXT_SIZE.m, FS_MIN, FS_MAX));
         if (t.kind !== 'caption' || !['top', 'bottom'].includes(t.at)) delete t.at;
         if (t.font != null && !isStyle(t.font)) delete t.font;
+        if (t.voice != null && !(typeof t.voice?.id === 'string' && Number(t.voice.secs) > 0)) delete t.voice;
       }
+      // a sound button with no sound on it, or words with neither words nor a voice, is nothing at all
+      p.words = p.words.filter(t => (isSound(t) ? !!t.voice : !!t.text.trim() || !!t.voice));
       layoutCaptions(p);
       p.bg ||= 'white';
       return p;

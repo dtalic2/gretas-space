@@ -14,6 +14,10 @@
 //   💬 Words    a speech bubble for whoever is picked up.
 //   📜 Caption  words with nobody talking: a strip along the top or the bottom
 //               of a panel, or a box that goes anywhere.
+//   🔊 Sound    a sound button: record anything, and tap it to hear it.
+//
+// Bubbles and captions can have a voice recorded on them too: the 🎙️ Voice
+// row in the card you type them in (see voice.js).
 //
 // Every change can be undone. A change to a page is remembered as that page
 // before and after (without its drawing, which is remembered a line at a
@@ -26,7 +30,7 @@ import {
   spotForPanel, firstFit, resizeTarget, moveTarget, growToFit, roomFor, addMilbil, fitContents,
   shiftContents, moveToPanel, placeWords, keepWordsOnPage, extent, pageIsEmpty,
   isStrip, stripTextWidth, layoutCaptions, makeRoomForCaption, fontSize, FS_MIN, FS_MAX, TEXT_SIZE,
-  inkIn, hasDrawing, copyAcross,
+  inkIn, hasDrawing, copyAcross, isSound, voiceOnly, soundSize,
 } from './model.js';
 import { CAST, who, castHTML } from './cast.js';
 import { measure, KINDS, MAX_W } from './bubbles.js';
@@ -35,6 +39,8 @@ import { PageView } from './view.js';
 import { $, esc, toast, card, sfx } from './ui.js';
 import { settings, saveSettings } from './store.js';
 import { STYLES, styleOf, titleStyle, fontReady, loadFonts } from './styles.js';
+import { bindVoiceRow, playWords, clips } from './voice.js';
+import { clock } from './tracks.js';
 
 const HISTORY = 120;
 const TAP = 7;       // px a finger can wander and still count as a tap
@@ -136,6 +142,7 @@ export class Editor {
           <button type="button" class="tool" data-act="add-milbil"><i>👾</i><span>Milbil</span></button>
           <button type="button" class="tool" data-act="add-words"><i>💬</i><span>Words</span></button>
           <button type="button" class="tool" data-act="add-caption"><i>📜</i><span>Caption</span></button>
+          <button type="button" class="tool" data-act="add-sound"><i>🔊</i><span>Sound</span></button>
         </nav>
       </div>`;
     this.nameEl = $('.ed-name b', root);
@@ -330,15 +337,22 @@ export class Editor {
         btn('mb-bigger', '➕', '', '', 'Bigger') + btn('mb-smaller', '➖', '', '', 'Smaller') +
         btn('mb-front', '⏫', 'Front') + btn('settings', '⚙️', 'Settings') + btn('mb-delete', '🗑️', '', 'danger', 'Take them out');
       hint = 'Drag to move them — even into another panel. The pink dot makes them bigger.';
+    } else if (s?.type === 'w' && find(page, s.id)?.t && isSound(find(page, s.id).t)){
+      html = btn('w-play', '▶️', 'Play', 'go') + btn('w-edit', '🎙️', 'Record again') +
+        btn('w-bigger', '➕', '', '', 'Bigger') + btn('w-smaller', '➖', '', '', 'Smaller') +
+        btn('settings', '⚙️', 'Settings') + btn('w-delete', '🗑️', '', 'danger', 'Throw this sound button away');
+      hint = 'A sound button. Drag it anywhere — tap it to hear it. The pink dot or ➕ ➖ change its size.';
     } else if (s?.type === 'w' && find(page, s.id)?.t){
       const t = find(page, s.id).t;
       const cap = t.kind === 'caption';
       html = btn('w-edit', '✏️', cap ? 'Change the caption' : 'Change the words', 'go') +
+        (t.voice ? btn('w-play', '▶️', '', '', 'Play the voice') : '') +
         btn('w-bigger', '➕', '', '', 'Bigger') + btn('w-smaller', '➖', '', '', 'Smaller') +
         btn('settings', '⚙️', 'Settings') +
         btn('w-delete', '🗑️', '', 'danger', cap ? 'Throw this caption away' : 'Throw these words away');
       hint = isStrip(t) ? 'Drag it to the top or the bottom of any panel. The pink dot or ➕ ➖ change the size.'
         : cap ? 'Drag the caption anywhere. The pink dot or ➕ ➖ make it bigger or smaller.'
+        : t.voice ? 'Tap 🔊 to hear the voice. Drag the bubble to move it; the pink dot or ➕ ➖ change its size.'
         : 'Drag the bubble to move it. The pink dot or ➕ ➖ make it bigger or smaller.';
     } else {
       const cover = page.kind === 'cover';
@@ -438,13 +452,17 @@ export class Editor {
 
   measureCaption(p, t){
     const mw = stripTextWidth(p);
-    Object.assign(t, measure(t.text, 'caption', fontSize(t), mw, t.font), { mw });
+    // a strip that's all voice is one line deep, with its 🔊 in the middle
+    Object.assign(t, measure(voiceOnly(t) ? ' ' : t.text, 'caption', fontSize(t), mw, t.font), { mw });
   }
 
   /** Measure some words again — after their writing changed size, say. */
   remeasure(p, t){
     if (isStrip(t)){ this.measureCaption(p, t); return; }
     const fs = fontSize(t);
+    // a sound button is round; a bubble that's all voice is just big enough for its 🔊
+    if (isSound(t)){ t.w = t.h = soundSize(fs); keepWordsOnPage(t); return; }
+    if (voiceOnly(t)){ t.w = Math.round(fs * 2); t.h = Math.round(fs * 1.35); keepWordsOnPage(t); return; }
     const max = t.kind === 'caption' ? Math.min(MAX_W.caption * fs / TEXT_SIZE.m, Math.max(120, box(p).w - 80)) : null;
     Object.assign(t, measure(t.text, t.kind, fs, max, t.font));
     keepWordsOnPage(t);
@@ -783,6 +801,8 @@ export class Editor {
       case 'add-milbil': this.pickMilbil(this.targetPanel()?.id); break;
       case 'add-words': this.addWords(); break;
       case 'add-caption': this.captionCard({ panelId: this.captionTarget()?.id }); break;
+      case 'add-sound': this.soundCard({ panelId: this.captionTarget()?.id }); break;
+      case 'w-play': { const t = find(this.page, this.sel?.id)?.t; if (t) this.playVoice(t); break; }
       case 'settings': this.settingsSheet(); break;
       case 'pnl-milbil': this.pickMilbil(this.sel?.id); break;
       case 'pnl-colour': this.panelColour(); break;
@@ -979,11 +999,14 @@ export class Editor {
           <span class="cast-pic${m.flip ? ' flip' : ''}">${castHTML(m.who)}</span>
           <b>${esc(who(m.who).name)}</b><small>panel ${i + 1}</small></button>`).join('')}
         <button type="button" class="cast-tile cap" data-act="caption">
-          <span class="cast-pic icon">📜</span><b>A caption</b><small>nobody talking</small></button></div>`,
+          <span class="cast-pic icon">📜</span><b>A caption</b><small>nobody talking</small></button>
+        <button type="button" class="cast-tile cap" data-act="sound">
+          <span class="cast-pic icon">🔊</span><b>A sound button</b><small>tap it to hear it</small></button></div>`,
       onAct: (act, id) => {
         this.sheet.close();
         if (act === 'talk') this.wordsCard({ speakerId: id });
         if (act === 'caption') this.captionCard({ panelId: this.captionTarget()?.id });
+        if (act === 'sound') this.soundCard({ panelId: this.captionTarget()?.id });
       },
     });
   }
@@ -999,6 +1022,7 @@ export class Editor {
     let text = t?.text || '';
     let font = styleOf(t ? t.font : kind === 'caption' ? settings.captionFont : settings.wordsFont).id;
     let picked = false;
+    let voiceRow = null;
     const kinds = speaker ? KINDS.filter(k => k.id !== 'caption') : [];
     const name = speaker ? esc(who(speaker.who).name) : '';
     const html = `
@@ -1010,7 +1034,8 @@ export class Editor {
       ${kinds.length ? `<div class="wc-row">${kinds.map(k =>
         `<button type="button" class="chip${k.id === kind ? ' on' : ''}" data-kind="${k.id}">${k.icon} ${k.name}</button>`).join('')}</div>` : ''}
       ${sizeRow(fs)}
-      ${styleRow(font)}`;
+      ${styleRow(font)}
+      <div class="wc-row voice-row"></div>`;
     const buttons = t
       ? [{ label: '🗑️ Throw away', cls: 'ghost', value: 'delete' }, { label: 'Done ✓', cls: 'go', value: 'ok' }]
       : [{ label: 'Cancel', cls: 'ghost', value: 'cancel' }, { label: 'Done ✓', cls: 'go', value: 'ok' }];
@@ -1019,6 +1044,8 @@ export class Editor {
       top: true, cls: 'words-card',
       onOpen: (wrap) => {
         const ta = wrap.querySelector('textarea');
+        voiceRow = bindVoiceRow(wrap.querySelector('.voice-row'), { voice: t?.voice || null,
+          note: speaker ? `${name} says it in your voice` : 'Say it in your own voice' });
         styleTextBox(ta, font);
         setTimeout(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 80);
         ta.addEventListener('input', () => { text = ta.value; });
@@ -1041,11 +1068,13 @@ export class Editor {
       },
     });
 
+    if (out !== 'ok'){ voiceRow?.cancel(); }
+    const voice = out === 'ok' ? await voiceRow?.finish() : null;
     if (!this.book) return;
     if (out === 'delete' && t){ this.select({ type: 'w', id: t.id }); this.deleteSelection(); return; }
     if (out !== 'ok') return;
     text = text.trim().slice(0, 160);
-    if (!text){
+    if (!text && !voice){
       if (t){ this.select({ type: 'w', id: t.id }); this.deleteSelection(); }
       return;
     }
@@ -1060,10 +1089,12 @@ export class Editor {
     let target = t;
     if (t){
       Object.assign(t, { text, kind, fs, font });
+      if (voice) t.voice = voice; else delete t.voice;
       this.remeasure(panel, t);
       keepWordsOnPage(t, box(panel));
     } else {
       target = { id: uid(), kind, fs, font, text, x: 0, y: 0, from: speaker?.id || null };
+      if (voice) target.voice = voice;
       this.remeasure(panel, target);
       panel.words.push(target);
       placeWords(panel, target, speaker);
@@ -1081,14 +1112,15 @@ export class Editor {
   panelItems(page, p){
     const out = [];
     for (const m of p.cast){
-      const said = p.words.filter(t => t.from === m.id).map(t => `“${esc(t.text)}”`).join(' ');
+      const said = p.words.filter(t => t.from === m.id).map(t => (t.text?.trim() ? `“${esc(t.text)}”` : '🔊')).join(' ');
       out.push({ key: `m:${m.id}`, name: esc(who(m.who).name), sub: said,
         pic: `<span class="${m.flip ? 'flip' : ''}">${castHTML(m.who)}</span>` });
     }
     for (const t of p.words){
       if (t.from && p.cast.some(m => m.id === t.from)) continue;      // goes with its milbil
-      out.push({ key: `w:${t.id}`, name: t.kind === 'caption' ? 'Caption' : 'Words', sub: `“${esc(t.text)}”`,
-        pic: `<span class="pick-icon">${t.kind === 'caption' ? '📜' : '💬'}</span>` });
+      const sub = t.text?.trim() ? `“${esc(t.text)}”${t.voice ? ' 🔊' : ''}` : `🔊 ${clock(t.voice?.secs)}`;
+      out.push({ key: `w:${t.id}`, name: isSound(t) ? 'Sound button' : t.kind === 'caption' ? 'Caption' : 'Words', sub,
+        pic: `<span class="pick-icon">${isSound(t) ? '🔊' : t.kind === 'caption' ? '📜' : '💬'}</span>` });
     }
     if (hasDrawing(page, p)){
       out.push({ key: 'ink', name: 'The drawing', sub: 'Everything drawn in this panel',
@@ -1262,10 +1294,73 @@ export class Editor {
     toast(`${move ? 'Moved' : 'Copied'} to ${where}.`, { undo: () => { if (this.past.length === mark) this.undo(); } });
   }
 
-  /** Tapping some words to change them: a caption has its own card. */
+  /** Tapping some words to change them: a caption has its own card, and so does a sound button. */
   editWords(t){
-    if (t.kind === 'caption') this.captionCard({ t });
+    if (isSound(t)) this.soundCard({ t });
+    else if (t.kind === 'caption') this.captionCard({ t });
     else this.wordsCard({ t });
+  }
+
+  /** Play the voice on some words, lighting up its 🔊 on the page. */
+  playVoice(t){
+    if (!t?.voice){ sfx('nope'); return; }
+    playWords(this.page, t.id, this.view.el);
+  }
+
+  /**
+   * 🔊 Sound: a sound button, anywhere on the page. Record something — a roar,
+   * a song, "the end!" — and it's a button that plays it. A new one goes in
+   * the top corner of the panel; drag it wherever you like.
+   */
+  async soundCard({ t = null, panelId = null } = {}){
+    const page = this.page;
+    if (this.mode !== 'move') this.setMode('move', { quiet: true });
+    if (!page.panels.length){
+      toast('Put a panel on the page first — tap 🔲 Panel — and then a sound button in it.');
+      sfx('nope');
+      return;
+    }
+    const found = t ? find(page, t.id) : null;
+    const panel = found?.panel || this.panel(panelId) || this.captionTarget();
+    let voiceRow = null;
+    const html = `
+      <div class="wc-top"><span class="wc-pic">🔊</span>
+        <h3>${t ? 'The sound button' : 'A sound button'}<small>Record anything — a roar, a splash, a song. Tap the button to hear it.</small></h3></div>
+      <div class="wc-row voice-row sound-row"></div>`;
+    const buttons = t
+      ? [{ label: '🗑️ Throw away', cls: 'ghost', value: 'delete' }, { label: 'Done ✓', cls: 'go', value: 'ok' }]
+      : [{ label: 'Cancel', cls: 'ghost', value: 'cancel' }, { label: 'Done ✓', cls: 'go', value: 'ok' }];
+    const out = await card(html, buttons, {
+      top: true, cls: 'words-card sound-card',
+      onOpen: (wrap) => {
+        voiceRow = bindVoiceRow(wrap.querySelector('.voice-row'), { voice: t?.voice || null, label: 'Sound', note: 'Tap, then make your sound' });
+      },
+    });
+    if (out !== 'ok') voiceRow?.cancel();
+    const voice = out === 'ok' ? await voiceRow?.finish() : null;
+    if (!this.book) return;
+    if (out === 'delete' && t){ this.select({ type: 'w', id: t.id }); this.deleteSelection(); return; }
+    if (out !== 'ok') return;
+    if (!voice){
+      if (t){ this.select({ type: 'w', id: t.id }); this.deleteSelection(); }
+      else { toast('Nothing was recorded, so there is no sound button.'); sfx('nope'); }
+      return;
+    }
+    if (this.page !== page) return;
+    const before = this.snap();
+    let target = t;
+    if (t) t.voice = voice;
+    else {
+      target = { id: uid(), kind: 'sound', text: '', fs: TEXT_SIZE.m, voice, x: 0, y: 0, from: null };
+      this.remeasure(panel, target);
+      panel.words.push(target);
+      placeWords(panel, target, null);
+    }
+    this.commit(before);
+    this.renderPage();
+    this.select({ type: 'w', id: target.id });
+    sfx('pop');
+    if (!t) toast('🔊 Tap the sound button to hear it. Drag it anywhere you like.');
   }
 
   /** Where a new caption goes, if nobody said: the panel picked up, else the first one without one. */
@@ -1298,6 +1393,7 @@ export class Editor {
     let fs = t ? fontSize(t) : TEXT_SIZE.m;
     let font = styleOf(t ? t.font : settings.captionFont).id;
     let picked = false;
+    let voiceRow = null;
     const order = this.panelsInOrder();
 
     const map = order.length > 1 ? `
@@ -1317,7 +1413,8 @@ export class Editor {
       <div class="wc-row"><span class="wc-label">Colour</span>${CAPTION_FILLS.map(c =>
         `<button type="button" class="sw${c.id === fill ? ' on' : ''}" data-fill="${c.id}" style="--c:${c.css}" aria-label="${c.name}"></button>`).join('')}</div>
       ${sizeRow(fs)}
-      ${styleRow(font)}`;
+      ${styleRow(font)}
+      <div class="wc-row voice-row"></div>`;
     const buttons = t
       ? [{ label: '🗑️ Throw away', cls: 'ghost', value: 'delete' }, { label: 'Done ✓', cls: 'go', value: 'ok' }]
       : [{ label: 'Cancel', cls: 'ghost', value: 'cancel' }, { label: 'Done ✓', cls: 'go', value: 'ok' }];
@@ -1326,6 +1423,7 @@ export class Editor {
       top: true, cls: 'words-card caption-card',
       onOpen: (wrap) => {
         const ta = wrap.querySelector('textarea');
+        voiceRow = bindVoiceRow(wrap.querySelector('.voice-row'), { voice: t?.voice || null, note: 'Read it in your storyteller voice' });
         styleTextBox(ta, font);
         setTimeout(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 80);
         ta.addEventListener('input', () => { text = ta.value; });
@@ -1345,11 +1443,13 @@ export class Editor {
       },
     });
 
+    if (out !== 'ok'){ voiceRow?.cancel(); }
+    const voice = out === 'ok' ? await voiceRow?.finish() : null;
     if (!this.book) return;
     if (out === 'delete' && t){ this.select({ type: 'w', id: t.id }); this.deleteSelection(); return; }
     if (out !== 'ok') return;
     text = text.trim().slice(0, 200);
-    if (!text){
+    if (!text && !voice){
       if (t){ this.select({ type: 'w', id: t.id }); this.deleteSelection(); }
       return;
     }
@@ -1368,6 +1468,7 @@ export class Editor {
     }
     const wasFree = t && !isStrip(t);
     Object.assign(c, { text, fs, fill, font });
+    if (voice) c.voice = voice; else delete c.voice;
     let grew = false;
     if (at === 'free'){
       for (const k of ['at', 'sw', 'sh', 'mw', 'framed']) delete c[k];
@@ -1410,7 +1511,7 @@ export class Editor {
         msg = `${esc(who(f.m.who).name)} has gone.`;
       } else {
         f.panel.words = f.panel.words.filter(x => x !== f.t);
-        msg = 'Words thrown away.';
+        msg = isSound(f.t) ? 'Sound button thrown away.' : 'Words thrown away.';
       }
     }
     this.sel = null;
@@ -1547,7 +1648,10 @@ export class Editor {
       if (f?.t){
         const again = this.sel?.id === f.t.id;
         this.select({ type: 'w', id: f.t.id });
-        Object.assign(d, { kind: 'w-move', id: f.t.id, tx: f.t.x, ty: f.t.y, again });
+        Object.assign(d, { kind: 'w-move', id: f.t.id, tx: f.t.x, ty: f.t.y, again,
+          play: !!t.closest('.snd') || (isSound(f.t) && again) });
+        // the first tap on a 🔊 is when an iPad allows sound to start
+        if (d.play) clips.unlock();
       }
       return;
     }
@@ -1694,6 +1798,7 @@ export class Editor {
     if (!d.moved){
       // A tap.
       if (d.add) this.pickMilbil(d.id);
+      else if (d.kind === 'w-move' && d.play){ const t = find(page, d.id)?.t; if (t) this.playVoice(t); }
       else if (d.kind === 'w-move' && d.again){ const t = find(page, d.id)?.t; if (t) this.editWords(t); }
       else if (d.kind === 'cover-title') this.coverSheet();
       else if (d.grid) this.renderSel();

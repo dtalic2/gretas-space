@@ -20,6 +20,7 @@ import { Editor, pickTitle } from './editor.js';
 import { Reader } from './reader.js';
 import { Studio } from './studio.js';
 import { trackName, clock, Player } from './tracks.js';
+import { tidyClips } from './voice.js';
 import { PageView } from './view.js';
 import { canSpeak, SPEEDS, say, wake } from './aloud.js';
 import { $, $$, esc, Sheet, card, toast, sfx, setSound, confetti, ago, plural } from './ui.js';
@@ -310,7 +311,13 @@ function leaveEditor(){
   const book = editor.close();
   settings.open = null;
   saveSettings();
+  tidy();
   return { book, from };
+}
+
+/** Clear away voice recordings no bubble uses any more (see voice.js), when nothing else is going on. */
+function tidy(){
+  setTimeout(() => { tidyClips(books).catch(() => {}); }, 3000);
 }
 
 /** ‹ in the editor: back to wherever the book was opened from. */
@@ -433,6 +440,7 @@ async function binBook(book){
   await removeBook(book.id);
   await removeTrack(book.id);           // its soundtrack goes with it
   books = books.filter(b => b !== book);
+  tidy();                               // and, a day later, the voices on its bubbles
   if (reader.isOpen) reader.close();
   paint();
   sfx('bin');
@@ -459,6 +467,11 @@ function helpSheet(){
       <li><b>📜 Caption</b>: words with nobody talking, like a storyteller — "Once upon a time…". Pick a
         panel and put it in a strip along the top, along the bottom, or in a box you can move anywhere.</li>
       <li><b>Bigger or smaller words</b>: tap a bubble or caption, then drag its pink dot, or tap ➕ and ➖.</li>
+      <li><b>🎙️ Your own voice on a bubble</b>: when you type what somebody says (or a caption), tap
+        <b>🔴 Record</b> in the Voice row and say it. The bubble gets a 🔊 to tap, and Read Aloud plays your
+        voice instead of its own. You don't even have to type anything — a bubble can be all voice.</li>
+      <li><b>🔊 Sound</b> puts a sound button anywhere on a page: record a roar, a splash, a song — anything —
+        and tap the button to hear it. Drag it wherever you like.</li>
       <li><b>Text style</b>: when you type words or a caption, pick how they're written — Comic, Bubbly,
         Marker, Fancy, Swirly, Blocky, Storybook, Spooky or Pixel. The next ones start in the style you picked
         last. The title has a style of its own: tap the title on the cover.</li>
@@ -550,6 +563,8 @@ async function boot(){
   else if (settings.open && byId(settings.open)){
     editor.open(byId(settings.open), { from: settings.openFrom || 'create', page: settings.openPage });
   }
+
+  tidy();
 
   // Save on the way out, whatever way out it is.
   const flush = () => { if (editor.isOpen) editor.flush(); };

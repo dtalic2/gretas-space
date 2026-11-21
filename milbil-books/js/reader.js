@@ -15,6 +15,7 @@ import { allPages } from './model.js';
 import { PageView } from './view.js';
 import { linesFor, say, wake, hush, canSpeak } from './aloud.js';
 import { Player, pageAt, timeOf } from './tracks.js';
+import { clips } from './voice.js';
 import { $, esc, sfx, plural, toast } from './ui.js';
 
 export class Reader {
@@ -75,6 +76,12 @@ export class Reader {
       if (act === 'again'){ this.stopReading(); this.stopListening(); this.show(0, 1); }
       if (act === 'dot') this.jump(+b.dataset.i);
     });
+
+    // Tapping a 🔊 on the page plays it (view.js does that); anything already
+    // reading out loud stops first, so the two don't talk over each other.
+    this.host.addEventListener('click', (e) => {
+      if (e.target.closest('.snd')){ this.stopReading(); this.stopListening(); }
+    }, true);
 
     // Swipe to turn. A tap on the left or right third of the page turns too.
     let sx = 0, sy = 0, st = 0, sid = null, turned = false;
@@ -233,6 +240,7 @@ export class Reader {
     if (!canSpeak()){ toast("Sorry — this browser can't read aloud."); return; }
     this.stopListening();
     wake();
+    clips.unlock();                    // recorded voices play later, from a timer
     this.reading = { token: Symbol('read') };
     this.paintReadBtn();
     if (this.at >= this.count - 1) this.show(0, 1);
@@ -245,7 +253,7 @@ export class Reader {
     const words = queue.length;
     const next = () => {
       if (this.reading?.token !== token) return;
-      this.host.querySelectorAll('.btxt.speaking').forEach(el => el.classList.remove('speaking'));
+      this.unlight();
       const line = queue.shift();
       if (!line){
         // End of the page: turn over and carry on. A page with no words on it
@@ -262,7 +270,10 @@ export class Reader {
         }, words ? 700 : 2400);
         return;
       }
-      if (line.id) this.host.querySelector(`.btxt[data-say="${line.id}"]`)?.classList.add('speaking');
+      if (line.id){
+        this.host.querySelector(`.btxt[data-say="${line.id}"]`)?.classList.add('speaking');
+        if (line.voice) this.host.querySelectorAll(`.snd[data-voice="${line.id}"]`).forEach(el => el.classList.add('playing'));
+      }
       say(line, () => setTimeout(next, 280));
     };
     next();
@@ -273,7 +284,13 @@ export class Reader {
     this.reading = null;
     hush();
     this.paintReadBtn();
+    this.unlight();
+  }
+
+  /** Nothing lit up as being read any more. */
+  unlight(){
     this.host.querySelectorAll('.btxt.speaking').forEach(el => el.classList.remove('speaking'));
+    this.host.querySelectorAll('.snd.playing').forEach(el => el.classList.remove('playing'));
   }
 
   // ------------------------------------------------------- the soundtrack

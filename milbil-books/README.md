@@ -2,7 +2,8 @@
 
 Make your own comic books, starring milbils. Pull the panels on a page to the
 size you want, put milbils in them, give them speech bubbles, write captions in
-any of nine text styles, and draw anything you like in any colour. The pages
+any of nine text styles, record your own voice onto the bubbles, put 🔊 sound
+buttons anywhere, and draw anything you like in any colour. The pages
 number themselves. When a book is finished, tap **✓ Done** and it goes on the
 shelf in the **Library** — where **🔊 Read Aloud** reads it to you, and you can
 open it up and **✏️ Edit** it again whenever you like. Record yourself reading
@@ -47,6 +48,7 @@ bottom are the tools.
 | 👾 | **Milbil** | Somebody to go in a panel. |
 | 💬 | **Words** | A speech bubble for a milbil. |
 | 📜 | **Caption** | Words with nobody talking, like a storyteller. |
+| 🔊 | **Sound** | A sound button: record anything, and tap it to hear it. |
 
 ↩️ and ↪️ at the top undo and redo anything at all. **🎙️ Soundtrack**, next to
 them, records you reading the book (see [Soundtracks](#-soundtracks)).
@@ -165,6 +167,33 @@ long one is smaller, so it still fits across.
 Every font is in `fonts/` with its licence (SIL Open Font License or Apache
 2.0); nothing is fetched from anywhere else.
 
+### Your own voice on a bubble
+
+When you type what somebody says, or a caption, the card has a **Voice** row.
+Tap **🔴 Record**, say it, and tap **⏹ Stop**: ▶️ plays it back, **🔴 Again**
+records it again and 🗑️ takes it off. (The first time, the browser asks whether
+Milbil Books may use the microphone.)
+
+A bubble with a voice on it gets a pink **🔊** on its edge. Tap it — in the
+editor, the reader or the soundtrack studio — to hear it, and tap it again to
+stop it. **🔊 Read Aloud plays your voice** for that bubble instead of reading
+the words out itself, so a book can be read in everybody's own voices.
+
+You don't have to type anything: a bubble can be **all voice**, with just a big
+🔊 in it — handy before you can spell everything you want to say. A caption
+can have a voice too, for a storyteller voice.
+
+### 🔊 Sound buttons
+
+The **🔊 Sound** tool puts a sound button on the page: a round gold button with
+any sound you like recorded on it — a roar, a splash, a song, "the end!". It
+starts in the top corner of the panel; drag it anywhere. Tap it to hear it.
+Picked up, it has **▶️ Play**, **🎙️ Record again**, ➕ ➖ (or the pink dot) to
+make it bigger or smaller, and 🗑️. Read Aloud plays it when it gets to it.
+
+A recording can be up to a minute long. Copying a page, or copying things to
+another panel with ⚙️ Settings, copies their voices too.
+
 ### Drawing
 
 Pick **✏️ Draw** and draw anywhere on the page — inside the panels, outside them,
@@ -234,6 +263,8 @@ pages by itself:
 - the captions, in the storyteller's voice;
 - the words in every bubble, just as they're written — "I'm so hungry!", not
   "Chomp says: I'm so hungry!";
+- any bubble, caption or sound button with a voice recorded on it plays that
+  voice instead, its 🔊 lighting up;
 - and **The End**.
 
 You can tell who's talking by their voice: every milbil has one of their own —
@@ -316,6 +347,8 @@ milbil-books/
     ├── aloud.js         Read Aloud: what to say, in what order, in whose voice
     ├── studio.js        🎙️ recording a soundtrack
     ├── tracks.js        soundtracks: names, page turns, playing them
+    ├── mic.js           the microphone: asking for it, the level, recording
+    ├── voice.js         voices on bubbles and sound buttons: recording, playing, tidying
     ├── store.js         where books (and soundtracks) are kept
     ├── ui.js            sheets, cards, toasts, sound, confetti
     └── main.js          the three tabs, new books, Done
@@ -331,9 +364,11 @@ crisply at every size too.
 **Where books are kept.** In the browser's own database (IndexedDB) on the
 device, never sent anywhere. localStorage is shared between every game on
 dtalic2.github.io and only holds about five megabytes between all of them; a
-few books with drawings in could fill it. Soundtracks are in a second database,
-`milbil-books-sounds`, so saving a book (every few seconds while you make it)
-never carries the sound along with it. Your name, the sound, your pen and the
+few books with drawings in could fill it. Soundtracks and the voices on bubbles
+are in a second database, `milbil-books-sounds`, so saving a book (every few
+seconds while you make it) never carries the sound along with it. A bubble just
+says which recording is its own; a recording nothing uses any more is cleared
+away a day later (not straight away, in case ↩️ Undo wants it back). Your name, the sound, your pen and the
 last text styles you picked are in localStorage under `milbil-books-v1`.
 
 ### Checking it
@@ -378,3 +413,12 @@ turning, in 🎧 Soundtracks with ▶️ and pause, and read along in the reader
 the way to The End; skipping by tapping a page dot; recording again (it asks),
 throwing it away, a reload, the microphone being refused, and a book thrown away
 taking its soundtrack with it.
+
+Voices on bubbles were checked the same way: a voice recorded on Chomp's bubble
+and played back in the card, its 🔊 playing in the editor and going out when it
+ends; a bubble that's all voice; a caption strip with a voice; a sound button
+recorded, made bigger, dragged, undone and redone, and played in the reader;
+Read Aloud playing all four recordings (and not reading those words out
+itself), lighting each one up; a reload; old unused recordings being tidied
+away while new ones stay; the microphone being refused; and all of it on a
+320-pixel phone and an iPad-sized screen.
