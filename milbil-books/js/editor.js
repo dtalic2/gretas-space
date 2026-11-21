@@ -11,7 +11,9 @@
 //   🧽 Rubber   rubs out drawing (and only drawing).
 //   🔲 Panel    a new panel, in the biggest gap on the page.
 //   👾 Milbil   somebody to go in a panel. If they don't fit, the panel grows.
-//   💬 Words    a speech bubble for whoever is picked up, or a caption box.
+//   💬 Words    a speech bubble for whoever is picked up.
+//   📜 Caption  words with nobody talking: a strip along the top or the bottom
+//               of a panel, or a box that goes anywhere.
 //
 // Every change can be undone. A change to a page is remembered as that page
 // before and after (without its drawing, which is remembered a line at a
@@ -19,13 +21,14 @@
 
 import {
   PAGE_W, PAGE_H, SIDE, TOP, FOOT, COLS, ROWS, CW, CH, GUT, MB_MIN,
-  COVER_COLOURS, PANEL_BGS, PEN_COLOURS, TEMPLATES, TITLE_IDEAS,
+  COVER_COLOURS, PANEL_BGS, PEN_COLOURS, TEMPLATES, TITLE_IDEAS, CAPTION_FILLS,
   uid, clamp, allPages, newPage, newPanel, box, mbBox, find, findMilbil, panelAt,
   spotForPanel, firstFit, resizeTarget, moveTarget, growToFit, roomFor, addMilbil, fitContents,
   shiftContents, moveToPanel, placeWords, keepWordsOnPage, extent, pageIsEmpty,
+  isStrip, stripTextWidth, layoutCaptions, makeRoomForCaption,
 } from './model.js';
 import { CAST, who, castHTML } from './cast.js';
-import { measure, KINDS } from './bubbles.js';
+import { measure, KINDS, MAX_W } from './bubbles.js';
 import { simplify } from './ink.js';
 import { PageView } from './view.js';
 import { $, esc, toast, card, sfx } from './ui.js';
@@ -103,6 +106,7 @@ export class Editor {
           <button type="button" class="tool" data-act="add-panel"><i>🔲</i><span>Panel</span></button>
           <button type="button" class="tool" data-act="add-milbil"><i>👾</i><span>Milbil</span></button>
           <button type="button" class="tool" data-act="add-words"><i>💬</i><span>Words</span></button>
+          <button type="button" class="tool" data-act="add-caption"><i>📜</i><span>Caption</span></button>
         </nav>
       </div>`;
     this.nameEl = $('.ed-name b', root);
@@ -223,6 +227,7 @@ export class Editor {
   }
 
   renderPage(){
+    this.layoutCaptions();
     this.view.render(this.page, { book: this.book, num: this.num });
     this.view.el.classList.toggle('drawing', this.mode !== 'move');
     this.view.el.dataset.tool = this.mode;
@@ -290,8 +295,13 @@ export class Editor {
         btn('mb-front', '⏫', 'Front') + btn('mb-delete', '🗑️', '', 'danger', 'Take them out');
       hint = 'Drag to move them — even into another panel. The pink dot makes them bigger.';
     } else if (s?.type === 'w' && find(page, s.id)?.t){
-      html = btn('w-edit', '✏️', 'Change the words', 'go') + btn('w-delete', '🗑️', '', 'danger', 'Throw these words away');
-      hint = 'Drag the bubble to move it. Tap it again to change the words.';
+      const t = find(page, s.id).t;
+      const cap = t.kind === 'caption';
+      html = btn('w-edit', '✏️', cap ? 'Change the caption' : 'Change the words', 'go') +
+        btn('w-delete', '🗑️', '', 'danger', cap ? 'Throw this caption away' : 'Throw these words away');
+      hint = isStrip(t) ? 'Drag it to the top or the bottom of any panel. Tap it again to change it.'
+        : cap ? 'Drag the caption anywhere. Tap it again to change it.'
+        : 'Drag the bubble to move it. Tap it again to change the words.';
     } else {
       const cover = page.kind === 'cover';
       // whatever the page needs next: a panel, then somebody in it, then words
@@ -373,7 +383,24 @@ export class Editor {
 
   // ============================================================= changing ===
 
-  snap(){ const { ink, ...rest } = this.page; return JSON.stringify(rest); }
+  snap(){ this.layoutCaptions(); const { ink, ...rest } = this.page; return JSON.stringify(rest); }
+
+  /**
+   * Caption strips follow their panel: whenever a panel changes width, the
+   * words in its strips are measured again, and then every strip is put back
+   * in its place along the edge.
+   */
+  layoutCaptions(page = this.page){
+    for (const p of page.panels){
+      for (const t of p.words) if (isStrip(t) && t.mw !== stripTextWidth(p)) this.measureCaption(p, t);
+      layoutCaptions(p);
+    }
+  }
+
+  measureCaption(p, t){
+    const mw = stripTextWidth(p);
+    Object.assign(t, measure(t.text, 'caption', t.size, mw), { mw });
+  }
 
   push(entry){
     this.past.push(entry);
@@ -666,12 +693,13 @@ export class Editor {
       case 'add-panel': this.addPanel(); break;
       case 'add-milbil': this.pickMilbil(this.targetPanel()?.id); break;
       case 'add-words': this.addWords(); break;
+      case 'add-caption': this.captionCard({ panelId: this.captionTarget()?.id }); break;
       case 'pnl-milbil': this.pickMilbil(this.sel?.id); break;
       case 'pnl-colour': this.panelColour(); break;
       case 'pnl-delete': case 'mb-delete': case 'w-delete': this.deleteSelection(); break;
       case 'mb-talk': this.wordsCard({ speakerId: this.sel?.id }); break;
       case 'mb-flip': case 'mb-bigger': case 'mb-smaller': case 'mb-front': this.mbAction(act); break;
-      case 'w-edit': { const t = find(this.page, this.sel?.id)?.t; if (t) this.wordsCard({ t }); break; }
+      case 'w-edit': { const t = find(this.page, this.sel?.id)?.t; if (t) this.editWords(t); break; }
       case 'palette': this.palette(); break;
       case 'pen-colour': this.setColour(b.dataset.id, { quick: true }); break;
       case 'rub-all': this.rubAll(); break;
@@ -850,7 +878,7 @@ export class Editor {
     if (this.sel?.type === 'mb' && find(page, this.sel.id)?.m){ this.wordsCard({ speakerId: this.sel.id }); return; }
     if (!page.panels.length){ toast('Put a panel on the page first — tap 🔲 Panel.'); sfx('nope'); return; }
     const everyone = this.panelsInOrder().flatMap((p, i) => p.cast.map(m => ({ m, i })));
-    if (!everyone.length){ this.wordsCard({ panelId: this.targetPanel().id }); return; }
+    if (!everyone.length){ this.captionCard({ panelId: this.captionTarget()?.id }); return; }
     this.sheet.show({
       key: 'talk', icon: '💬', title: "Who's talking?", sub: 'Pick somebody on this page, or make a caption box.',
       render: () => `<div class="cast-grid">${everyone.map(({ m, i }) => `
@@ -862,7 +890,7 @@ export class Editor {
       onAct: (act, id) => {
         this.sheet.close();
         if (act === 'talk') this.wordsCard({ speakerId: id });
-        if (act === 'caption') this.wordsCard({ panelId: this.targetPanel().id });
+        if (act === 'caption') this.captionCard({ panelId: this.captionTarget()?.id });
       },
     });
   }
@@ -933,6 +961,127 @@ export class Editor {
     this.renderPage();
     this.select({ type: 'w', id: target.id });
     sfx('words');
+  }
+
+  /** Tapping some words to change them: a caption has its own card. */
+  editWords(t){
+    if (t.kind === 'caption') this.captionCard({ t });
+    else this.wordsCard({ t });
+  }
+
+  /** Where a new caption goes, if nobody said: the panel picked up, else the first one without one. */
+  captionTarget(){
+    const s = this.sel;
+    if (s?.type === 'panel'){ const p = this.panel(s.id); if (p) return p; }
+    if (s){ const f = find(this.page, s.id); if (f) return f.panel; }
+    const order = this.panelsInOrder();
+    return order.find(p => !p.words.some(t => t.kind === 'caption')) || order[0] || null;
+  }
+
+  /**
+   * Add a caption, or change one: the words, which panel it is in, whether it
+   * runs along the top or the bottom of the panel or is a box that can go
+   * anywhere, its colour and how big the writing is.
+   */
+  async captionCard({ t = null, panelId = null } = {}){
+    const page = this.page;
+    if (this.mode !== 'move') this.setMode('move', { quiet: true });
+    if (!page.panels.length){
+      toast('Put a panel on the page first — tap 🔲 Panel — and then a caption in it.');
+      sfx('nope');
+      return;
+    }
+    const found = t ? find(page, t.id) : null;
+    let panel = found?.panel || this.panel(panelId) || this.captionTarget();
+    let text = t?.text || '';
+    let at = t ? (isStrip(t) ? t.at : 'free') : 'bottom';
+    let fill = t?.fill || 'yellow';
+    let size = t?.size || 'm';
+    const order = this.panelsInOrder();
+
+    const map = order.length > 1 ? `
+      <div class="cap-which"><span class="wc-label">Which panel?</span>
+        <span class="cap-map">${order.map((p, i) => `<button type="button" class="cap-pnl${p === panel ? ' on' : ''}" data-pick="${p.id}"
+          style="left:${p.x / COLS * 100}%;top:${p.y / ROWS * 100}%;width:${p.w / COLS * 100}%;height:${p.h / ROWS * 100}%"
+          aria-label="Panel ${i + 1}">${i + 1}</button>`).join('')}</span></div>` : '';
+    const html = `
+      <div class="wc-top"><span class="wc-pic">📜</span>
+        <h3>${t ? 'Change the caption' : 'Add a caption'}<small>Words with nobody talking, like a storyteller.</small></h3></div>
+      ${map}
+      <textarea class="in wc-text" maxlength="200" rows="3" placeholder="Meanwhile, at the beach…">${esc(text)}</textarea>
+      <div class="wc-row"><span class="wc-label">Where</span>
+        <button type="button" class="chip${at === 'top' ? ' on' : ''}" data-at="top">⬆️ Top</button>
+        <button type="button" class="chip${at === 'bottom' ? ' on' : ''}" data-at="bottom">⬇️ Bottom</button>
+        <button type="button" class="chip${at === 'free' ? ' on' : ''}" data-at="free">✋ Anywhere</button></div>
+      <div class="wc-row"><span class="wc-label">Colour</span>${CAPTION_FILLS.map(c =>
+        `<button type="button" class="sw${c.id === fill ? ' on' : ''}" data-fill="${c.id}" style="--c:${c.css}" aria-label="${c.name}"></button>`).join('')}</div>
+      <div class="wc-row"><span class="wc-label">Size</span>${['s', 'm', 'l'].map(z =>
+        `<button type="button" class="chip sz sz-${z}${z === size ? ' on' : ''}" data-size="${z}" aria-label="${{ s: 'Small', m: 'Middle', l: 'Big' }[z]} words">A</button>`).join('')}</div>`;
+    const buttons = t
+      ? [{ label: '🗑️ Throw away', cls: 'ghost', value: 'delete' }, { label: 'Done ✓', cls: 'go', value: 'ok' }]
+      : [{ label: 'Cancel', cls: 'ghost', value: 'cancel' }, { label: 'Done ✓', cls: 'go', value: 'ok' }];
+
+    const out = await card(html, buttons, {
+      top: true, cls: 'words-card caption-card',
+      onOpen: (wrap) => {
+        const ta = wrap.querySelector('textarea');
+        setTimeout(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 80);
+        ta.addEventListener('input', () => { text = ta.value; });
+        ta.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); wrap.querySelector('.btn.go').click(); }
+        });
+        wrap.addEventListener('click', (e) => {
+          const pick = e.target.closest('[data-pick]'), w = e.target.closest('[data-at]');
+          const c = e.target.closest('[data-fill]'), z = e.target.closest('[data-size]');
+          const mark = (sel, el) => wrap.querySelectorAll(sel).forEach(b => b.classList.toggle('on', b === el));
+          if (pick){ panel = this.panel(pick.dataset.pick) || panel; mark('[data-pick]', pick); sfx('pick'); }
+          if (w){ at = w.dataset.at; mark('[data-at]', w); sfx('pick'); }
+          if (c){ fill = c.dataset.fill; mark('[data-fill]', c); sfx('pick'); }
+          if (z){ size = z.dataset.size; mark('[data-size]', z); sfx('pick'); }
+        });
+      },
+    });
+
+    if (!this.book) return;
+    if (out === 'delete' && t){ this.select({ type: 'w', id: t.id }); this.deleteSelection(); return; }
+    if (out !== 'ok') return;
+    text = text.trim().slice(0, 200);
+    if (!text){
+      if (t){ this.select({ type: 'w', id: t.id }); this.deleteSelection(); }
+      return;
+    }
+
+    const before = this.snap();
+    let c = t;
+    if (!c){
+      c = { id: uid(), kind: 'caption', from: null, x: 0, y: 0 };
+      panel.words.push(c);
+    } else if (found.panel !== panel){
+      found.panel.words = found.panel.words.filter(x => x !== c);
+      panel.words.push(c);
+    }
+    const wasFree = t && !isStrip(t);
+    Object.assign(c, { text, size, fill });
+    let grew = false;
+    if (at === 'free'){
+      for (const k of ['at', 'sw', 'sh', 'mw', 'framed']) delete c[k];
+      const B = box(panel);
+      Object.assign(c, measure(text, 'caption', size, Math.min(MAX_W.caption, Math.max(120, B.w - 80))));
+      if (wasFree && found.panel === panel) keepWordsOnPage(c, B);
+      else placeWords(panel, c, null);
+    } else {
+      const moved = !t || c.at !== at || found.panel !== panel;
+      c.at = at;
+      this.measureCaption(panel, c);
+      layoutCaptions(panel);
+      // a new strip, or one moved somewhere else, makes room for itself
+      if (moved && makeRoomForCaption(page, panel, c) === 'grew'){ grew = true; this.layoutCaptions(); }
+    }
+    this.commit(before);
+    this.renderPage();
+    this.select({ type: 'w', id: c.id });
+    sfx(grew ? 'grow' : 'words');
+    if (grew) toast('The panel grew to make room for the caption.');
   }
 
   deleteSelection(){
@@ -1184,6 +1333,20 @@ export class Editor {
       case 'w-move': {
         const f = find(page, d.id);
         if (!f) break;
+        if (isStrip(f.t)){
+          // A strip doesn't float about: it jumps to the top or the bottom of
+          // whichever panel the finger is over.
+          const over = panelAt(page, u.x, u.y) || f.panel;
+          const B = box(over);
+          const at = u.y < B.y + B.h / 2 ? 'top' : 'bottom';
+          if (over !== f.panel || at !== f.t.at){
+            if (over !== f.panel){ f.panel.words = f.panel.words.filter(x => x !== f.t); over.words.push(f.t); }
+            f.t.at = at;
+            sfx('snap');
+          }
+          this.renderPage();
+          break;
+        }
         f.t.x = d.tx + (u.x - d.start.x);
         f.t.y = d.ty + (u.y - d.start.y);
         keepWordsOnPage(f.t);
@@ -1205,7 +1368,7 @@ export class Editor {
     if (!d.moved){
       // A tap.
       if (d.add) this.pickMilbil(d.id);
-      else if (d.kind === 'w-move' && d.again){ const t = find(page, d.id)?.t; if (t) this.wordsCard({ t }); }
+      else if (d.kind === 'w-move' && d.again){ const t = find(page, d.id)?.t; if (t) this.editWords(t); }
       else if (d.kind === 'cover-title') this.coverSheet();
       else if (d.grid) this.renderSel();
       return;

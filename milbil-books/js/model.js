@@ -10,6 +10,8 @@
 //   panel  { id, x, y, w, h, bg, cast[], words[] }   x/y/w/h in grid squares
 //   milbil { id, who, x, y, h, flip }                x = middle, y = feet, page units
 //   words  { id, kind, text, size, x, y, w, h, from } x/y = middle, w/h = the text
+//          captions also have a fill colour, and `at`: 'top' or 'bottom' for a
+//          strip along that edge of the panel, or nothing for a box that moves
 //   ink    { c, w, g, b, e, p[] }                     see ink.js
 //
 // Panels live on a 12 × 16 grid inside the page margins and never overlap, so
@@ -26,6 +28,9 @@ export const CW = (PAGE_W - 2 * SIDE) / COLS;      // one grid square across, in
 export const CH = (PAGE_H - TOP - FOOT) / ROWS;    // ...and down
 export const GUT = 10;                             // half the gap between two panels
 export const MIN_CELLS = 2;                        // the smallest a panel can be, each way
+
+export const FRAME = 6.6;     // how thick a panel's frame is (0.55% of the page's width, as in the CSS)
+export const CAP_PADX = 24, CAP_PADY = 16;   // room round the words in a caption
 
 export const MB_H = 330;      // how tall a milbil is when it first goes in
 export const MB_MIN = 70;     // ...the smallest one can be made
@@ -58,6 +63,16 @@ export const PANEL_BGS = [
 ];
 export const PANEL_BG = Object.fromEntries(PANEL_BGS.map(b => [b.id, b]));
 export const bgCss = (id) => (PANEL_BG[id] || PANEL_BG.white).css;
+
+/** What colour a caption is. Comics use pale yellow; the rest are for fun. */
+export const CAPTION_FILLS = [
+  { id:'yellow', name:'Yellow', css:'#fff3b0' },
+  { id:'white',  name:'White',  css:'#ffffff' },
+  { id:'pink',   name:'Pink',   css:'#ffe0ef' },
+  { id:'sky',    name:'Sky',    css:'#dff3ff' },
+  { id:'mint',   name:'Mint',   css:'#dcf7ea' },
+];
+export const captionFill = (id) => (CAPTION_FILLS.find(f => f.id === id) || CAPTION_FILLS[0]).css;
 
 export const PEN_COLOURS = [
   '#2b2233', '#ffffff', '#8a8a99', '#9a6a3c', '#ffd9b3', '#e5484d',
@@ -282,7 +297,9 @@ export function placeMilbil(p, whoId, { h = null } = {}){
   const w = H * who(whoId).aspect;
   const m = { id: uid(), who: whoId, h: H, flip: false, x: 0, y: Math.round(B.y + B.h - Math.min(18, B.h * 0.04)) };
 
-  // the widest gap between the milbils already standing there, and where it is in the row
+  // Somebody new stands to the right of everybody already there, if there's
+  // room — so the order you put milbils in is the order they read in. If not,
+  // the widest gap there is.
   const row = [...p.cast].sort((a, b) => a.x - b.x);
   let gap = [B.x, B.x + B.w], gapLen = -1, slot = 0, cursor = B.x;
   row.forEach((o, i) => {
@@ -290,7 +307,8 @@ export function placeMilbil(p, whoId, { h = null } = {}){
     if (a - cursor > gapLen){ gapLen = a - cursor; gap = [cursor, a]; slot = i; }
     cursor = Math.max(cursor, o.x + mbWidth(o) / 2);
   });
-  if (B.x + B.w - cursor > gapLen){ gapLen = B.x + B.w - cursor; gap = [cursor, B.x + B.w]; slot = row.length; }
+  const right = B.x + B.w - cursor;
+  if (right > gapLen || right >= w + 24){ gapLen = right; gap = [cursor, B.x + B.w]; slot = row.length; }
 
   if (!row.length || gapLen >= w + 24){
     m.x = Math.round(w > B.w ? B.x + B.w / 2 : clamp((gap[0] + gap[1]) / 2, B.x + w / 2, B.x + B.w - w / 2));
@@ -336,7 +354,7 @@ export function fitContents(p){
     m.x = Math.round(clamp(m.x, B.x + w * 0.15, B.x + B.w - w * 0.15));
     m.y = Math.round(clamp(m.y, B.y + m.h * 0.75, B.y + B.h + m.h * 0.35));
   }
-  for (const t of p.words) keepWordsOnPage(t, B);
+  for (const t of p.words) if (!isStrip(t)) keepWordsOnPage(t, B);
 }
 
 export function shiftContents(p, dx, dy){
@@ -373,9 +391,13 @@ export function moveToPanel(from, to, m){
 
 export const TEXT_SIZE = { s: 38, m: 48, l: 64 };
 
+/** A caption that runs along the top or the bottom of its panel. */
+export const isStrip = (t) => t.kind === 'caption' && (t.at === 'top' || t.at === 'bottom');
+
 /** Half the size of a bubble's body: the oval around the words. */
 export function bodyHalf(t){
-  if (t.kind === 'caption') return { rx: t.w / 2 + 24, ry: t.h / 2 + 18 };
+  if (isStrip(t)) return { rx: (t.sw ?? t.w + 2 * CAP_PADX) / 2, ry: (t.sh ?? t.h + 2 * CAP_PADY) / 2 };
+  if (t.kind === 'caption') return { rx: t.w / 2 + CAP_PADX, ry: t.h / 2 + CAP_PADY + 2 };
   if (t.kind === 'think') return { rx: t.w / 2 * 1.25 + 16, ry: t.h / 2 * 1.25 + 14 };
   return { rx: t.w / 2 * 1.3 + 24, ry: t.h / 2 * 1.3 + 22 };
 }
@@ -385,6 +407,7 @@ export const bumpRadius = (rx, ry) => clamp(Math.min(rx, ry) * 0.36, 16, 42);
 /** Half the size of everything a bubble draws, bumps and spikes included. */
 export function extent(t){
   const { rx, ry } = bodyHalf(t);
+  if (isStrip(t)) return { rx, ry };
   if (t.kind === 'think'){ const r = bumpRadius(rx, ry); return { rx: rx + r, ry: ry + r }; }
   if (t.kind === 'shout') return { rx: rx * 1.26, ry: ry * 1.26 };
   return { rx: rx + 5, ry: ry + 5 };
@@ -392,6 +415,7 @@ export function extent(t){
 
 /** Keep a bubble's middle inside its panel and all of it on the page. */
 export function keepWordsOnPage(t, B = null){
+  if (isStrip(t)) return;                 // strips go where layoutCaptions puts them
   const { rx, ry } = extent(t);
   if (B){ t.x = clamp(t.x, B.x, B.x + B.w); t.y = clamp(t.y, B.y, B.y + B.h); }
   t.x = Math.round(clamp(t.x, Math.min(rx, PAGE_W / 2), Math.max(PAGE_W - rx, PAGE_W / 2)));
@@ -399,46 +423,124 @@ export function keepWordsOnPage(t, B = null){
 }
 
 /**
- * Somewhere sensible for a new bubble: above the milbil who is talking if there
- * is room, otherwise beside them, and never on top of another bubble.
+ * Somewhere sensible for a new bubble: as close as it can be to just above
+ * the head of whoever is saying it (the top left of the panel, for a caption
+ * box), without covering other bubbles, anybody's face, or a caption strip.
+ * Every spot on a grid across the panel is tried and the best one kept.
  */
 export function placeWords(p, t, m){
   const B = box(p);
   const { rx, ry } = extent(t);
-  const spots = [];
-  if (m){
-    const top = m.y - m.h, w = mbWidth(m);
-    spots.push({ x: m.x, y: top - ry - 26 });
-    spots.push({ x: m.x + w / 2 + rx * 0.55, y: top - ry * 0.35 });
-    spots.push({ x: m.x - w / 2 - rx * 0.55, y: top - ry * 0.35 });
-    spots.push({ x: m.x + w / 2 + rx + 14, y: top + m.h * 0.25 });
-    spots.push({ x: m.x - w / 2 - rx - 14, y: top + m.h * 0.25 });
-  }
-  spots.push({ x: B.x + rx + 18, y: B.y + ry + 18 });
-  spots.push({ x: B.x + B.w - rx - 18, y: B.y + ry + 18 });
-  spots.push({ x: B.x + B.w / 2, y: B.y + B.h / 2 });
+  const strip = (at) => p.words.reduce((n, o) => n + (isStrip(o) && o.at === at && o !== t ? o.sh || 0 : 0), 0);
+  const top = B.y + strip('top'), bottom = B.y + B.h - strip('bottom');
+  const want = m ? { x: m.x, y: m.y - m.h - ry - 26 } : { x: B.x + rx + 18, y: top + ry + 18 };
 
-  const inside = (s) => ({
-    x: B.w > 2 * rx + 20 ? clamp(s.x, B.x + rx + 10, B.x + B.w - rx - 10) : B.x + B.w / 2,
-    y: B.h > 2 * ry + 20 ? clamp(s.y, B.y + ry + 10, B.y + B.h - ry - 10) : B.y + B.h / 2,
-  });
-  const rectOf = (c, e) => ({ x: c.x - e.rx, y: c.y - e.ry, w: e.rx * 2, h: e.ry * 2 });
+  const span = (lo, hi, n, also) => {
+    if (hi <= lo) return [(lo + hi) / 2];
+    const out = Array.from({ length: n }, (_, i) => lo + (hi - lo) * i / (n - 1));
+    out.push(clamp(also, lo, hi));
+    return out;
+  };
+  const xs = span(B.x + rx + 10, B.x + B.w - rx - 10, 13, want.x);
+  const ys = span(top + ry + 10, bottom - ry - 10, 11, want.y);
+
+  const rectAt = (x, y) => ({ x: x - rx, y: y - ry, w: rx * 2, h: ry * 2 });
+  const others = p.words.filter(o => o !== t).map(o => { const e = extent(o); return { x: o.x - e.rx, y: o.y - e.ry, w: e.rx * 2, h: e.ry * 2 }; });
+  const faces = p.cast.map(o => ({ x: o.x - mbWidth(o) * 0.45, y: o.y - o.h, w: mbWidth(o) * 0.9, h: o.h * 0.55 }));
+  const bodies = p.cast.map(o => ({ x: o.x - mbWidth(o) * 0.45, y: o.y - o.h * 0.45, w: mbWidth(o) * 0.9, h: o.h * 0.45 }));
 
   let best = null, bestCost = Infinity;
-  spots.forEach((s, i) => {
-    const c = inside(s);
-    const r = rectOf(c, { rx, ry });
-    let cost = Math.hypot(c.x - s.x, c.y - s.y) * 2 + i * 25;
-    for (const o of p.words) if (o !== t) cost += area(r, rectOf(o, extent(o))) / 40;
-    for (const o of p.cast){
-      const face = { x: o.x - mbWidth(o) * 0.4, y: o.y - o.h, w: mbWidth(o) * 0.8, h: o.h * 0.6 };
-      cost += area(r, face) / 60;
-    }
-    if (cost < bestCost){ bestCost = cost; best = c; }
-  });
+  for (const x of xs) for (const y of ys){
+    const r = rectAt(x, y);
+    let cost = Math.hypot(x - want.x, y - want.y);
+    for (const o of others) cost += area(r, o) / 20;
+    for (const f of faces) cost += area(r, f) / 30;
+    for (const b of bodies) cost += area(r, b) / 120;
+    if (cost < bestCost){ bestCost = cost; best = { x, y }; }
+  }
   t.x = Math.round(best.x);
   t.y = Math.round(best.y);
   keepWordsOnPage(t);
+}
+
+// -------------------------------------------------------------- captions ---
+//
+// A caption strip runs the whole width of its panel, just inside the frame,
+// along the top or the bottom. Several on the same edge stack up. Strips are
+// never placed by hand: wherever the panel goes, or whatever size it becomes,
+// they are laid out again from the panel itself.
+
+/** How wide the words in a strip can be in this panel. */
+export const stripTextWidth = (p) => Math.max(80, Math.round(box(p).w - 2 * FRAME - 2 * CAP_PADX));
+
+/**
+ * Put every strip in a panel in its place. Their words must already have been
+ * measured at stripTextWidth(p) — the editor does that, since measuring needs
+ * the page on screen.
+ */
+export function layoutCaptions(p){
+  const B = box(p);
+  const left = B.x + FRAME, width = B.w - 2 * FRAME;
+  let top = B.y + FRAME, bottom = B.y + B.h - FRAME;
+  for (const t of p.words){
+    if (!isStrip(t) || t.at !== 'top') continue;
+    t.sw = width; t.sh = t.h + 2 * CAP_PADY; t.framed = !p.frameless;
+    t.x = Math.round(left + width / 2); t.y = Math.round(top + t.sh / 2);
+    top += t.sh;
+  }
+  // the last one added sits lowest, so they still read top to bottom in the order they were made
+  for (const t of [...p.words].reverse()){
+    if (!isStrip(t) || t.at !== 'bottom') continue;
+    t.sw = width; t.sh = t.h + 2 * CAP_PADY; t.framed = !p.frameless;
+    t.x = Math.round(left + width / 2); t.y = Math.round(bottom - t.sh / 2);
+    bottom -= t.sh;
+  }
+}
+
+/**
+ * A new strip shouldn't cover anybody up. If it would, the panel grows by the
+ * strip's height (if there is room), and everything in it moves along so the
+ * new space is where the strip is. If there is no room to grow, everybody
+ * steps out of the way instead: milbils stand up on a strip along the bottom
+ * (smaller, if that's what it takes to keep their heads in the panel), and
+ * bubbles move out from under a strip along the top.
+ *
+ * Returns 'grew', 'moved' or '' (nothing needed doing).
+ */
+export function makeRoomForCaption(page, p, t){
+  if (!isStrip(t)) return '';
+  const top = t.y - t.sh / 2, bottom = t.y + t.sh / 2;
+  const under = (o) => !isStrip(o) && o !== t && Math.abs(o.y - t.y) < extent(o).ry + t.sh / 2;
+  const covered = p.cast.some(m => m.y > top && m.y - m.h < bottom) || p.words.some(under);
+  if (!covered) return '';
+
+  const B0 = box(p);
+  if (!p.fixed && growToFit(page, p, p.w, Math.ceil((B0.h + t.sh + 2 * GUT) / CH - 0.04))){
+    const B1 = box(p);
+    const dy = t.at === 'bottom' ? B1.y - B0.y : (B1.y + B1.h) - (B0.y + B0.h);
+    for (const m of p.cast) m.y += dy;
+    for (const o of p.words) if (!isStrip(o)) o.y += dy;
+    return 'grew';
+  }
+
+  const strips = (at) => p.words.reduce((n, o) => n + (isStrip(o) && o.at === at ? o.sh || 0 : 0), 0);
+  const ceiling = B0.y + FRAME + strips('top');
+  const floor = B0.y + B0.h - FRAME - strips('bottom');
+  if (t.at === 'bottom'){
+    for (const m of p.cast){
+      if (m.y <= floor) continue;
+      const dy = floor - m.y;
+      m.y = Math.round(floor);
+      m.h = Math.round(clamp(Math.min(m.h, m.y - ceiling), MB_MIN, m.h));
+      for (const o of p.words) if (o.from === m.id) o.y += dy;
+    }
+  }
+  for (const o of p.words){
+    if (!under(o)) continue;
+    const e = extent(o);
+    o.y = Math.round(t.at === 'top' ? Math.max(o.y, ceiling + e.ry + 4) : Math.min(o.y, floor - e.ry - 4));
+  }
+  return 'moved';
 }
 
 // -------------------------------------------------------------- checking ---
@@ -465,7 +567,11 @@ export function repairBook(b){
       for (const k of ['x', 'y', 'w', 'h']) p[k] = Math.round(Number(p[k]) || 0);
       p.cast = (Array.isArray(p.cast) ? p.cast : []).filter(m => m && m.who && Number.isFinite(m.x) && Number.isFinite(m.y) && m.h > 0);
       p.words = (Array.isArray(p.words) ? p.words : []).filter(t => t && typeof t.text === 'string' && Number.isFinite(t.x) && Number.isFinite(t.y));
-      for (const t of p.words){ t.kind ||= 'say'; t.size = TEXT_SIZE[t.size] ? t.size : 'm'; t.w = +t.w || 100; t.h = +t.h || 50; }
+      for (const t of p.words){
+        t.kind ||= 'say'; t.size = TEXT_SIZE[t.size] ? t.size : 'm'; t.w = +t.w || 100; t.h = +t.h || 50;
+        if (t.kind !== 'caption' || !['top', 'bottom'].includes(t.at)) delete t.at;
+      }
+      layoutCaptions(p);
       p.bg ||= 'white';
       return p;
     });

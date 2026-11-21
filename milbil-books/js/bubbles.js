@@ -5,7 +5,9 @@
 //   say      an oval with a tail pointing at whoever is talking
 //   think    a cloud, with little puffs trailing back to them
 //   shout    a spiky yellow burst
-//   caption  a box with no tail — the narrator, "Meanwhile, at the beach…"
+//   caption  the narrator, with nobody talking: "Meanwhile, at the beach…"
+//            Either a strip right along the top or the bottom of its panel,
+//            or a box that can go anywhere.
 //
 // The words themselves are ordinary HTML, so they wrap like any text. The
 // bubble round them is SVG, drawn from the size the words came out at. Each
@@ -13,7 +15,7 @@
 // white on top. The fill covers the outlines where the pieces overlap, so the
 // oval and its tail come out as one shape with one outline round it.
 
-import { TEXT_SIZE, bodyHalf, bumpRadius, mbWidth, clamp } from './model.js';
+import { TEXT_SIZE, bodyHalf, bumpRadius, mbWidth, clamp, isStrip, captionFill } from './model.js';
 
 const INK = '#2b2233';
 const OUTLINE = 9;          // stroke width; the fill covers the inner half of it
@@ -37,14 +39,15 @@ export const KINDS = [
 
 let meter = null;
 
-export function measure(text, kind = 'say', size = 'm'){
+/** How wide words can be, and how tall, in page units. `max` overrides MAX_W. */
+export function measure(text, kind = 'say', size = 'm', max = null){
   if (!meter){
     meter = document.createElement('div');
     meter.className = 'meter';
     meter.setAttribute('aria-hidden', 'true');
     document.body.appendChild(meter);
   }
-  const max = MAX_W[kind] || MAX_W.say;
+  max = Math.round(max ?? (MAX_W[kind] || MAX_W.say));
   const el = document.createElement('div');
   el.className = `btxt ${kind}`;
   el.style.cssText = `position:static;font-size:${TEXT_SIZE[size] || TEXT_SIZE.m}px;max-width:${max}px;width:max-content`;
@@ -170,12 +173,14 @@ function boxD(t){
  * null for a caption or somebody who has been deleted.
  */
 export function bubbleSVG(t, speaker, { hit = false } = {}){
+  const tag = `<g class="bub ${t.kind}${isStrip(t) ? ' strip' : ''}"${hit ? ` data-w="${t.id}"` : ''}>`;
+  if (isStrip(t)) return tag + stripSVG(t) + '</g>';
   const { rx, ry } = bodyHalf(t);
   let parts, fill = '#fff';
 
   if (t.kind === 'caption'){
     parts = [boxD(t)];
-    fill = '#fff3b0';
+    fill = captionFill(t.fill);
   } else if (t.kind === 'think'){
     parts = cloudD(t, rx, ry);
     const a = speaker && aim(t, rx + bumpRadius(rx, ry) * 0.6, ry + bumpRadius(rx, ry) * 0.6, speaker);
@@ -193,6 +198,22 @@ export function bubbleSVG(t, speaker, { hit = false } = {}){
 
   const lines = parts.map(d => `<path d="${d}" fill="none" stroke="${INK}" stroke-width="${OUTLINE}" stroke-linejoin="round"/>`).join('');
   const fills = parts.map(d => `<path d="${d}" fill="${fill}"/>`).join('');
-  return `<g class="bub ${t.kind}"${hit ? ` data-w="${t.id}"` : ''}>${lines}${fills}</g>`;
+  return `${tag}${lines}${fills}</g>`;
+}
+
+/**
+ * A strip sits just inside its panel's frame, so the frame is its outline on
+ * three sides; it only needs a line of its own along the side facing into the
+ * panel. On the cover, where panels have no frame, it is outlined all round.
+ */
+function stripSVG(t){
+  const x = t.x - t.sw / 2, y = t.y - t.sh / 2;
+  const fill = captionFill(t.fill);
+  if (t.framed === false){
+    return `<rect x="${f(x)}" y="${f(y)}" width="${f(t.sw)}" height="${f(t.sh)}" rx="10" fill="${fill}" stroke="${INK}" stroke-width="6"/>`;
+  }
+  const edge = t.at === 'top' ? y + t.sh : y;
+  return `<rect x="${f(x)}" y="${f(y)}" width="${f(t.sw)}" height="${f(t.sh)}" fill="${fill}"/>` +
+    `<path d="M${f(x)} ${f(edge)}H${f(x + t.sw)}" stroke="${INK}" stroke-width="6"/>`;
 }
 

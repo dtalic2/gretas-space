@@ -1,10 +1,11 @@
 # 📚 Milbil Books
 
 Make your own comic books, starring milbils. Pull the panels on a page to the
-size you want, put milbils in them, give them speech bubbles, and draw anything
-you like in any colour. The pages number themselves. When a book is finished,
-tap **✓ Done** and it goes on the shelf in the **Library** — and you can open it
-up and **✏️ Edit** it again whenever you like.
+size you want, put milbils in them, give them speech bubbles, write captions,
+and draw anything you like in any colour. The pages number themselves. When a
+book is finished, tap **✓ Done** and it goes on the shelf in the **Library** —
+where **🔊 Read Aloud** reads it to you, and you can open it up and **✏️ Edit**
+it again whenever you like.
 
 **▶ Play it: https://dtalic2.github.io/gretas-space/milbil-books/**
 
@@ -21,7 +22,7 @@ python3 milbil-books/serve.py      # http://localhost:8135
 | | | |
 | --- | --- | --- |
 | ✏️ | **Create** | Start a new book, or carry on with one you're making. |
-| 📚 | **Library** | Every finished book, on a shelf. Tap one to read it; ✏️ Edit to change it. |
+| 📚 | **Library** | Every finished book, on a shelf. Tap one to read it, 🔊 Read Aloud to have it read to you, ✏️ Edit to change it. |
 
 ## Making a book
 
@@ -41,7 +42,8 @@ bottom are the tools.
 | 🧽 | **Rubber** | Rubs out drawing — and only drawing. |
 | 🔲 | **Panel** | A new panel, in the biggest gap on the page. |
 | 👾 | **Milbil** | Somebody to go in a panel. |
-| 💬 | **Words** | A speech bubble, or a caption box. |
+| 💬 | **Words** | A speech bubble for a milbil. |
+| 📜 | **Caption** | Words with nobody talking, like a storyteller. |
 
 ↩️ and ↪️ at the top undo and redo anything at all.
 
@@ -91,12 +93,37 @@ Pick a milbil and tap **💬 Talk**, type what they say, and pick a bubble:
 | 💬 | **Talk** | An oval with a tail pointing at whoever is talking. |
 | 💭 | **Think** | A cloud, with little puffs trailing back to them. |
 | 💥 | **Shout** | A spiky yellow burst. |
-| 📜 | **Caption** | A box with nobody talking: "Meanwhile, at the beach…" |
 
-…and small, middle or big writing. A new bubble goes above the milbil if there is
-room, beside them if not, and never on top of another bubble. The tail always
-points at the speaker, wherever either of them is dragged. Tap a bubble twice to
-change the words.
+…and small, middle or big writing. A new bubble goes as close as it can to just
+above the milbil's head without covering another bubble, anybody's face or a
+caption. The tail always points at the speaker, wherever either of them is
+dragged. Tap a bubble twice to change the words.
+
+### Captions
+
+The **📜 Caption** tool is for words with nobody talking — the storyteller:
+"Once upon a time…", "Meanwhile, at the beach…", "Uh oh."
+
+Pick which panel it goes in (a little map of the page shows them all), type the
+words, and pick where:
+
+| | | |
+| --- | --- | --- |
+| ⬆️ | **Top** | A strip right along the top of the panel, like a comic. |
+| ⬇️ | **Bottom** | A strip right along the bottom, like the words under a picture in a picture book. This is where it starts. |
+| ✋ | **Anywhere** | A box you can drag wherever you like. |
+
+…and a colour (yellow, white, pink, sky or mint) and small, middle or big writing.
+
+A strip always runs the whole width of its panel, just inside the frame. Make the
+panel bigger or smaller and the strip goes with it, the words wrapping again to
+fit. Two strips on the same edge stack up. Drag a strip and it jumps to the top
+or the bottom of whichever panel your finger is over. Tap it twice to change it.
+
+**A caption doesn't cover anybody up.** If a new strip would sit on top of a
+milbil, the panel grows to make room for it, like it does for milbils. If there's
+no room to grow, the milbils step up and stand on the strip instead (a bit
+smaller, if that's what it takes), and bubbles move out from under it.
 
 ### Drawing
 
@@ -129,11 +156,37 @@ the cover spins across the screen onto the shelf. (A book with no title is calle
 "Greta's Book" — whoever made it.)
 
 In the Library, tap a book to read it — swipe, tap the edges or use the arrows to
-turn the page — and after the last page comes **The End**. 🔊 reads the whole
-book out loud, lighting up each bubble as it goes.
+turn the page — and after the last page comes **The End**.
 
-**✏️ Edit this book** is always along the bottom of the reader (and under every
-book on the shelf). It opens the book straight back up. It stays on the shelf
+### 🔊 Read Aloud
+
+**🔊 Read Aloud** is under every book on the shelf and along the bottom of the
+book you're reading. It reads the book to you from wherever you are, turning the
+pages by itself:
+
+- the title and who made it, from the cover;
+- the captions, in the storyteller's voice;
+- every bubble, with who said it — "Chomp says: I'm so hungry!", "Petal thinks:
+  I ate his lunch.", "Sunny shouts: lunch time!";
+- and **The End**.
+
+Every milbil has a voice of their own — Chomp low and rumbly, Petal high and
+small, everybody else somewhere in between — and thinking is said a little
+quieter. Each bubble and caption lights up while it's being read. A page with
+only pictures on it gets a moment to be looked at before the page turns.
+
+It reads a page top to bottom and left to right: the strips along a panel's top,
+then the bubbles a row at a time, then the strips along its bottom. A new milbil
+stands to the right of the ones already in a panel, so the order you make them
+talk is the order they're read.
+
+Tap **⏹ Stop reading** to stop. **⚙️ Settings** has the speed — 🐢 slow,
+🙂 normal or 🐇 fast — and ▶️ to try it. It uses the device's own voice (an
+Australian one if it has one), so nothing is sent anywhere and it works without
+the internet. If a browser can't speak at all, the button doesn't appear.
+
+**✏️ Edit this book** is always along the bottom of the reader, next to 🔊 Read
+Aloud (and under every book on the shelf). It opens the book straight back up. It stays on the shelf
 while you change it, and ✓ Done puts it back.
 
 Books you haven't finished wait in Create under **Books you're making**.
@@ -157,12 +210,14 @@ milbil-books/
 └── js/
     ├── cast.js          the 36 milbils
     ├── milbil.js        drawing milbils (shared with MilMATHS and Milbil Café)
-    ├── model.js         books, pages, panels: the grid, growing, making room
-    ├── bubbles.js       measuring words, and drawing the four kinds of bubble
+    ├── model.js         books, pages, panels: the grid, growing, making room,
+    │                    where bubbles go, caption strips
+    ├── bubbles.js       measuring words, and drawing the bubbles and captions
     ├── ink.js           pen, glow pen and rubber
     ├── view.js          drawing a page, at any size
     ├── editor.js        Create: picking up, dragging, the tools, undo
-    ├── reader.js        the Library's reader, and reading aloud
+    ├── reader.js        the Library's reader
+    ├── aloud.js         Read Aloud: what to say, in what order, in whose voice
     ├── store.js         where books are kept
     ├── ui.js            sheets, cards, toasts, sound, confetti
     └── main.js          the two tabs, new books, Done
@@ -193,3 +248,12 @@ colour changed; ✓ Done, the Library, the reader, The End and ✏️ Edit; and 
 reload in the middle, which comes back to the same page of the same book. Also
 looked at on a desktop, a phone turned sideways, a 320-pixel phone, and with the
 browser pretending it is too old for container units.
+
+Captions were checked the same way: strips along the top and the bottom, a
+panel growing to make room for one, milbils stepping up onto one when it
+couldn't, strips stacking, rewrapping when their panel got narrower, and being
+dragged from one panel to another. Read Aloud was checked with a stand-in for
+the browser's voice that writes down everything it's asked to say: the order,
+who says what, each milbil's voice, the pages turning, the bubble that lights
+up, The End, and stopping half way. (What the real voice sounds like depends on
+the device.)

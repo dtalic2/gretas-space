@@ -23,7 +23,7 @@
 // Panels and milbils are kept between redraws rather than rebuilt, so dragging
 // one about doesn't make Greta's pictures flicker.
 
-import { PAGE_W, PAGE_H, TEXT_SIZE, box, mbWidth, bgCss, findMilbil } from './model.js';
+import { PAGE_W, PAGE_H, TEXT_SIZE, box, mbWidth, bgCss, findMilbil, isStrip } from './model.js';
 import { castHTML } from './cast.js';
 import { bubbleSVG } from './bubbles.js';
 import { paintInk, drawStroke, usesLayer } from './ink.js';
@@ -153,7 +153,13 @@ export class PageView {
         pe.insertAdjacentHTML('beforeend', `<button type="button" class="pnl-add" data-add="${p.id}">
           <i>👾</i><span>Add a milbil</span></button>`);
       } else if (!wantAdd && add) add.remove();
-      if (wantAdd) pe.classList.toggle('tiny', b.w < 300 || b.h < 220);
+      if (wantAdd){
+        // in the middle of the space the caption strips leave, not underneath one
+        const strip = (at) => p.words.reduce((n, t) => n + (isStrip(t) && t.at === at ? t.sh || 0 : 0), 0);
+        const top = strip('top'), bottom = strip('bottom');
+        pe.querySelector(':scope > .pnl-add').style.top = `${((top + b.h - bottom) / 2 / b.h * 100).toFixed(2)}%`;
+        pe.classList.toggle('tiny', b.w < 300 || b.h - top - bottom < 220);
+      }
     });
     for (const [id, n] of this.panelEls) if (!seenP.has(id)){ n.remove(); this.panelEls.delete(id); }
     for (const [id, n] of this.mbEls) if (!seenM.has(id)){ n.remove(); this.mbEls.delete(id); }

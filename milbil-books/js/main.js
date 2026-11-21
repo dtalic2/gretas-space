@@ -17,6 +17,7 @@ import { CAST, castHTML } from './cast.js';
 import { Editor, pickTitle } from './editor.js';
 import { Reader } from './reader.js';
 import { PageView } from './view.js';
+import { canSpeak, SPEEDS, say, wake } from './aloud.js';
 import { $, $$, esc, Sheet, card, toast, sfx, setSound, confetti, ago, plural } from './ui.js';
 
 const NAMES = ['Greta', 'Milly', 'Bil', 'Pip', 'Sprout', 'Nugget', 'Pickle', 'Bean', 'Tilly', 'Ro', 'Mo', 'Dot'];
@@ -127,7 +128,10 @@ function paintLibrary(){
         </button>
         <span class="book-txt"><b>${esc(b.title || 'My Book')}</b>
           <small>${b.author ? `by ${esc(b.author)} · ` : ''}${plural(b.pages.length, 'page')}</small></span>
-        <button type="button" class="book-edit" data-act="edit" data-id="${b.id}">✏️ Edit</button>
+        <span class="book-btns">
+          ${canSpeak() ? `<button type="button" class="book-act" data-act="aloud" data-id="${b.id}">🔊 Read Aloud</button>` : ''}
+          <button type="button" class="book-act" data-act="edit" data-id="${b.id}">✏️ Edit</button>
+        </span>
       </div>`).join('')}</div>`;
   for (const b of done) coverInto($(`[data-cover-of="${b.id}"]`, view), b);
 }
@@ -140,6 +144,7 @@ view.addEventListener('click', (e) => {
     case 'new': newBookCard(); break;
     case 'continue': if (book) openEditor(book, 'create'); break;
     case 'read': if (book) openReader(book); break;
+    case 'aloud': if (book){ openReader(book); reader.startReading(); } break;
     case 'edit': if (book) openEditor(book, 'library'); break;
     case 'bin': if (book) binBook(book); break;
   }
@@ -361,13 +366,18 @@ function helpSheet(){
       <li><b>👾 Milbils</b> go in panels. Tap <b>Add a milbil</b> in an empty panel. If a panel is too small for
         everybody in it, it grows to fit.</li>
       <li><b>💬 Words</b>: tap a milbil, then <b>Talk</b>, and type. Bubbles can talk, think or shout, and the
-        tail follows whoever is talking. A caption box is for the narrator.</li>
+        tail follows whoever is talking.</li>
       <li><b>✏️ Draw</b> anywhere on the page. Tap the colour button for every colour, the glow pen, and
         drawing <b>behind</b> the milbils for skies and grass. The slider makes the line thicker.</li>
       <li><b>🧽 Rubber</b> rubs out drawing, and only drawing.</li>
       <li><b>↩️ Undo</b> takes back anything. Pages number themselves.</li>
+      <li><b>📜 Caption</b>: words with nobody talking, like a storyteller — "Once upon a time…". Pick a
+        panel and put it in a strip along the top, along the bottom, or in a box you can move anywhere.</li>
       <li><b>✓ Done</b> puts your book in the 📚 Library. Open it there and tap <b>✏️ Edit</b> at the bottom to
         change it whenever you like.</li>
+      <li><b>🔊 Read Aloud</b> reads your book to you: the captions, and every bubble with who said it, each
+        milbil in their own voice, turning the pages as it goes. It's under every book on the shelf, and at
+        the bottom of a book you're reading.</li>
     </ul>`,
   });
 }
@@ -380,6 +390,9 @@ function settingsSheet(){
       <label class="field"><span>Your name <small>(it goes on your covers)</small></span><span class="set-row">
         <input class="in" data-role="name" maxlength="30" value="${esc(settings.name)}" placeholder="Your name" autocomplete="off" spellcheck="false">
         <button type="button" class="btn ghost dice" data-act="dice" aria-label="Pick a name for me">🎲</button></span></label>
+      ${canSpeak() ? `<div class="field"><span>🔊 Read Aloud speed</span><div class="opts3">${SPEEDS.map(sp =>
+        `<button type="button" class="opt2${settings.readSpeed === sp.id ? ' on' : ''}" data-act="speed" data-id="${sp.id}"><i>${sp.icon}</i><b>${sp.name}</b></button>`).join('')}
+        </div><button type="button" class="btn ghost sm try" data-act="try">▶️ Try it</button></div>` : ''}
       <div class="field"><span>Sound</span><div class="opts2">
         <button type="button" class="opt2${settings.sound ? ' on' : ''}" data-act="sound" data-id="on"><i>🔊</i><b>On</b></button>
         <button type="button" class="opt2${!settings.sound ? ' on' : ''}" data-act="sound" data-id="off"><i>🔇</i><b>Off</b></button>
@@ -389,6 +402,8 @@ function settingsSheet(){
     onAct: (act, id) => {
       if (act === 'sound'){ settings.sound = id === 'on'; setSound(settings.sound); saveSettings(); sheet.render(); sfx('pick'); }
       if (act === 'dice'){ settings.name = any(NAMES); saveSettings(); sheet.render(); sfx('pick'); }
+      if (act === 'speed'){ settings.readSpeed = id; saveSettings(); sheet.render(); sfx('pick'); }
+      if (act === 'try'){ wake(); say({ who: 'chomp', kind: 'say', text: "Chomp says: I'm going to read you a story!" }); }
     },
   });
 }
