@@ -25,11 +25,12 @@ import {
   uid, clamp, allPages, newPage, newPanel, box, mbBox, find, findMilbil, panelAt,
   spotForPanel, firstFit, resizeTarget, moveTarget, growToFit, roomFor, addMilbil, fitContents,
   shiftContents, moveToPanel, placeWords, keepWordsOnPage, extent, pageIsEmpty,
-  isStrip, stripTextWidth, layoutCaptions, makeRoomForCaption,
+  isStrip, stripTextWidth, layoutCaptions, makeRoomForCaption, fontSize, FS_MIN, FS_MAX, TEXT_SIZE,
+  inkIn, hasDrawing, copyAcross,
 } from './model.js';
 import { CAST, who, castHTML } from './cast.js';
 import { measure, KINDS, MAX_W } from './bubbles.js';
-import { simplify } from './ink.js';
+import { simplify, drawStroke } from './ink.js';
 import { PageView } from './view.js';
 import { $, esc, toast, card, sfx } from './ui.js';
 import { settings, saveSettings } from './store.js';
@@ -44,6 +45,14 @@ const boxHTML = (cls, b) => `<div class="sel-box ${cls}" style="left:${pct(b.x, 
 const btn = (act, icon, label = '', cls = '', title = '') =>
   `<button type="button" class="cb ${cls}" data-act="${act}"${title ? ` title="${title}" aria-label="${title}"` : ''}>` +
   `<i>${icon}</i>${label ? `<span>${label}</span>` : ''}</button>`;
+
+/** The Size row in the words and caption cards: three sizes to start from. */
+function sizeRow(fs){
+  const names = { s: 'Small', m: 'Middle', l: 'Big' };
+  return `<div class="wc-row"><span class="wc-label">Size</span>${['s', 'm', 'l'].map(z =>
+    `<button type="button" class="chip sz sz-${z}${TEXT_SIZE[z] === fs ? ' on' : ''}" data-size="${z}" aria-label="${names[z]} words">A</button>`).join('')}
+    <span class="wc-note">or drag the pink dot</span></div>`;
+}
 
 export function pickTitle(not = ''){
   const pool = TITLE_IDEAS.filter(t => t !== not);
@@ -63,6 +72,9 @@ function clonePage(src){
   for (const p of page.panels) for (const t of p.words){ t.id = uid(); if (t.from) t.from = ids[t.from] || null; }
   return page;
 }
+
+/** A page's panels in reading order: top to bottom, left to right. */
+const inOrder = (page) => [...page.panels].sort((a, b) => a.y - b.y || a.x - b.x);
 
 /** Put a page back the way it was, keeping its drawing (that has its own undo). */
 function restore(page, json){
@@ -187,7 +199,7 @@ export class Editor {
   get num(){ return this.book.pages.indexOf(this.page) + 1; }          // 0 on the cover
   panel(id){ return this.page.panels.find(p => p.id === id) || null; }
   findPage(id){ return this.pages.find(p => p.id === id) || null; }
-  panelsInOrder(){ return [...this.page.panels].sort((a, b) => a.y - b.y || a.x - b.x); }
+  panelsInOrder(page = this.page){ return inOrder(page); }
   unitsPerPx(){ return PAGE_W / Math.max(1, this.view.el.clientWidth); }
 
   /** The panel a new milbil should go in, if nobody said which. */
@@ -248,6 +260,10 @@ export class Editor {
         `width:${pct(PAGE_W - 2 * SIDE, PAGE_W)};height:${pct(PAGE_H - TOP - FOOT, PAGE_H)};` +
         `background-size:${100 / COLS}% ${100 / ROWS}%"></div>`;
     }
+    // a size dot is kept a finger's width inside the page, so it can always be grabbed
+    const inset = 16 * this.unitsPerPx();
+    const dot = (x, y, h) => `<i class="h size" data-h="${h}" style="left:${pct(clamp(x, inset, PAGE_W - inset), PAGE_W)};` +
+      `top:${pct(clamp(y, inset, PAGE_H - inset), PAGE_H)}"></i>`;
     if (s && this.mode === 'move'){
       if (s.type === 'panel'){
         const p = this.panel(s.id);
@@ -263,11 +279,10 @@ export class Editor {
         const f = find(page, s.id);
         if (f?.m){
           const b = mbBox(f.m);
-          html += boxHTML('sel-mb', b) +
-            `<i class="h size" data-h="mb" style="left:${pct(b.x + b.w, PAGE_W)};top:${pct(b.y, PAGE_H)}"></i>`;
+          html += boxHTML('sel-mb', b) + dot(b.x + b.w, b.y, 'mb');
         } else if (f?.t){
           const e = extent(f.t);
-          html += boxHTML('sel-words', { x: f.t.x - e.rx, y: f.t.y - e.ry, w: e.rx * 2, h: e.ry * 2 });
+          html += boxHTML('sel-words', { x: f.t.x - e.rx, y: f.t.y - e.ry, w: e.rx * 2, h: e.ry * 2 }) + dot(f.t.x + e.rx, f.t.y + e.ry, 'w');
         }
       }
     }
@@ -287,29 +302,33 @@ export class Editor {
     } else if (s?.type === 'panel' && this.panel(s.id)){
       const p = this.panel(s.id);
       html = btn('pnl-milbil', '👾', 'Add a milbil', 'go') +
-        (p.fixed ? '' : btn('pnl-colour', '🎨', 'Colour') + btn('pnl-delete', '🗑️', '', 'danger', 'Throw this panel away'));
+        (p.fixed ? '' : btn('pnl-colour', '🎨', 'Colour')) + btn('settings', '⚙️', 'Settings') +
+        (p.fixed ? '' : btn('pnl-delete', '🗑️', '', 'danger', 'Throw this panel away'));
       hint = p.fixed ? 'Milbils on the cover can be as big as you like.' : 'Drag a blue dot to make the panel bigger or smaller. Drag the middle to move it.';
     } else if (s?.type === 'mb' && find(page, s.id)?.m){
       html = btn('mb-talk', '💬', 'Talk', 'go') + btn('mb-flip', '↔️', 'Turn') +
         btn('mb-bigger', '➕', '', '', 'Bigger') + btn('mb-smaller', '➖', '', '', 'Smaller') +
-        btn('mb-front', '⏫', 'Front') + btn('mb-delete', '🗑️', '', 'danger', 'Take them out');
+        btn('mb-front', '⏫', 'Front') + btn('settings', '⚙️', 'Settings') + btn('mb-delete', '🗑️', '', 'danger', 'Take them out');
       hint = 'Drag to move them — even into another panel. The pink dot makes them bigger.';
     } else if (s?.type === 'w' && find(page, s.id)?.t){
       const t = find(page, s.id).t;
       const cap = t.kind === 'caption';
       html = btn('w-edit', '✏️', cap ? 'Change the caption' : 'Change the words', 'go') +
+        btn('w-bigger', '➕', '', '', 'Bigger') + btn('w-smaller', '➖', '', '', 'Smaller') +
+        btn('settings', '⚙️', 'Settings') +
         btn('w-delete', '🗑️', '', 'danger', cap ? 'Throw this caption away' : 'Throw these words away');
-      hint = isStrip(t) ? 'Drag it to the top or the bottom of any panel. Tap it again to change it.'
-        : cap ? 'Drag the caption anywhere. Tap it again to change it.'
-        : 'Drag the bubble to move it. Tap it again to change the words.';
+      hint = isStrip(t) ? 'Drag it to the top or the bottom of any panel. The pink dot or ➕ ➖ change the size.'
+        : cap ? 'Drag the caption anywhere. The pink dot or ➕ ➖ make it bigger or smaller.'
+        : 'Drag the bubble to move it. The pink dot or ➕ ➖ make it bigger or smaller.';
     } else {
       const cover = page.kind === 'cover';
       // whatever the page needs next: a panel, then somebody in it, then words
       const anyone = page.panels.some(p => p.cast.length);
       const next = !page.panels.length ? btn('add-panel', '🔲', 'Add a panel')
         : !anyone ? btn('add-milbil', '👾', 'Add a milbil') : btn('add-words', '💬', 'Words');
-      html = cover ? btn('cover', '📕', 'Title and colour') + btn('add-milbil', '👾', 'Add a milbil')
-        : btn('page-menu', '📄', `Page ${this.num}`) + next;
+      html = (cover ? btn('cover', '📕', 'Title and colour') + btn('add-milbil', '👾', 'Add a milbil')
+        : btn('page-menu', '📄', `Page ${this.num}`) + next) +
+        (page.panels.length ? btn('settings', '⚙️', 'Settings') : '');
       hint = cover ? 'This is the cover. Tap the title to change it, or put milbils on it.'
         : !page.panels.length ? 'An empty page. Add a panel, or draw on it.'
         : !anyone ? 'Tap a panel to change its size, or put a milbil in it.'
@@ -383,7 +402,7 @@ export class Editor {
 
   // ============================================================= changing ===
 
-  snap(){ this.layoutCaptions(); const { ink, ...rest } = this.page; return JSON.stringify(rest); }
+  snap(page = this.page){ this.layoutCaptions(page); const { ink, ...rest } = page; return JSON.stringify(rest); }
 
   /**
    * Caption strips follow their panel: whenever a panel changes width, the
@@ -399,7 +418,34 @@ export class Editor {
 
   measureCaption(p, t){
     const mw = stripTextWidth(p);
-    Object.assign(t, measure(t.text, 'caption', t.size, mw), { mw });
+    Object.assign(t, measure(t.text, 'caption', fontSize(t), mw), { mw });
+  }
+
+  /** Measure some words again — after their writing changed size, say. */
+  remeasure(p, t){
+    if (isStrip(t)){ this.measureCaption(p, t); return; }
+    const fs = fontSize(t);
+    const max = t.kind === 'caption' ? Math.min(MAX_W.caption * fs / TEXT_SIZE.m, Math.max(120, box(p).w - 80)) : null;
+    Object.assign(t, measure(t.text, t.kind, fs, max));
+    keepWordsOnPage(t);
+  }
+
+  /** Bigger or smaller writing, from the ➕ and ➖ buttons. */
+  wordsSize(k){
+    const f = find(this.page, this.sel?.id);
+    if (!f?.t) return;
+    const before = this.snap();
+    const fs = Math.round(clamp(fontSize(f.t) * k, FS_MIN, FS_MAX));
+    if (fs === fontSize(f.t)){
+      toast(k > 1 ? "That's as big as words go." : "That's as small as words go.");
+      sfx('nope');
+      return;
+    }
+    f.t.fs = fs;
+    this.remeasure(f.panel, f.t);
+    this.commit(before);
+    this.renderPage();
+    sfx('tap');
   }
 
   push(entry){
@@ -438,16 +484,16 @@ export class Editor {
   undo(){
     const e = this.past.pop();
     if (!e){ sfx('nope'); return; }
+    this.future.push(e);            // before apply(), which redraws the ↩️ ↪️ buttons
     this.apply(e, true);
-    this.future.push(e);
     sfx('undo');
   }
 
   redo(){
     const e = this.future.pop();
     if (!e){ sfx('nope'); return; }
-    this.apply(e, false);
     this.past.push(e);
+    this.apply(e, false);
     sfx('undo');
   }
 
@@ -498,6 +544,17 @@ export class Editor {
       case 'meta':
         Object.assign(b, back ? e.before : e.after);
         this.markDirty(b.cover.id);
+        break;
+      case 'multi':
+        // several changes made together — copying from one page to another, say
+        for (const part of (back ? [...e.parts].reverse() : e.parts)){
+          const pg = this.findPage(part.pid);
+          if (!pg) continue;
+          if (part.kind === 'page') restore(pg, back ? part.before : part.after);
+          if (part.kind === 'ink'){ pg.ink = (back ? part.before : part.after).slice(); ink = true; }
+          this.markDirty(pg.id);
+        }
+        goTo = e.goTo || null;
         break;
     }
     this.sel = null;
@@ -666,6 +723,7 @@ export class Editor {
 
   setMode(m, { quiet = false } = {}){
     if (this.mode === m && m !== 'move') m = 'move';      // tapping Draw again puts the pen down
+    if (m !== 'move') this.sel = null;                     // picking up the pen puts everything else down
     this.mode = m;
     this.renderPage();
     this.renderTools();
@@ -694,12 +752,15 @@ export class Editor {
       case 'add-milbil': this.pickMilbil(this.targetPanel()?.id); break;
       case 'add-words': this.addWords(); break;
       case 'add-caption': this.captionCard({ panelId: this.captionTarget()?.id }); break;
+      case 'settings': this.settingsSheet(); break;
       case 'pnl-milbil': this.pickMilbil(this.sel?.id); break;
       case 'pnl-colour': this.panelColour(); break;
       case 'pnl-delete': case 'mb-delete': case 'w-delete': this.deleteSelection(); break;
       case 'mb-talk': this.wordsCard({ speakerId: this.sel?.id }); break;
       case 'mb-flip': case 'mb-bigger': case 'mb-smaller': case 'mb-front': this.mbAction(act); break;
       case 'w-edit': { const t = find(this.page, this.sel?.id)?.t; if (t) this.editWords(t); break; }
+      case 'w-bigger': this.wordsSize(1.2); break;
+      case 'w-smaller': this.wordsSize(1 / 1.2); break;
       case 'palette': this.palette(); break;
       case 'pen-colour': this.setColour(b.dataset.id, { quick: true }); break;
       case 'rub-all': this.rubAll(); break;
@@ -721,7 +782,7 @@ export class Editor {
   }
 
   onKey(e){
-    if (!this.book || this.sheet.open || document.querySelector('.card-wrap')) return;
+    if (!this.book || this.sheet.open || document.querySelector('.card-wrap.show')) return;
     if (e.target.closest?.('input, textarea, select')) return;
     const mod = e.metaKey || e.ctrlKey;
     const key = e.key.toLowerCase();
@@ -902,7 +963,7 @@ export class Editor {
     const panel = (t && find(page, t.id)?.panel) || (speaker && find(page, speaker.id)?.panel) || this.panel(panelId) || this.targetPanel();
     if (!panel) return;
     let kind = t?.kind || (speaker ? 'say' : 'caption');
-    let size = t?.size || 'm';
+    let fs = t ? fontSize(t) : TEXT_SIZE.m;
     let text = t?.text || '';
     const kinds = speaker ? KINDS.filter(k => k.id !== 'caption') : [];
     const name = speaker ? esc(who(speaker.who).name) : '';
@@ -914,8 +975,7 @@ export class Editor {
       <textarea class="in wc-text" maxlength="160" rows="3" placeholder="${speaker ? 'Type it here…' : 'Meanwhile, at the beach…'}">${esc(text)}</textarea>
       ${kinds.length ? `<div class="wc-row">${kinds.map(k =>
         `<button type="button" class="chip${k.id === kind ? ' on' : ''}" data-kind="${k.id}">${k.icon} ${k.name}</button>`).join('')}</div>` : ''}
-      <div class="wc-row"><span class="wc-label">Size</span>${['s', 'm', 'l'].map(z =>
-        `<button type="button" class="chip sz sz-${z}${z === size ? ' on' : ''}" data-size="${z}" aria-label="${{ s: 'Small', m: 'Middle', l: 'Big' }[z]} words">A</button>`).join('')}</div>`;
+      ${sizeRow(fs)}`;
     const buttons = t
       ? [{ label: '🗑️ Throw away', cls: 'ghost', value: 'delete' }, { label: 'Done ✓', cls: 'go', value: 'ok' }]
       : [{ label: 'Cancel', cls: 'ghost', value: 'cancel' }, { label: 'Done ✓', cls: 'go', value: 'ok' }];
@@ -932,7 +992,7 @@ export class Editor {
         wrap.addEventListener('click', (e) => {
           const k = e.target.closest('[data-kind]'), z = e.target.closest('[data-size]');
           if (k){ kind = k.dataset.kind; wrap.querySelectorAll('[data-kind]').forEach(b => b.classList.toggle('on', b === k)); sfx('pick'); }
-          if (z){ size = z.dataset.size; wrap.querySelectorAll('[data-size]').forEach(b => b.classList.toggle('on', b === z)); sfx('pick'); }
+          if (z){ fs = TEXT_SIZE[z.dataset.size]; wrap.querySelectorAll('[data-size]').forEach(b => b.classList.toggle('on', b === z)); sfx('pick'); }
         });
       },
     });
@@ -945,14 +1005,15 @@ export class Editor {
       if (t){ this.select({ type: 'w', id: t.id }); this.deleteSelection(); }
       return;
     }
-    const { w, h } = measure(text, kind, size);
     const before = this.snap();
     let target = t;
     if (t){
-      Object.assign(t, { text, kind, size, w, h });
+      Object.assign(t, { text, kind, fs });
+      this.remeasure(panel, t);
       keepWordsOnPage(t, box(panel));
     } else {
-      target = { id: uid(), kind, size, text, w, h, x: 0, y: 0, from: speaker?.id || null };
+      target = { id: uid(), kind, fs, text, x: 0, y: 0, from: speaker?.id || null };
+      this.remeasure(panel, target);
       panel.words.push(target);
       placeWords(panel, target, speaker);
     }
@@ -961,6 +1022,193 @@ export class Editor {
     this.renderPage();
     this.select({ type: 'w', id: target.id });
     sfx('words');
+  }
+
+  // ------------------------------------------------------------ settings
+
+  /** Everything in a panel that can be copied: milbils (with their words), captions, the drawing. */
+  panelItems(page, p){
+    const out = [];
+    for (const m of p.cast){
+      const said = p.words.filter(t => t.from === m.id).map(t => `“${esc(t.text)}”`).join(' ');
+      out.push({ key: `m:${m.id}`, name: esc(who(m.who).name), sub: said,
+        pic: `<span class="${m.flip ? 'flip' : ''}">${castHTML(m.who)}</span>` });
+    }
+    for (const t of p.words){
+      if (t.from && p.cast.some(m => m.id === t.from)) continue;      // goes with its milbil
+      out.push({ key: `w:${t.id}`, name: t.kind === 'caption' ? 'Caption' : 'Words', sub: `“${esc(t.text)}”`,
+        pic: `<span class="pick-icon">${t.kind === 'caption' ? '📜' : '💬'}</span>` });
+    }
+    if (hasDrawing(page, p)){
+      out.push({ key: 'ink', name: 'The drawing', sub: 'Everything drawn in this panel',
+        pic: `<canvas class="ink-preview" data-pnl="${p.id}"></canvas>` });
+    }
+    return out;
+  }
+
+  /** A little picture of what has been drawn in a panel, for its row in the list. */
+  paintPreview(page, p){
+    const c = this.sheet.body.querySelector('canvas.ink-preview');
+    if (!c) return;
+    const B = box(p);
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = 54, h = Math.round(clamp(54 * B.h / B.w, 24, 72));
+    c.style.width = `${w}px`;
+    c.style.height = `${h}px`;
+    c.width = Math.round(w * dpr);
+    c.height = Math.round(h * dpr);
+    const k = Math.min(c.width / B.w, c.height / B.h);
+    const ctx = c.getContext('2d');
+    ctx.setTransform(1, 0, 0, 1, (c.width - B.w * k) / 2 - B.x * k, (c.height - B.h * k) / 2 - B.y * k);
+    for (const l of inkIn(page, p)) drawStroke(ctx, l, k);
+  }
+
+  /**
+   * ⚙️ Settings, for one panel: everything in it with a tick against each,
+   * somewhere to send them — a page, then a panel on that page — and Copy or
+   * Move. And the panel's colour.
+   */
+  settingsSheet(){
+    const page = this.page;
+    const order = inOrder(page);
+    if (!order.length){ toast('This page has no panels yet — tap 🔲 Panel to add one.'); sfx('nope'); return; }
+    if (this.mode !== 'move') this.setMode('move', { quiet: true });
+
+    let src = this.targetPanel() || order[0];
+    const items = () => this.panelItems(page, src);
+    let picked;
+    const pickAll = () => { picked = new Set(items().map(i => i.key)); };
+    // whatever was picked up is what gets ticked; otherwise everything is
+    const s = this.sel;
+    const f = s && s.type !== 'panel' ? find(page, s.id) : null;
+    if (f?.m) picked = new Set([`m:${f.m.id}`]);
+    else if (f?.t) picked = new Set([f.t.from && f.panel.cast.some(m => m.id === f.t.from) ? `m:${f.t.from}` : `w:${f.t.id}`]);
+    else pickAll();
+
+    // Send them to the next panel along; if this page has only the one, the first panel over the page.
+    let toPageId = page.id, toPanelId = null;
+    const aim = () => {
+      const o = inOrder(page);
+      if (o.length > 1){ toPageId = page.id; toPanelId = o[(o.indexOf(src) + 1) % o.length].id; return; }
+      const pages = this.pages;
+      const next = pages.slice(pages.indexOf(page) + 1).find(pg => pg.panels.length) || pages.find(pg => pg !== page && pg.panels.length);
+      toPageId = (next || page).id;
+      toPanelId = next ? inOrder(next)[0].id : null;
+    };
+    aim();
+
+    const pageName = (pg) => (pg.kind === 'cover' ? 'the cover' : `page ${this.book.pages.indexOf(pg) + 1}`);
+    const map = (o, on, act, off = null) => `<span class="cap-map">${o.map((p, i) => `<button type="button"
+        class="cap-pnl${p.id === on ? ' on' : ''}${p.id === off ? ' off' : ''}" data-act="${act}" data-id="${p.id}"${p.id === off ? ' disabled' : ''}
+        style="left:${p.x / COLS * 100}%;top:${p.y / ROWS * 100}%;width:${p.w / COLS * 100}%;height:${p.h / ROWS * 100}%"
+        aria-label="Panel ${i + 1}">${i + 1}</button>`).join('')}</span>`;
+
+    const render = () => {
+      const list = items();
+      const toPage = this.findPage(toPageId) || page;
+      const toOrder = inOrder(toPage);
+      const n = order.indexOf(src) + 1;
+      const can = picked.size > 0 && !!toPanelId && !(toPage === page && toPanelId === src.id);
+      const there = toPanelId ? `panel ${toOrder.findIndex(p => p.id === toPanelId) + 1} on ${pageName(toPage)}` : '';
+      return `
+        <div class="set-head">
+          ${order.length > 1 ? map(order, src.id, 'src') : ''}
+          <div><h3>Panel ${n}${page.kind === 'cover' ? ' of the cover' : ` of page ${this.num}`}</h3>
+            <p>${order.length > 1 ? 'Tap a different panel to see what is in that one.' : 'The only panel on this page.'}</p></div>
+        </div>
+        <h4 class="sheet-h">What's in it</h4>
+        ${list.length ? `<div class="pick-list">${list.map(i => `
+          <button type="button" class="pick${picked.has(i.key) ? ' on' : ''}" data-act="item" data-id="${i.key}" aria-pressed="${picked.has(i.key)}">
+            <span class="pick-box">${picked.has(i.key) ? '✓' : ''}</span>
+            <span class="pick-pic">${i.pic}</span>
+            <span class="pick-txt"><b>${i.name}</b>${i.sub ? `<small>${i.sub}</small>` : ''}</span>
+          </button>`).join('')}</div>` : '<p class="sheet-note">Nothing in this panel yet.</p>'}
+        ${list.length ? `
+          <h4 class="sheet-h">Copy them to…</h4>
+          <div class="page-chips">${this.pages.map((pg, i) => `<button type="button" class="chip${pg === toPage ? ' on' : ''}"
+            data-act="to-page" data-id="${pg.id}">${i ? `Page ${i}` : 'Cover'}</button>`).join('')}</div>
+          ${toOrder.length ? `<div class="set-head">
+              ${map(toOrder, toPanelId, 'to-panel', toPage === page ? src.id : null)}
+              <p>${toPanelId ? `They'll go in <b>${there}</b>.` : 'Tap the panel to put them in.'}</p></div>`
+            : `<p class="sheet-note">${pageName(toPage)[0].toUpperCase() + pageName(toPage).slice(1)} has no panels yet.</p>`}
+          <div class="set-btns">
+            <button type="button" class="btn go" data-act="copy"${can ? '' : ' disabled'}>📄 Copy</button>
+            <button type="button" class="btn ghost" data-act="move"${can ? '' : ' disabled'}>➡️ Move</button>
+          </div>
+          <p class="sheet-note">Copy leaves them here as well. Move takes them away from here.
+            If the panels are different sizes, they're made bigger or smaller to fit.</p>` : ''}
+        ${src.fixed ? '' : `
+          <h4 class="sheet-h">Colour of panel ${n}</h4>
+          <div class="bg-grid small">${PANEL_BGS.map(bg => `
+            <button type="button" class="bg-tile${src.bg === bg.id ? ' on' : ''}" data-act="bg" data-id="${bg.id}">
+              <i style="background:${bg.css}"></i><b>${bg.name}</b></button>`).join('')}</div>`}`;
+    };
+    const again = () => { this.sheet.render(); this.paintPreview(page, src); };
+
+    this.sheet.show({
+      key: 'settings', cls: 'tall', icon: '⚙️', title: 'Settings',
+      sub: 'Copy things from this panel into another one — or move them.',
+      render,
+      onAct: (act, id) => {
+        if (act === 'src'){ src = this.panel(id) || src; pickAll(); aim(); this.select({ type: 'panel', id: src.id }); }
+        if (act === 'item'){ if (picked.has(id)) picked.delete(id); else picked.add(id); }
+        if (act === 'to-page'){
+          toPageId = id;
+          const pg = this.findPage(id);
+          toPanelId = inOrder(pg).find(p => !(pg === page && p.id === src.id))?.id || null;
+        }
+        if (act === 'to-panel') toPanelId = id;
+        if (act === 'bg'){ const before = this.snap(); src.bg = id; this.commit(before); this.renderPage(); }
+        if (act === 'copy' || act === 'move'){
+          this.sheet.close();
+          this.sendTo(src, toPageId, toPanelId, [...picked], act === 'move');
+          return;
+        }
+        sfx('pick');
+        again();
+      },
+    });
+    this.paintPreview(page, src);
+  }
+
+  /** Copy or move the chosen things from a panel on this page to a panel anywhere in the book. */
+  sendTo(from, toPageId, toPanelId, keys, move){
+    const fromPage = this.page;
+    const toPage = this.findPage(toPageId);
+    const to = toPage?.panels.find(p => p.id === toPanelId);
+    if (!to || !keys.length) return;
+
+    const touched = [...new Set([fromPage, toPage])];
+    const before = touched.map(pg => ({ pg, page: this.snap(pg), ink: pg.ink.slice() }));
+    const words = copyAcross({ fromPage, from, toPage, to, keys, move });
+    for (const t of words){ this.remeasure(to, t); keepWordsOnPage(t, box(to)); }
+
+    const parts = [];
+    for (const b of before){
+      const after = this.snap(b.pg);
+      if (after !== b.page) parts.push({ kind: 'page', pid: b.pg.id, before: b.page, after });
+      const now = b.pg.ink;
+      if (now.length !== b.ink.length || now.some((l, i) => l !== b.ink[i])){
+        parts.push({ kind: 'ink', pid: b.pg.id, before: b.ink, after: now.slice() });
+      }
+    }
+    if (!parts.length){ toast('There was nothing to copy.'); sfx('nope'); return; }
+    this.push({ kind: 'multi', parts, goTo: toPage.id });
+    const mark = this.past.length;
+    for (const b of before) this.markDirty(b.pg.id);
+    this.changed(toPage.id);
+
+    // Go and look at them in their new panel.
+    this.go(toPage.id, { quiet: toPage === fromPage });
+    this.view.paintInk();
+    this.select({ type: 'panel', id: to.id });
+    const flags = this.view.flags;
+    flags[to.id] = 'grew';
+    this.renderPage();
+    setTimeout(() => { if (this.view?.flags === flags && flags[to.id] === 'grew'){ delete flags[to.id]; this.renderPage(); } }, 900);
+    sfx('pop');
+    const where = `panel ${inOrder(toPage).indexOf(to) + 1}${toPage === fromPage ? '' : ` on ${toPage.kind === 'cover' ? 'the cover' : `page ${this.book.pages.indexOf(toPage) + 1}`}`}`;
+    toast(`${move ? 'Moved' : 'Copied'} to ${where}.`, { undo: () => { if (this.past.length === mark) this.undo(); } });
   }
 
   /** Tapping some words to change them: a caption has its own card. */
@@ -996,7 +1244,7 @@ export class Editor {
     let text = t?.text || '';
     let at = t ? (isStrip(t) ? t.at : 'free') : 'bottom';
     let fill = t?.fill || 'yellow';
-    let size = t?.size || 'm';
+    let fs = t ? fontSize(t) : TEXT_SIZE.m;
     const order = this.panelsInOrder();
 
     const map = order.length > 1 ? `
@@ -1015,8 +1263,7 @@ export class Editor {
         <button type="button" class="chip${at === 'free' ? ' on' : ''}" data-at="free">✋ Anywhere</button></div>
       <div class="wc-row"><span class="wc-label">Colour</span>${CAPTION_FILLS.map(c =>
         `<button type="button" class="sw${c.id === fill ? ' on' : ''}" data-fill="${c.id}" style="--c:${c.css}" aria-label="${c.name}"></button>`).join('')}</div>
-      <div class="wc-row"><span class="wc-label">Size</span>${['s', 'm', 'l'].map(z =>
-        `<button type="button" class="chip sz sz-${z}${z === size ? ' on' : ''}" data-size="${z}" aria-label="${{ s: 'Small', m: 'Middle', l: 'Big' }[z]} words">A</button>`).join('')}</div>`;
+      ${sizeRow(fs)}`;
     const buttons = t
       ? [{ label: '🗑️ Throw away', cls: 'ghost', value: 'delete' }, { label: 'Done ✓', cls: 'go', value: 'ok' }]
       : [{ label: 'Cancel', cls: 'ghost', value: 'cancel' }, { label: 'Done ✓', cls: 'go', value: 'ok' }];
@@ -1037,7 +1284,7 @@ export class Editor {
           if (pick){ panel = this.panel(pick.dataset.pick) || panel; mark('[data-pick]', pick); sfx('pick'); }
           if (w){ at = w.dataset.at; mark('[data-at]', w); sfx('pick'); }
           if (c){ fill = c.dataset.fill; mark('[data-fill]', c); sfx('pick'); }
-          if (z){ size = z.dataset.size; mark('[data-size]', z); sfx('pick'); }
+          if (z){ fs = TEXT_SIZE[z.dataset.size]; mark('[data-size]', z); sfx('pick'); }
         });
       },
     });
@@ -1061,12 +1308,12 @@ export class Editor {
       panel.words.push(c);
     }
     const wasFree = t && !isStrip(t);
-    Object.assign(c, { text, size, fill });
+    Object.assign(c, { text, fs, fill });
     let grew = false;
     if (at === 'free'){
       for (const k of ['at', 'sw', 'sh', 'mw', 'framed']) delete c[k];
       const B = box(panel);
-      Object.assign(c, measure(text, 'caption', size, Math.min(MAX_W.caption, Math.max(120, B.w - 80))));
+      this.remeasure(panel, c);
       if (wasFree && found.panel === panel) keepWordsOnPage(c, B);
       else placeWords(panel, c, null);
     } else {
@@ -1221,6 +1468,13 @@ export class Editor {
           const anchor = { x: m.x, y: m.y };
           Object.assign(d, { kind: 'mb-size', id: m.id, h0: m.h, anchor, d0: Math.max(30, Math.hypot(u.x - anchor.x, u.y - anchor.y)) });
         }
+      } else if (h.dataset.h === 'w' && this.sel?.type === 'w'){
+        const t = find(page, this.sel.id)?.t;
+        if (t){
+          const c = { x: t.x, y: t.y };
+          Object.assign(d, { kind: 'w-size', id: t.id, fs0: fontSize(t), w0: t.w, h0: t.h, c,
+            d0: Math.max(30, Math.hypot(u.x - c.x, u.y - c.y)) });
+        }
       } else if (this.sel?.type === 'panel'){
         const p = this.panel(this.sel.id);
         if (p) Object.assign(d, { kind: 'pnl-size', id: p.id, corner: h.dataset.h, p0: { ...p }, content: this.contentOf(p), grid: true });
@@ -1321,6 +1575,19 @@ export class Editor {
         this.renderPage();
         break;
       }
+      case 'w-size': {
+        const f = find(page, d.id);
+        if (!f) break;
+        const fs = Math.round(clamp(d.fs0 * Math.hypot(u.x - d.c.x, u.y - d.c.y) / d.d0, FS_MIN, FS_MAX));
+        if (fs !== fontSize(f.t)){
+          f.t.fs = fs;
+          // a strip is measured for real; a bubble just scales, and is measured properly when let go
+          if (isStrip(f.t)) this.measureCaption(f.panel, f.t);
+          else { f.t.w = Math.round(d.w0 * fs / d.fs0); f.t.h = Math.round(d.h0 * fs / d.fs0); keepWordsOnPage(f.t); }
+        }
+        this.renderPage();
+        break;
+      }
       case 'mb-size': {
         const f = find(page, d.id);
         if (!f) break;
@@ -1383,6 +1650,7 @@ export class Editor {
       }
     }
     if (d.kind === 'mb-size'){ const f = find(page, d.id); if (f) fitContents(f.panel); }
+    if (d.kind === 'w-size'){ const f = find(page, d.id); if (f) this.remeasure(f.panel, f.t); }
     this.commit(d.before);
     this.renderPage();
     this.renderCtx();

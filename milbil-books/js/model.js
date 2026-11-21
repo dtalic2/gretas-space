@@ -9,7 +9,8 @@
 //   page   { id, kind?:'cover', panels[], ink[] }
 //   panel  { id, x, y, w, h, bg, cast[], words[] }   x/y/w/h in grid squares
 //   milbil { id, who, x, y, h, flip }                x = middle, y = feet, page units
-//   words  { id, kind, text, size, x, y, w, h, from } x/y = middle, w/h = the text
+//   words  { id, kind, text, fs, x, y, w, h, from }   x/y = middle, w/h = the text,
+//          fs = how big the writing is (older books have size: 's' | 'm' | 'l')
 //          captions also have a fill colour, and `at`: 'top' or 'bottom' for a
 //          strip along that edge of the panel, or nothing for a box that moves
 //   ink    { c, w, g, b, e, p[] }                     see ink.js
@@ -390,6 +391,10 @@ export function moveToPanel(from, to, m){
 // ---------------------------------------------------------------- words ---
 
 export const TEXT_SIZE = { s: 38, m: 48, l: 64 };
+export const FS_MIN = 24, FS_MAX = 130;     // the smallest and biggest writing can be
+
+/** How big the writing in some words is, in page units. */
+export const fontSize = (t) => clamp(Number(t.fs) || TEXT_SIZE[t.size] || TEXT_SIZE.m, FS_MIN, FS_MAX);
 
 /** A caption that runs along the top or the bottom of its panel. */
 export const isStrip = (t) => t.kind === 'caption' && (t.at === 'top' || t.at === 'bottom');
@@ -543,6 +548,91 @@ export function makeRoomForCaption(page, p, t){
   return 'moved';
 }
 
+// --------------------------------------------- copying to another panel ---
+
+/** The lines drawn in a panel: the ones whose middle is inside it. */
+export function inkIn(page, p){
+  const B = box(p);
+  return page.ink.filter(l => {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (let i = 0; i < l.p.length; i += 2){
+      const x = l.p[i], y = l.p[i + 1];
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
+      if (y < y0) y0 = y;
+      if (y > y1) y1 = y;
+    }
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    return cx >= B.x && cx <= B.x + B.w && cy >= B.y && cy <= B.y + B.h;
+  });
+}
+
+/** Has anything actually been drawn in this panel (not just rubbed out)? */
+export const hasDrawing = (page, p) => inkIn(page, p).some(l => !l.e);
+
+/**
+ * Copy things from one panel into another — on the same page or a different
+ * one — or move them, if `move` is set. `keys` says what:
+ *
+ *   'm:<id>'  a milbil, and everything they are saying
+ *   'w:<id>'  a caption, or words with nobody left to say them
+ *   'ink'     everything drawn in the panel
+ *
+ * If the panels are different sizes, everything is scaled to fit and kept in
+ * the middle (words not quite so much, so they stay readable). The copied
+ * words come back, because their writing may have changed size and they want
+ * measuring again.
+ */
+export function copyAcross({ fromPage, from, toPage, to, keys, move = false }){
+  const Bs = box(from), Bt = box(to);
+  const k = Math.min(Bt.w / Bs.w, Bt.h / Bs.h);
+  const ox = Bt.x + (Bt.w - Bs.w * k) / 2, oy = Bt.y + (Bt.h - Bs.h * k) / 2;
+  const X = (x) => Math.round(ox + (x - Bs.x) * k), Y = (y) => Math.round(oy + (y - Bs.y) * k);
+  const words = [];
+
+  // Words don't shrink or grow as much as everything else, so they can still be read.
+  const kw = clamp(k, 0.75, 1.5);
+  const copyWords = (t, speaker) => {
+    const c = { ...t, id: uid(), from: speaker, x: X(t.x), y: Y(t.y),
+      fs: Math.round(clamp(fontSize(t) * kw, FS_MIN, FS_MAX)) };
+    for (const key of ['sw', 'sh', 'mw', 'framed']) delete c[key];
+    to.words.push(c);
+    words.push(c);
+  };
+
+  for (const key of keys){
+    if (key.startsWith('m:')){
+      const m = from.cast.find(x => x.id === key.slice(2));
+      if (!m) continue;
+      const c = { ...m, id: uid(), x: X(m.x), y: Y(m.y), h: Math.max(MB_MIN, Math.round(m.h * k)) };
+      to.cast.push(c);
+      for (const t of from.words.filter(t => t.from === m.id)) copyWords(t, c.id);
+      if (move){
+        from.cast = from.cast.filter(x => x !== m);
+        from.words = from.words.filter(t => t.from !== m.id);
+      }
+    } else if (key.startsWith('w:')){
+      const t = from.words.find(x => x.id === key.slice(2));
+      if (!t) continue;
+      copyWords(t, null);
+      if (move) from.words = from.words.filter(x => x !== t);
+    }
+  }
+
+  if (keys.includes('ink')){
+    const lines = inkIn(fromPage, from);
+    const copies = lines.map(l => ({ ...l, w: Math.max(1, Math.round(l.w * k * 10) / 10),
+      p: l.p.map((v, i) => (i % 2 ? Y(v) : X(v))) }));
+    if (move) fromPage.ink = fromPage.ink.filter(l => !lines.includes(l));
+    // The copy goes in underneath everything else on its page. That way any
+    // rubbing-out copied with it only rubs out the copy, never something that
+    // was already drawn there.
+    toPage.ink.unshift(...copies);
+  }
+  fitContents(to);
+  return words;
+}
+
 // -------------------------------------------------------------- checking ---
 
 export function pageIsEmpty(page){
@@ -569,6 +659,7 @@ export function repairBook(b){
       p.words = (Array.isArray(p.words) ? p.words : []).filter(t => t && typeof t.text === 'string' && Number.isFinite(t.x) && Number.isFinite(t.y));
       for (const t of p.words){
         t.kind ||= 'say'; t.size = TEXT_SIZE[t.size] ? t.size : 'm'; t.w = +t.w || 100; t.h = +t.h || 50;
+        if (t.fs != null) t.fs = Math.round(clamp(+t.fs || TEXT_SIZE.m, FS_MIN, FS_MAX));
         if (t.kind !== 'caption' || !['top', 'bottom'].includes(t.at)) delete t.at;
       }
       layoutCaptions(p);

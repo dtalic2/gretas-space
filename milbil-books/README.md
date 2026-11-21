@@ -99,6 +99,11 @@ above the milbil's head without covering another bubble, anybody's face or a
 caption. The tail always points at the speaker, wherever either of them is
 dragged. Tap a bubble twice to change the words.
 
+**Bigger or smaller.** Tap a bubble and drag the pink dot on its corner — out to
+make it bigger, in to make it smaller — or tap ➕ and ➖. The writing and the
+bubble grow together, keeping the same words on each line, anywhere from tiny
+to huge. Captions work the same way.
+
 ### Captions
 
 The **📜 Caption** tool is for words with nobody talking — the storyteller:
@@ -142,6 +147,32 @@ over everything.
 The **🧽 Rubber** has its own size, rubs out drawing in front and behind, and
 never touches milbils or words. **🧹 Rub out the lot** clears a page's drawing in
 one go (and ↩️ brings it back).
+
+### ⚙️ Settings: copying things to another panel
+
+**⚙️ Settings** is in the row above the tools (whenever 👆 Move is on). It shows
+everything in one panel, each with a tick:
+
+- every milbil, with whatever they're saying;
+- every caption;
+- **the drawing** — everything drawn in that panel, with a little picture of it.
+
+Untick anything you don't want, pick where to send the rest — **any page** (the
+cover too), then **any panel** on it, from a little map — and tap:
+
+| | | |
+| --- | --- | --- |
+| 📄 | **Copy** | Puts a copy there and leaves these where they are. |
+| ➡️ | **Move** | Takes them out of this panel and puts them there. |
+
+If the two panels are different sizes, everything is made bigger or smaller to
+fit (the words not quite so much, so they can still be read). The game then goes
+to the panel they went to, so you can see them. Copy a whole panel to the next
+one, change what everybody says, and you have the next picture of your comic.
+
+Whatever was picked up when you opened Settings is what starts off ticked — a
+milbil, say. If nothing was, everything is. Settings also has the panel's
+colour. ↩️ Undo takes back a copy or a move in one go, even one to another page.
 
 ### Page numbers
 
@@ -211,7 +242,7 @@ milbil-books/
     ├── cast.js          the 36 milbils
     ├── milbil.js        drawing milbils (shared with MilMATHS and Milbil Café)
     ├── model.js         books, pages, panels: the grid, growing, making room,
-    │                    where bubbles go, caption strips
+    │                    where bubbles go, caption strips, copying between panels
     ├── bubbles.js       measuring words, and drawing the bubbles and captions
     ├── ink.js           pen, glow pen and rubber
     ├── view.js          drawing a page, at any size
@@ -248,6 +279,14 @@ colour changed; ✓ Done, the Library, the reader, The End and ✏️ Edit; and 
 reload in the middle, which comes back to the same page of the same book. Also
 looked at on a desktop, a phone turned sideways, a 320-pixel phone, and with the
 browser pretending it is too old for container units.
+
+⚙️ Settings and resizing were checked in the same browser: a whole panel —
+milbil, bubble, caption strip, glow-pen drawing — copied to the panel below,
+then moved to a panel half the width on another page (and scaled to fit), undone
+and redone; just the drawing moved; a milbil copied onto the cover; only the
+milbil ticked when one was picked up; and a bubble made bigger with ➕, bigger
+again with its dot, and smaller with ➖. The Settings sheet was looked at on a
+320-pixel phone too.
 
 Captions were checked the same way: strips along the top and the bottom, a
 panel growing to make room for one, milbils stepping up onto one when it
