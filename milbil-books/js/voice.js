@@ -39,6 +39,8 @@ class ClipPlayer {
     this.audio = new Audio();
     this.audio.preload = 'auto';
     this.urls = new Map();           // clip id -> a URL to play it from, kept for next time
+    this.loading = new Map();        // clip id -> its URL on the way
+    this.missing = new Map();        // clip id -> when it was found not to be there
     this.now = null;                 // { id, u, done } while one is playing
     this.audio.addEventListener('ended', () => { if (this.now && this.audio.src === this.now.u) this.finish(this.now, true); });
     this.audio.addEventListener('error', () => { if (this.now && this.audio.src === this.now.u) this.finish(this.now, false); });
@@ -50,22 +52,37 @@ class ClipPlayer {
     try { this.audio.play()?.catch(() => {}); } catch {}
   }
 
-  async url(id){
-    if (this.urls.has(id)) return this.urls.get(id);
-    const clip = await getClip(id);
-    if (!clip?.data) return null;
-    if (this.urls.has(id)) return this.urls.get(id);
-    const u = URL.createObjectURL(new Blob([clip.data], { type: clip.mime || 'audio/webm' }));
-    this.urls.set(id, u);
-    if (this.urls.size > 40){
-      const [old, ou] = this.urls.entries().next().value;
-      if (this.now?.id !== old){ URL.revokeObjectURL(ou); this.urls.delete(old); }
+  /** A URL to play a clip from: loaded once, then kept. Null if there's no such clip. */
+  url(id){
+    if (this.urls.has(id)) return Promise.resolve(this.urls.get(id));
+    if (!this.loading.has(id)){
+      const done = (u) => { this.loading.delete(id); return u; };
+      this.loading.set(id, getClip(id).then((clip) => {
+        if (!clip?.data){ this.missing.set(id, Date.now()); return done(null); }
+        this.missing.delete(id);
+        const u = URL.createObjectURL(new Blob([clip.data], { type: clip.mime || 'audio/webm' }));
+        this.urls.set(id, u);
+        if (this.urls.size > 40){
+          const [old, ou] = this.urls.entries().next().value;
+          if (this.now?.id !== old){ URL.revokeObjectURL(ou); this.urls.delete(old); }
+        }
+        return done(u);
+      }, () => done(null)));
     }
-    return u;
+    return this.loading.get(id);
   }
 
-  /** Get some clips ready, so a tap can start one straight away. */
-  warm(ids){ for (const id of ids) if (id && !this.urls.has(id)) this.url(id); }
+  /**
+   * Get some clips ready, so a tap can start one straight away. (The editor
+   * asks every time it redraws the page, so one that isn't there isn't looked
+   * for again for a little while.)
+   */
+  warm(ids){
+    for (const id of ids){
+      if (!id || this.urls.has(id) || this.loading.has(id) || Date.now() - (this.missing.get(id) || 0) < 10000) continue;
+      this.url(id);
+    }
+  }
 
   /** Which clip is playing, if any. */
   get playing(){ return this.now?.id || null; }
