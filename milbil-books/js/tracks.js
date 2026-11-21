@@ -7,12 +7,18 @@
 // turn was written down, so whoever listens later sees each page come up just
 // as it is being read.
 //
-//   book.track   { secs, at }                                — so a list can say how long it is
+//   book.track   { secs, at, seen }    so a list can say how long it is, and which pages it has
+//                                       (seen: the id of every page that was showing at some point)
 //   the track    { id, mime, data, secs, pages: [{ t, id }], at }   — in store.js's own database
+//
+// A soundtrack can always be replaced by a new one — after adding pages to the
+// book, say. The game notices when a book has pages its soundtrack doesn't
+// (missingPages), and says so wherever the soundtrack is.
 //
 // Nothing is sent anywhere: the browser records it and keeps it, like the books.
 
 import { getTrack } from './store.js';
+import { allPages } from './model.js';
 
 export const trackName = (book) => `${book?.title || 'My Book'} Soundtrack`;
 
@@ -31,6 +37,37 @@ export function pageAt(track, t){
     else break;
   }
   return id;
+}
+
+/** The ids of the pages in a soundtrack: every page that was showing at some point while it was recorded. */
+export const seenIn = (track) => [...new Set((track?.pages || []).map(p => p.id))];
+
+/**
+ * The numbers of a book's pages its soundtrack doesn't have — added after it
+ * was recorded, or never turned to while it was — with 0 for the cover. Null
+ * if it isn't known which pages it has (a soundtrack from before the game
+ * kept count; opening it in the studio or 🎧 Soundtracks finds out).
+ */
+export function missingPages(book){
+  const seen = book?.track?.seen;
+  if (!Array.isArray(seen)) return null;
+  const has = new Set(seen);
+  return allPages(book).map((p, i) => (has.has(p.id) ? -1 : i)).filter(i => i >= 0);
+}
+
+/** "Page 4 isn't in the soundtrack yet." — or '' if it has every page. */
+export function missingNote(book){
+  const m = missingPages(book) || [];
+  if (!m.length) return '';
+  const name = (i) => (i ? String(i) : 'the cover');
+  let say;
+  if (m.length > 4) say = `${m.length} pages aren't in the soundtrack yet.`;
+  else if (m.length === 1) say = `${m[0] ? 'Page ' : ''}${name(m[0])} isn't in the soundtrack yet.`;
+  else {
+    const list = m.map(name);
+    say = `${m[0] ? 'Pages ' : ''}${list.slice(0, -1).join(', ')} and ${list[list.length - 1]} aren't in the soundtrack yet.`;
+  }
+  return say[0].toUpperCase() + say.slice(1);
 }
 
 /** When a page first came up in a soundtrack, in seconds; null if it never did. */

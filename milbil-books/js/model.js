@@ -7,7 +7,7 @@
 //
 //   book   { id, title, author, color, titleFont?, track?, status:'draft'|'done', cover, pages[] }
 //          titleFont = the title's text style (see styles.js); Bubbly if none
-//          track = { secs, at } if somebody has recorded a soundtrack of it (see tracks.js)
+//          track = { secs, at, seen } if somebody has recorded a soundtrack of it (see tracks.js)
 //   page   { id, kind?:'cover', panels[], ink[] }
 //   panel  { id, x, y, w, h, bg, cast[], words[] }   x/y/w/h in grid squares
 //   milbil { id, who, x, y, h, flip }                x = middle, y = feet, page units
@@ -701,6 +701,7 @@ export function repairBook(b){
   b.color ||= COVER_COLOURS[0];
   if (b.titleFont != null && !isStyle(b.titleFont)) delete b.titleFont;
   if (b.track != null && !(b.track && Number(b.track.secs) > 0)) delete b.track;
+  if (b.track && b.track.seen != null && !(Array.isArray(b.track.seen) && b.track.seen.every(id => typeof id === 'string'))) delete b.track.seen;
   b.status = b.status === 'done' ? 'done' : 'draft';
   b.created ||= Date.now();
   b.updated ||= b.created;
