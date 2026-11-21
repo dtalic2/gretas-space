@@ -9,11 +9,12 @@
 // fall back to localStorage, and if that is full too they live in memory for as
 // long as the tab is open — and the game says so rather than pretending.
 //
-// Soundtracks — recordings of somebody reading a book out loud — are in a
-// second database of their own, `milbil-books-sounds`, so that saving a book
-// (which happens every few seconds while you make it) never has to carry a
-// few megabytes of sound along with it. A separate database also means adding
-// it never had to upgrade the first one, which a second open tab can block.
+// Soundtracks — recordings of somebody reading a book out loud — and the
+// voices recorded onto bubbles are in a second database of their own,
+// `milbil-books-sounds`, so that saving a book (which happens every few
+// seconds while you make it) never has to carry the sound along with it. A
+// separate database also means adding it never had to upgrade the first one,
+// which a second open tab can block.
 //
 // The little settings object (your name, sound, which tab, the last text
 // styles you picked) is in localStorage
@@ -117,16 +118,20 @@ export async function removeBook(id){
   }
 }
 
-// ----------------------------------------------------------- soundtracks ---
+// ------------------------------------------------- soundtracks and voices ---
 //
-//   { id: the book's id, mime, data: ArrayBuffer, secs, pages: [{ t, id }], at }
+// Two kinds of recording live in the sounds database, each under its own id:
 //
-// `pages` says which page was showing when, so the pages can turn along with
-// the recording. The sound is kept as an ArrayBuffer rather than a Blob: every
-// browser that has IndexedDB can store one of those.
+//   a soundtrack   { id: the book's id, mime, data: ArrayBuffer, secs, pages: [{ t, id }], at }
+//   a voice clip   { id: 'voice:' + its id, mime, data, secs }   — on a bubble or a sound button
+//
+// A soundtrack's `pages` says which page was showing when, so the pages can
+// turn along with it. The sound is kept as an ArrayBuffer rather than a Blob:
+// every browser that has IndexedDB can store one of those.
 
 let sounds = null;                 // the database, once open; false if it won't
 const soundsInMemory = new Map();
+const CLIP = 'voice:';
 
 function openSounds(){
   if (sounds !== null) return Promise.resolve(sounds);
@@ -154,16 +159,16 @@ function soundTx(kind, fn){
   });
 }
 
-/** Keep a soundtrack. Resolves true if it is safely stored, false if only for as long as the tab is open. */
-export async function putTrack(track){
+/** Keep a recording. Resolves true if it is safely stored, false if only for as long as the tab is open. */
+async function putSound(rec){
   if (await openSounds()){
-    try { await soundTx('readwrite', s => s.put(track)); return true; } catch {}
+    try { await soundTx('readwrite', s => s.put(rec)); return true; } catch {}
   }
-  soundsInMemory.set(track.id, track);
+  soundsInMemory.set(rec.id, rec);
   return false;
 }
 
-export async function getTrack(id){
+async function getSound(id){
   if (soundsInMemory.has(id)) return soundsInMemory.get(id);
   if (await openSounds()){
     try { return (await soundTx('readonly', s => s.get(id))) || null; } catch {}
@@ -171,20 +176,38 @@ export async function getTrack(id){
   return null;
 }
 
-export async function removeTrack(id){
+async function removeSound(id){
   soundsInMemory.delete(id);
   if (await openSounds()){
     try { await soundTx('readwrite', s => s.delete(id)); } catch {}
   }
 }
 
-/** Which books have a soundtrack, without loading any of the sound. */
-export async function trackIds(){
+/** Every recording's id, without loading any of the sound. */
+async function soundKeys(){
   const ids = new Set(soundsInMemory.keys());
   if (await openSounds()){
-    try { for (const id of (await soundTx('readonly', s => s.getAllKeys())) || []) ids.add(id); } catch {}
+    try { for (const id of (await soundTx('readonly', s => s.getAllKeys())) || []) ids.add(String(id)); } catch {}
   }
-  return ids;
+  return [...ids];
+}
+
+export const putTrack = putSound;
+export const getTrack = getSound;
+export const removeTrack = removeSound;
+
+/** Which books have a soundtrack. */
+export async function trackIds(){
+  return new Set((await soundKeys()).filter(k => !k.startsWith(CLIP)));
+}
+
+export const putClip = (clip) => putSound({ ...clip, id: CLIP + clip.id });
+export const getClip = (id) => getSound(CLIP + id);
+export const removeClip = (id) => removeSound(CLIP + id);
+
+/** Every voice clip's id. */
+export async function clipIds(){
+  return (await soundKeys()).filter(k => k.startsWith(CLIP)).map(k => k.slice(CLIP.length));
 }
 
 // -------------------------------------------------------------- settings ---

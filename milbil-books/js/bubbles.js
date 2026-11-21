@@ -9,6 +9,8 @@
 //            Either a strip right along the top or the bottom of its panel,
 //            or a box that can go anywhere.
 //
+// (A fifth kind, 'sound', is a 🔊 sound button: no bubble at all. See voice.js.)
+//
 // The words themselves are ordinary HTML, so they wrap like any text. The
 // bubble round them is SVG, drawn from the size the words came out at. Each
 // bubble is drawn twice: every piece of it outlined, then every piece filled in
@@ -182,6 +184,7 @@ function boxD(t){
  * null for a caption or somebody who has been deleted.
  */
 export function bubbleSVG(t, speaker, { hit = false } = {}){
+  if (t.kind === 'sound') return '';        // a sound button is just its 🔊 (see view.js)
   const tag = `<g class="bub ${t.kind}${isStrip(t) ? ' strip' : ''}"${hit ? ` data-w="${t.id}"` : ''}>`;
   if (isStrip(t)) return tag + stripSVG(t) + '</g>';
   const { rx, ry } = bodyHalf(t);

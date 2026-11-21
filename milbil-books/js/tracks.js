@@ -16,9 +16,6 @@ import { getTrack } from './store.js';
 
 export const trackName = (book) => `${book?.title || 'My Book'} Soundtrack`;
 
-/** Can this browser record? (It needs a microphone it's allowed to ask for, and MediaRecorder.) */
-export const canRecord = () => !!(navigator.mediaDevices?.getUserMedia && window.MediaRecorder);
-
 /** 125 → "2:05" */
 export function clock(secs){
   const s = Math.max(0, Math.floor(Number(secs) || 0));

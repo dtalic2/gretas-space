@@ -4,13 +4,15 @@
 // every page in turn — the captions and the words in the bubbles, just as they
 // are written, nothing added. Captions are read in the storyteller's voice, and
 // every milbil has a voice of their own, higher or lower, so you can tell who
-// is talking with your eyes shut.
+// is talking with your eyes shut. Bubbles, captions and sound buttons with a
+// real voice recorded on them (see voice.js) play that instead.
 //
 // It all happens on the device (the browser's speech synthesis), so nothing is
 // sent anywhere and it works without the internet.
 
 import { allPages, findMilbil, isStrip } from './model.js';
 import { settings } from './store.js';
+import { clips } from './voice.js';
 
 export const canSpeak = () => 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
 
@@ -71,10 +73,11 @@ export function linesFor(book, i){
     const top = p.words.filter(t => isStrip(t) && t.at === 'top').sort((a, b) => a.y - b.y);
     const bottom = p.words.filter(t => isStrip(t) && t.at === 'bottom').sort((a, b) => a.y - b.y);
     for (const t of [...top, ...readingOrder(p.words.filter(t => !isStrip(t))), ...bottom]){
-      if (!t.text?.trim()) continue;
+      if (!t.text?.trim() && !t.voice) continue;
       const m = t.kind !== 'caption' && t.from ? findMilbil(page, t.from) : null;
       // just the words — the speaker is in the voice, not in what is said
-      out.push({ id: t.id, kind: t.kind, who: m?.who || null, text: t.text });
+      out.push({ id: t.id, kind: t.kind, who: m?.who || null, text: t.text || '',
+        voice: t.voice?.id || null, secs: t.voice?.secs || 0 });
     }
   }
   return out;
@@ -91,9 +94,25 @@ let current = null;      // held on to: some browsers forget to say 'finished' a
 
 /**
  * Say one line, then call `done` — when the voice says it has finished, or, if
- * it never says (some browsers don't), once there has been plenty of time.
+ * it never says (some browsers don't), once there has been plenty of time. A
+ * line with a recorded voice plays that; if the recording won't play, the
+ * device says the words instead.
  */
 export function say(line, done){
+  if (!line.voice){ speak(line, done); return; }
+  let over = false;
+  const finish = () => { if (!over){ over = true; clearTimeout(dog); done?.(); } };
+  const dog = setTimeout(finish, ((line.secs || 20) + 4) * 1000);
+  clips.play(line.voice).then((how) => {
+    if (over) return;
+    if (how !== 'failed' || !line.text?.trim()){ finish(); return; }
+    over = true;
+    clearTimeout(dog);
+    speak(line, done);
+  });
+}
+
+function speak(line, done){
   const text = sayable(line.text);
   let rate = rateFor(settings.readSpeed), pitch = 1, volume = 1;
   if (line.who) pitch = pitchFor(line.who);
@@ -139,6 +158,7 @@ export function wake(){
 
 export function hush(){
   current = null;
+  clips.stop();
   try { speechSynthesis.cancel(); } catch {}
 }
 

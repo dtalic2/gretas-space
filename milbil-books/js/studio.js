@@ -13,15 +13,11 @@
 import { allPages } from './model.js';
 import { PageView } from './view.js';
 import { putTrack, removeTrack } from './store.js';
-import { trackName, canRecord, clock, pageAt, Player } from './tracks.js';
+import { trackName, clock, pageAt, Player } from './tracks.js';
+import { Mic, canRecord, micTrouble } from './mic.js';
 import { $, esc, card, toast, sfx } from './ui.js';
 
 const MAX_SECS = 20 * 60;          // a long book read slowly is still well under this
-// What to record in, best first. Chrome and Firefox make WebM; iPads make MP4.
-const TYPES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4;codecs=mp4a.40.2', 'audio/mp4', 'audio/aac', 'audio/ogg;codecs=opus'];
-
-/** Switch off a sound-maker, whatever state it's in. */
-const shut = (ctx) => { try { ctx?.close?.()?.catch?.(() => {}); } catch {} };
 
 export class Studio {
   constructor(root, hooks){
@@ -221,43 +217,30 @@ export class Studio {
 
   // ------------------------------------------------------------- recording
 
-  elapsed(){ return this.t0 ? (performance.now() - this.t0) / 1000 : 0; }
+  elapsed(){ return this.mic?.elapsed() || 0; }
 
   async record(){
     if (!canRecord()){ toast("Sorry — this browser can't record sound."); sfx('nope'); return; }
     this.player.pause();
-    // The meter's sound has to be switched on from a tap (iPads insist), so it's
-    // made now, before anything is waited for.
-    const AC = window.AudioContext || window.webkitAudioContext;
-    let ctx = null;
-    try { ctx = AC ? new AC() : null; ctx?.resume?.()?.catch?.(() => {}); } catch { ctx = null; }
+    const mic = new Mic();                // from the tap, before anything is waited for
 
     if (this.book.track){
       const ok = await card(`<h3>🎙️ Record it again?</h3>
         <p>The new recording will take the place of the one you made before (${clock(this.book.track.secs)} long).</p>`,
       [{ label: 'Keep the old one', cls: 'ghost', value: null }, { label: '🔴 Record a new one', cls: 'go', value: 'go' }]);
-      if (ok !== 'go' || !this.book){ shut(ctx); return; }
+      if (ok !== 'go' || !this.book){ mic.close(); return; }
     }
 
     this.setState('asking');
-    let stream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
-    } catch (err){
-      shut(ctx);
+    this.mic = mic;
+    try { await mic.open(); }
+    catch (err){
+      if (this.mic === mic) this.mic = null;
       if (this.state === 'asking') this.setState('idle');
-      this.micTrouble(err);
+      if (err?.name !== 'AbortError') micTrouble(err);
       return;
     }
-    if (this.state !== 'asking' || !this.book){ stream.getTracks().forEach(t => t.stop()); shut(ctx); return; }
-    this.stream = stream;
-    this.ctx = ctx;
-    try {
-      const an = ctx.createAnalyser();
-      an.fftSize = 1024;
-      ctx.createMediaStreamSource(stream).connect(an);
-      this.meter = { an, buf: new Float32Array(an.fftSize), level: 0 };
-    } catch { this.meter = null; }
+    if (this.state !== 'asking' || !this.book || this.mic !== mic){ mic.close(); return; }
 
     // back to the cover, and 3, 2, 1...
     this.show(0, this.at ? -1 : 0);
@@ -268,7 +251,7 @@ export class Studio {
       this.countEl.classList.remove('beat'); void this.countEl.offsetWidth; this.countEl.classList.add('beat');
       sfx('tap');
       await new Promise(r => setTimeout(r, 750));
-      if (this.state !== 'countdown') return;      // cancelled
+      if (this.state !== 'countdown' || this.mic !== mic) return;      // cancelled
     }
     this.countEl.hidden = true;
     this.go();
@@ -276,21 +259,8 @@ export class Studio {
 
   /** Start recording, from the cover. */
   go(){
-    const mime = TYPES.find(t => window.MediaRecorder.isTypeSupported?.(t)) || '';
-    let rec;
-    try { rec = new MediaRecorder(this.stream, mime ? { mimeType: mime } : undefined); }
-    catch { rec = new MediaRecorder(this.stream); }
-    const chunks = [];
-    rec.ondataavailable = (e) => { if (e.data?.size) chunks.push(e.data); };
-    // Saved once, whichever way it stops: ⏹, running out of time, or going wrong.
-    let saved = null;
-    this.finish = () => (saved ||= this.save(chunks, rec.mimeType || mime));
-    this.whenSaved = new Promise((resolve) => { rec.onstop = () => this.finish().finally(resolve); this.saved = resolve; });
-    rec.onerror = () => this.stop();
-    this.rec = rec;
+    this.mic.start();
     this.turns = [{ t: 0, id: this.pages[this.at].id }];
-    this.t0 = performance.now();
-    rec.start(1000);
     this.setState('recording');
     this.tick();
   }
@@ -298,64 +268,47 @@ export class Studio {
   /** The clock, and the meter jumping about with your voice. */
   tick(){
     if (this.state !== 'recording') return;
-    const secs = this.elapsed();
+    const mic = this.mic, secs = this.elapsed();
     const time = this.root.querySelector('.sd-time');
     if (time) time.textContent = clock(secs);
-    const m = this.meter, bar = this.root.querySelector('.sd-level i');
-    if (m && bar){
-      m.an.getFloatTimeDomainData(m.buf);
-      let sum = 0;
-      for (const v of m.buf) sum += v * v;
-      const rms = Math.sqrt(sum / m.buf.length);
-      m.level = Math.max(Math.min(1, rms * 6), m.level * 0.85);       // up fast, down slowly
-      bar.style.transform = `scaleX(${Math.max(0.03, m.level).toFixed(3)})`;
-    }
+    const bar = this.root.querySelector('.sd-level i');
+    if (bar) bar.style.transform = `scaleX(${Math.max(0.03, mic.level()).toFixed(3)})`;
     if (secs >= MAX_SECS){ toast(`That's ${MAX_SECS / 60} minutes — as long as a soundtrack can be.`); this.stop(); return; }
+    if (!mic.recording){ this.stop(); return; }             // it stopped by itself: keep what there is
     requestAnimationFrame(() => this.tick());
   }
 
+  /** ⏹: stop, and save it. */
   stop(){
     if (this.state !== 'recording') return;
-    this.secs = this.elapsed();
+    const mic = this.mic;
+    this.mic = null;
     this.setState('saving');
-    // stopping hands over the last of the sound, and then rec.onstop saves it all
-    try { this.rec.stop(); } catch { this.finish().finally(this.saved); }
-    this.release();
-  }
-
-  /** Let go of the microphone (and its light goes off). */
-  release(){
-    this.stream?.getTracks().forEach(t => t.stop());
-    this.stream = null;
-    shut(this.ctx);
-    this.ctx = null;
-    this.meter = null;
-    this.t0 = 0;
+    this.whenSaved = mic.stop().then(r => this.save(r)).catch(() => this.save(null));
   }
 
   /** Not now: before recording has started. */
   cancel(){
     if (this.state === 'asking' || this.state === 'countdown'){
       this.countEl.hidden = true;
-      this.release();
+      this.mic?.close();
+      this.mic = null;
       this.setState('idle');
     }
     if (this.state === 'playing') this.player.pause();
   }
 
-  async save(chunks, mime){
+  async save(r){
     const book = this.book;
     if (!book) return;
-    if (!chunks.length){
+    if (!r){
       toast("Nothing was recorded. Is the microphone working?");
       sfx('nope');
       this.setState('idle');
       return;
     }
-    const blob = new Blob(chunks, { type: mime || chunks[0].type || 'audio/webm' });
-    const data = await new Response(blob).arrayBuffer();
-    const secs = Math.max(1, Math.round((this.secs || 0) * 10) / 10);
-    const track = { id: book.id, mime: blob.type, data, secs, pages: this.turns, at: Date.now() };
+    const secs = Math.max(1, r.secs);
+    const track = { id: book.id, mime: r.mime, data: r.data, secs, pages: this.turns, at: Date.now() };
     const kept = await putTrack(track);
     book.track = { secs, at: track.at };
     book.updated = Date.now();
@@ -366,17 +319,6 @@ export class Studio {
     sfx('cheer');
     toast(kept ? `🎙️ <b>${esc(trackName(book))}</b> is saved! It's in 🎧 Soundtracks.`
       : "⚠️ This browser won't keep the soundtrack after the page is closed.", { ms: 5000 });
-  }
-
-  micTrouble(err){
-    const name = err?.name || '';
-    const msg = name === 'NotAllowedError' || name === 'SecurityError'
-      ? "<p>Milbil Books isn't allowed to use the microphone. To record, let this page use the microphone — the browser asks, or it's in the browser's settings — and then tap 🔴 Record again.</p>"
-      : name === 'NotFoundError' || name === 'OverconstrainedError'
-        ? '<p>There doesn\'t seem to be a microphone to record with.</p>'
-        : '<p>The microphone wouldn\'t start. Try again in a moment.</p>';
-    card(`<h3>🎙️ Can't hear you</h3>${msg}`, [{ label: 'OK', cls: 'go' }]);
-    sfx('nope');
   }
 
   // ------------------------------------------------------------- listening
