@@ -5,12 +5,15 @@
 // in those units. That way the same page can be drawn at any size: a thumbnail in
 // the page strip, the editor, the shelf, or the whole screen in the reader.
 //
-//   book   { id, title, author, color, status:'draft'|'done', cover, pages[] }
+//   book   { id, title, author, color, titleFont?, track?, status:'draft'|'done', cover, pages[] }
+//          titleFont = the title's text style (see styles.js); Bubbly if none
+//          track = { secs, at } if somebody has recorded a soundtrack of it (see tracks.js)
 //   page   { id, kind?:'cover', panels[], ink[] }
 //   panel  { id, x, y, w, h, bg, cast[], words[] }   x/y/w/h in grid squares
 //   milbil { id, who, x, y, h, flip }                x = middle, y = feet, page units
-//   words  { id, kind, text, fs, x, y, w, h, from }   x/y = middle, w/h = the text,
-//          fs = how big the writing is (older books have size: 's' | 'm' | 'l')
+//   words  { id, kind, text, fs, font?, x, y, w, h, from }   x/y = middle, w/h = the text,
+//          fs = how big the writing is (older books have size: 's' | 'm' | 'l'),
+//          font = its text style (see styles.js); Comic if none
 //          captions also have a fill colour, and `at`: 'top' or 'bottom' for a
 //          strip along that edge of the panel, or nothing for a box that moves
 //   ink    { c, w, g, b, e, p[] }                     see ink.js
@@ -21,6 +24,7 @@
 // milbils instead of stretching them.
 
 import { who } from './cast.js';
+import { isStyle } from './styles.js';
 
 export const PAGE_W = 1200, PAGE_H = 1600;
 export const COLS = 12, ROWS = 16;
@@ -661,6 +665,7 @@ export function repairBook(b){
         t.kind ||= 'say'; t.size = TEXT_SIZE[t.size] ? t.size : 'm'; t.w = +t.w || 100; t.h = +t.h || 50;
         if (t.fs != null) t.fs = Math.round(clamp(+t.fs || TEXT_SIZE.m, FS_MIN, FS_MAX));
         if (t.kind !== 'caption' || !['top', 'bottom'].includes(t.at)) delete t.at;
+        if (t.font != null && !isStyle(t.font)) delete t.font;
       }
       layoutCaptions(p);
       p.bg ||= 'white';
@@ -675,6 +680,8 @@ export function repairBook(b){
   b.title = String(b.title ?? '').slice(0, 60);
   b.author = String(b.author ?? '').slice(0, 30);
   b.color ||= COVER_COLOURS[0];
+  if (b.titleFont != null && !isStyle(b.titleFont)) delete b.titleFont;
+  if (b.track != null && !(b.track && Number(b.track.secs) > 0)) delete b.track;
   b.status = b.status === 'done' ? 'done' : 'draft';
   b.created ||= Date.now();
   b.updated ||= b.created;

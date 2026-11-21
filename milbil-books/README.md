@@ -1,11 +1,13 @@
 # 📚 Milbil Books
 
 Make your own comic books, starring milbils. Pull the panels on a page to the
-size you want, put milbils in them, give them speech bubbles, write captions,
-and draw anything you like in any colour. The pages number themselves. When a
-book is finished, tap **✓ Done** and it goes on the shelf in the **Library** —
-where **🔊 Read Aloud** reads it to you, and you can open it up and **✏️ Edit**
-it again whenever you like.
+size you want, put milbils in them, give them speech bubbles, write captions in
+any of nine text styles, and draw anything you like in any colour. The pages
+number themselves. When a book is finished, tap **✓ Done** and it goes on the
+shelf in the **Library** — where **🔊 Read Aloud** reads it to you, and you can
+open it up and **✏️ Edit** it again whenever you like. Record yourself reading
+it with **🎙️ Soundtrack**, and it's in **🎧 Soundtracks** to listen to when
+there isn't time to read.
 
 **▶ Play it: https://dtalic2.github.io/gretas-space/milbil-books/**
 
@@ -17,12 +19,13 @@ python3 milbil-books/serve.py      # http://localhost:8135
 
 ---
 
-## Two tabs
+## Three tabs
 
 | | | |
 | --- | --- | --- |
 | ✏️ | **Create** | Start a new book, or carry on with one you're making. |
 | 📚 | **Library** | Every finished book, on a shelf. Tap one to read it, 🔊 Read Aloud to have it read to you, ✏️ Edit to change it. |
+| 🎧 | **Soundtracks** | Every book somebody has recorded themselves reading, to listen to — or 📖 read along, with the pages turning by themselves. |
 
 ## Making a book
 
@@ -45,7 +48,8 @@ bottom are the tools.
 | 💬 | **Words** | A speech bubble for a milbil. |
 | 📜 | **Caption** | Words with nobody talking, like a storyteller. |
 
-↩️ and ↪️ at the top undo and redo anything at all.
+↩️ and ↪️ at the top undo and redo anything at all. **🎙️ Soundtrack**, next to
+them, records you reading the book (see [Soundtracks](#-soundtracks)).
 
 ### Panels
 
@@ -94,9 +98,9 @@ Pick a milbil and tap **💬 Talk**, type what they say, and pick a bubble:
 | 💭 | **Think** | A cloud, with little puffs trailing back to them. |
 | 💥 | **Shout** | A spiky yellow burst. |
 
-…and small, middle or big writing. A new bubble goes as close as it can to just
-above the milbil's head without covering another bubble, anybody's face or a
-caption. The tail always points at the speaker, wherever either of them is
+…small, middle or big writing, and a text style (see [Text styles](#text-styles)).
+A new bubble goes as close as it can to just above the milbil's head without
+covering another bubble, anybody's face or a caption. The tail always points at the speaker, wherever either of them is
 dragged. Tap a bubble twice to change the words.
 
 **Bigger or smaller.** Tap a bubble and drag the pink dot on its corner — out to
@@ -118,7 +122,8 @@ words, and pick where:
 | ⬇️ | **Bottom** | A strip right along the bottom, like the words under a picture in a picture book. This is where it starts. |
 | ✋ | **Anywhere** | A box you can drag wherever you like. |
 
-…and a colour (yellow, white, pink, sky or mint) and small, middle or big writing.
+…and a colour (yellow, white, pink, sky or mint), small, middle or big writing,
+and a text style.
 
 A strip always runs the whole width of its panel, just inside the frame. Make the
 panel bigger or smaller and the strip goes with it, the words wrapping again to
@@ -129,6 +134,36 @@ or the bottom of whichever panel your finger is over. Tap it twice to change it.
 milbil, the panel grows to make room for it, like it does for milbils. If there's
 no room to grow, the milbils step up and stand on the strip instead (a bit
 smaller, if that's what it takes), and bubbles move out from under it.
+
+### Text styles
+
+Words in bubbles and captions can be written nine ways. The box you type in
+changes as you pick, so you can see what it will look like:
+
+| | |
+| --- | --- |
+| **Comic** | Comic-book writing. Everything starts in this. |
+| **Bubbly** | Round and chunky (Chewy — the titles' writing). |
+| **Marker** | Felt-tip capitals (Permanent Marker). |
+| **Fancy** | Joined-up and bold (Lobster). |
+| **Swirly** | Joined-up and loopy (Pacifico). |
+| **Blocky** | Big square capitals (Bungee). |
+| **Storybook** | Like an old fairy-tale book (Abril Fatface). |
+| **Spooky** | Dripping letters (Creepster). |
+| **Pixel** | Like an old video game (Press Start 2P). |
+
+The next words start in the style you picked last — one for bubbles and one for
+captions — so a whole spooky book doesn't need picking every time. Each style is
+sized so Middle looks about as big in all of them, and the bubble is measured in
+the style itself, so it fits round the words.
+
+**The title** has a style of its own: tap the title on the cover (or **✏️ title
+and cover** at the top). Titles start in Bubbly, as they always were. Each style
+is fitted to the cover — a short title in Pixel is as big as it is in Bubbly; a
+long one is smaller, so it still fits across.
+
+Every font is in `fonts/` with its licence (SIL Open Font License or Apache
+2.0); nothing is fetched from anywhere else.
 
 ### Drawing
 
@@ -197,13 +232,13 @@ pages by itself:
 
 - the title and who made it, from the cover;
 - the captions, in the storyteller's voice;
-- every bubble, with who said it — "Chomp says: I'm so hungry!", "Petal thinks:
-  I ate his lunch.", "Sunny shouts: lunch time!";
+- the words in every bubble, just as they're written — "I'm so hungry!", not
+  "Chomp says: I'm so hungry!";
 - and **The End**.
 
-Every milbil has a voice of their own — Chomp low and rumbly, Petal high and
-small, everybody else somewhere in between — and thinking is said a little
-quieter. Each bubble and caption lights up while it's being read. A page with
+You can tell who's talking by their voice: every milbil has one of their own —
+Chomp low and rumbly, Petal high and small, everybody else somewhere in between
+— and thinking is said a little quieter. Each bubble and caption lights up while it's being read. A page with
 only pictures on it gets a moment to be looked at before the page turns.
 
 It reads a page top to bottom and left to right: the strips along a panel's top,
@@ -222,12 +257,41 @@ while you change it, and ✓ Done puts it back.
 
 Books you haven't finished wait in Create under **Books you're making**.
 
+## 🎧 Soundtracks
+
+A soundtrack is somebody reading a book out loud, recorded and kept with the
+book. It's named after it: a book called **Chomp** has the **Chomp
+Soundtrack**.
+
+**Recording one.** While you're making or changing a book, tap **🎙️ Soundtrack**
+at the top (just 🎙️ on a phone). The studio shows the book a page at a time,
+like the reader. Tap **🔴 Record** — the first time, the browser asks whether
+Milbil Books may use the microphone — and after 3, 2, 1, read the book out loud
+from the cover, turning the pages as you go (swipe, or ‹ and ›). A red dot and a
+clock show it's recording, and a bar jumps about with your voice. Tap **⏹ Stop**
+and it's saved. **▶️ Listen** plays it back there and then.
+
+**🔴 Record again** makes a new one in its place (it asks first); 🗑️ throws it
+away. A book with a soundtrack has a little red dot on its 🎙️ button.
+
+**Listening.** **🎧 Soundtracks** lists every book that has one, newest first.
+**▶️ Listen** plays it right there, with a bar showing how far through it is —
+for when there isn't time to read. **📖 Read along** (or tapping the cover)
+opens the book and plays it, and **the pages turn by themselves**, in exactly
+the places they were turned while it was being recorded. A book with a
+soundtrack also has **🎧 Soundtrack** along the bottom of the reader; tap a page
+dot while it's playing and it skips to where that page is read.
+
+The recording never leaves the device: the browser records it and keeps it in
+its own database, like the books. Throwing a book away throws its soundtrack
+away too. A soundtrack can be up to 20 minutes long.
+
 ---
 
 ## How it is built
 
 Plain ES modules, no framework, no build step, nothing loaded from anywhere
-else. Greta's drawings and the Chewy font for the titles are in this folder.
+else. Greta's drawings and every font are in this folder.
 
 ```
 milbil-books/
@@ -236,7 +300,7 @@ milbil-books/
 ├── icon.svg
 ├── serve.py             local server with no-cache headers
 ├── art/                 Greta's drawings: Chomp, Petal, Sunny, Hattie, Scoop
-├── fonts/               Chewy, for book titles (Apache 2.0)
+├── fonts/               the text styles' fonts, each with its licence
 ├── css/style.css
 └── js/
     ├── cast.js          the 36 milbils
@@ -244,14 +308,17 @@ milbil-books/
     ├── model.js         books, pages, panels: the grid, growing, making room,
     │                    where bubbles go, caption strips, copying between panels
     ├── bubbles.js       measuring words, and drawing the bubbles and captions
+    ├── styles.js        the nine text styles, and loading their fonts
     ├── ink.js           pen, glow pen and rubber
     ├── view.js          drawing a page, at any size
     ├── editor.js        Create: picking up, dragging, the tools, undo
     ├── reader.js        the Library's reader
     ├── aloud.js         Read Aloud: what to say, in what order, in whose voice
-    ├── store.js         where books are kept
+    ├── studio.js        🎙️ recording a soundtrack
+    ├── tracks.js        soundtracks: names, page turns, playing them
+    ├── store.js         where books (and soundtracks) are kept
     ├── ui.js            sheets, cards, toasts, sound, confetti
-    └── main.js          the two tabs, new books, Done
+    └── main.js          the three tabs, new books, Done
 ```
 
 **One page, every size.** A page is 1200 × 1600 units and everything on it is
@@ -264,8 +331,10 @@ crisply at every size too.
 **Where books are kept.** In the browser's own database (IndexedDB) on the
 device, never sent anywhere. localStorage is shared between every game on
 dtalic2.github.io and only holds about five megabytes between all of them; a
-few books with drawings in could fill it. Your name, the sound and your pen are
-in localStorage under `milbil-books-v1`.
+few books with drawings in could fill it. Soundtracks are in a second database,
+`milbil-books-sounds`, so saving a book (every few seconds while you make it)
+never carries the sound along with it. Your name, the sound, your pen and the
+last text styles you picked are in localStorage under `milbil-books-v1`.
 
 ### Checking it
 
@@ -296,3 +365,16 @@ the browser's voice that writes down everything it's asked to say: the order,
 who says what, each milbil's voice, the pages turning, the bubble that lights
 up, The End, and stopping half way. (What the real voice sounds like depends on
 the device.)
+
+Text styles were checked by writing a bubble, a caption and a title in every
+one: each bubble measured in its own font and fitting round its words, the next
+bubble starting in the last style, captions keeping their own, titles short and
+long (and in capitals) fitting the cover in all nine, undo, and a reload.
+
+Soundtracks were checked with the browser's pretend microphone (it beeps): the
+countdown, the clock and the level bar, three page turns written down, the
+recording saved with the book, played back in the studio with the pages
+turning, in 🎧 Soundtracks with ▶️ and pause, and read along in the reader all
+the way to The End; skipping by tapping a page dot; recording again (it asks),
+throwing it away, a reload, the microphone being refused, and a book thrown away
+taking its soundtrack with it.

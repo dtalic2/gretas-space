@@ -7,6 +7,14 @@
 */
 
 @font-face { font-family: 'Chewy'; src: url(../fonts/chewy.woff2) format('woff2'); font-display: swap; }
+/* the text styles' fonts (js/styles.js); each one's licence is beside it in fonts/ */
+@font-face { font-family: 'Permanent Marker'; src: url(../fonts/permanentmarker.woff2) format('woff2'); font-display: swap; }
+@font-face { font-family: 'Lobster'; src: url(../fonts/lobster.woff2) format('woff2'); font-display: swap; }
+@font-face { font-family: 'Pacifico'; src: url(../fonts/pacifico.woff2) format('woff2'); font-display: swap; }
+@font-face { font-family: 'Bungee'; src: url(../fonts/bungee.woff2) format('woff2'); font-display: swap; }
+@font-face { font-family: 'Abril Fatface'; src: url(../fonts/abrilfatface.woff2) format('woff2'); font-display: swap; }
+@font-face { font-family: 'Creepster'; src: url(../fonts/creepster.woff2) format('woff2'); font-display: swap; }
+@font-face { font-family: 'Press Start 2P'; src: url(../fonts/pressstart2p.woff2) format('woff2'); font-display: swap; }
 
 :root {
   --card: #fffdf8;
@@ -227,7 +235,7 @@ main { max-width: 680px; margin: 0 auto; padding: 12px; display: grid; gap: 14px
 
 .pg-title { inset: 3% 6% auto; height: 27%; display: flex; align-items: center; justify-content: center; text-align: center; }
 .pg-title h1 {
-  font-family: var(--title); font-weight: 400; color: #fff; line-height: 1.02; letter-spacing: .02em;
+  font-weight: 400; color: #fff; line-height: 1.02; letter-spacing: .02em;
   overflow-wrap: anywhere; max-height: 100%;
   text-shadow: 0 calc(var(--cq) * .55) 0 #2b2233, calc(var(--cq) * .55) 0 0 #2b2233, calc(var(--cq) * -.55) 0 0 #2b2233, 0 calc(var(--cq) * -.55) 0 #2b2233,
     calc(var(--cq) * .4) calc(var(--cq) * .4) 0 #2b2233, calc(var(--cq) * -.4) calc(var(--cq) * .4) 0 #2b2233, calc(var(--cq) * .4) calc(var(--cq) * -.4) 0 #2b2233, calc(var(--cq) * -.4) calc(var(--cq) * -.4) 0 #2b2233,
@@ -243,7 +251,7 @@ main { max-width: 680px; margin: 0 auto; padding: 12px; display: grid; gap: 14px
   font-weight: 800; color: #6d6280; background: #efe9fb; border-radius: 99px;
   min-width: 2.4em; padding: .12em .6em; text-align: center; line-height: 1.3;
 }
-.pg-num .by { font-family: var(--title); color: #fff; text-shadow: 0 calc(var(--cq) * .35) 0 #2b223366; padding-bottom: calc(var(--cq) * 1); }
+.pg-num .by { color: #fff; text-shadow: 0 calc(var(--cq) * .35) 0 #2b223366; padding-bottom: calc(var(--cq) * 1); }
 
 .btxt {
   position: absolute; font-family: var(--comic); font-weight: 700; color: #2b2233;
@@ -321,6 +329,23 @@ main { max-width: 680px; margin: 0 auto; padding: 12px; display: grid; gap: 14px
 .ed-btn {
   width: 40px; height: 40px; border-radius: 50%; background: var(--card); flex: none;
   box-shadow: 0 2px 8px var(--shade); font-size: 17px; display: grid; place-items: center;
+}
+/* 🎙️ Soundtrack: just the microphone on a phone, with its name where there's room */
+.ed-rec {
+  position: relative; flex: none; height: 40px; min-width: 40px; border-radius: 20px; padding: 0;
+  background: var(--card); box-shadow: 0 2px 8px var(--shade); color: var(--accent-d);
+  display: flex; align-items: center; justify-content: center; gap: 5px; font-weight: 800; font-size: 13.5px;
+}
+.ed-rec i { font-style: normal; font-size: 17px; }
+.ed-rec span { display: none; }
+@media (min-width: 560px) {
+  .ed-rec { padding: 0 14px 0 11px; }
+  .ed-rec span { display: inline; }
+}
+/* a red dot: this book has a soundtrack */
+.ed-rec.has::after {
+  content: ''; position: absolute; top: 2px; right: 2px; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--red); box-shadow: 0 0 0 2px var(--card);
 }
 .ed-btn.back { font-size: 30px; line-height: 1; padding-bottom: 4px; color: var(--accent-d); font-weight: 700; }
 .ed-btn:disabled { opacity: .35; }
@@ -487,6 +512,8 @@ main { max-width: 680px; margin: 0 auto; padding: 12px; display: grid; gap: 14px
 .rd-btns .btn { flex: 1; min-width: 0; padding-left: 8px; padding-right: 8px; white-space: nowrap; font-size: clamp(14px, 4.3vw, 17px); }
 .rd-read { background: var(--card); color: var(--accent-d); box-shadow: 0 3px 0 var(--shade), inset 0 0 0 2.5px var(--accent); }
 .rd-read.on { background: var(--pink); color: #fff; box-shadow: 0 3px 0 #c93f7f; animation: reading 1.6s ease-in-out infinite; }
+/* with a soundtrack there are three buttons, each as wide as its words */
+#reader.three .rd-btns .btn { flex: 1 1 auto; padding-left: 6px; padding-right: 6px; font-size: clamp(13px, 3.9vw, 17px); }
 @keyframes reading { 50% { box-shadow: 0 3px 0 #c93f7f, 0 0 0 7px #ff5fa244; } }
 .turn-r { animation: turn-r .38s ease-out; }
 .turn-l { animation: turn-l .38s ease-out; }
@@ -713,6 +740,77 @@ body.reading .toasts { bottom: calc(var(--safe-b) + 110px); }
   padding: 10px 12px; font-size: 16px; -webkit-user-select: text; user-select: text;
 }
 .name-input button { width: 48px; border-radius: 12px; background: var(--tint); font-size: 19px; }
+
+/* ============================================================ studio */
+/* Recording a soundtrack: the reader's layout, with a red button. */
+.sd-say {
+  min-height: 2.9em; max-width: 440px; text-align: center; font-size: 13.5px; line-height: 1.45; color: var(--muted);
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 12px;
+}
+.sd-say b { color: var(--ink); }
+.sd-rec { display: inline-flex; align-items: center; gap: 7px; font-weight: 800; color: var(--ink); font-size: 15px; }
+.sd-time { font-variant-numeric: tabular-nums; }
+.sd-dot { width: 13px; height: 13px; border-radius: 50%; background: var(--red); animation: rec-dot 1.1s ease-in-out infinite; }
+@keyframes rec-dot { 50% { opacity: .25; } }
+.sd-level { display: block; width: 130px; height: 10px; border-radius: 5px; background: var(--tint); overflow: hidden; box-shadow: inset 0 0 0 1.5px var(--line); }
+.sd-level i {
+  display: block; height: 100%; transform-origin: left center; transform: scaleX(.03);
+  background: linear-gradient(to right, #3fae4a, #ffc531 70%, #e5484d);
+  background-size: 130px 100%;
+}
+.sd-btns .btn.rec { background: var(--red); color: #fff; box-shadow: 0 3px 0 #b8303a; }
+.sd-btns .btn.rec-again { background: var(--card); color: var(--red); box-shadow: 0 3px 0 var(--shade), inset 0 0 0 2.5px var(--red); }
+.sd-btns .btn.stop { background: var(--pink); color: #fff; box-shadow: 0 3px 0 #c93f7f; animation: reading 1.6s ease-in-out infinite; }
+#studio[data-state="recording"] .rd-host > .pg { box-shadow: 0 0 0 4px #e5484d, 0 10px 30px #e5484d44; }
+.sd-count {
+  grid-area: 1 / 1; z-index: 3; place-self: center; pointer-events: none;
+  font-family: var(--title); font-size: 130px; line-height: 1; color: #fff;
+  text-shadow: 0 5px 0 #2b2233, 4px 0 0 #2b2233, -4px 0 0 #2b2233, 0 -4px 0 #2b2233, 0 12px 24px #2b223355;
+}
+.sd-count.beat { animation: beat .7s ease-out; }
+@keyframes beat { from { transform: scale(1.6); opacity: 0; } 30% { opacity: 1; } }
+
+/* ======================================================= soundtracks */
+.tracks { display: grid; gap: 12px; }
+.trk {
+  display: flex; gap: 14px; align-items: center; background: var(--card); border-radius: 20px; padding: 12px;
+  box-shadow: 0 3px 0 var(--shade), 0 8px 24px var(--shade); transition: box-shadow .2s;
+}
+.trk.on { box-shadow: 0 3px 0 var(--shade), 0 0 0 3px var(--pink), 0 8px 24px var(--shade); }
+.trk-cover { width: 78px; flex: none; display: block; }
+.trk-cover > span { display: block; }
+.trk-cover .pg { border-radius: 3px 7px 7px 3px; box-shadow: 0 2px 8px #2b223333; }
+.trk-main { flex: 1; min-width: 0; display: grid; gap: 5px; }
+.trk-main b { font-family: var(--title); font-weight: 400; font-size: 20px; line-height: 1.15; color: var(--accent-d); overflow-wrap: anywhere; }
+.trk-main small { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.trk-time { font-variant-numeric: tabular-nums; }
+.trk-bar { display: block; height: 7px; border-radius: 4px; background: var(--tint); overflow: hidden; }
+.trk-bar i { display: block; height: 100%; background: var(--pink); transform-origin: left center; transform: scaleX(0); transition: transform .25s linear; }
+.trk-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 3px; }
+.trk-btns .btn { padding: 8px 12px; font-size: 13.5px; }
+
+/* ====================================================== text styles */
+/* One class for each style in js/styles.js, on bubbles, captions, the cover's
+   title and the chips you pick them with. These fonts come in one weight only:
+   font-synthesis: none stops the browser smearing them into a fake bold. */
+.f-comic { font-family: var(--comic); }
+.f-bubbly { font-family: "Chewy", var(--comic); }
+.f-marker { font-family: "Permanent Marker", var(--comic); }
+.f-fancy { font-family: "Lobster", var(--comic); }
+.f-swirly { font-family: "Pacifico", var(--comic); }
+.f-blocky { font-family: "Bungee", var(--comic); }
+.f-storybook { font-family: "Abril Fatface", Georgia, serif; }
+.f-spooky { font-family: "Creepster", var(--comic); }
+.f-pixel { font-family: "Press Start 2P", ui-monospace, monospace; }
+.f-bubbly, .f-marker, .f-fancy, .f-swirly, .f-blocky, .f-storybook, .f-spooky, .f-pixel { font-weight: 400; font-synthesis: none; }
+.pg-title h1.f-comic, .pg-num .by.f-comic { font-weight: 700; }
+/* Pacifico's loops reach a long way up and down */
+.btxt.f-swirly { line-height: 1.4; }
+.pg-title h1.f-swirly { line-height: 1.3; }
+.wc-text.f-swirly { line-height: 1.5; }
+.chip.st { padding: 6px 11px; line-height: 1.3; }
+.cover-styles .chip.st { color: #fff; text-shadow: 0 1.5px 0 #2b2233, 1.5px 0 0 #2b2233, -1.5px 0 0 #2b2233, 0 -1.5px 0 #2b2233; background: var(--c); }
+.cover-styles .chip.st.on { border-color: var(--ink); box-shadow: 0 0 0 2.5px var(--card), 0 0 0 5px var(--accent); }
 
 @media (max-width: 380px) {
   .brand h1 { font-size: 22px; }

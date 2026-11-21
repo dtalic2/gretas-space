@@ -1,21 +1,25 @@
 // ---------- Milbil Books ----------
 //
-// Wires the whole thing together. Two tabs along the bottom:
+// Wires the whole thing together. Three tabs along the bottom:
 //
-//   ✏️ Create    start a new book, or carry on with one you're making
-//   📚 Library   every finished book, on a shelf, to read — and ✏️ Edit
+//   ✏️ Create        start a new book, or carry on with one you're making
+//   📚 Library       every finished book, on a shelf, to read — and ✏️ Edit
+//   🎧 Soundtracks   books somebody has recorded themselves reading, to listen to
 //
-// Over the top of those there can be the editor (making a book), the reader
-// (reading one), at most one sheet sliding up from the bottom, and a card.
+// Over the top of those there can be the editor (making a book), the studio
+// (recording a soundtrack, over the editor), the reader (reading one), at most
+// one sheet sliding up from the bottom, and a card.
 //
 // A book is a draft until you tap ✓ Done in the editor; then it goes on the
 // shelf in the Library. Editing it again later doesn't take it off the shelf.
 
-import { openStore, loadBooks, putBook, removeBook, settings, loadSettings, saveSettings, storageMode } from './store.js';
+import { openStore, loadBooks, putBook, removeBook, removeTrack, trackIds, settings, loadSettings, saveSettings, storageMode } from './store.js';
 import { newBook, repairBook, COVER_COLOURS } from './model.js';
 import { CAST, castHTML } from './cast.js';
 import { Editor, pickTitle } from './editor.js';
 import { Reader } from './reader.js';
+import { Studio } from './studio.js';
+import { trackName, clock, Player } from './tracks.js';
 import { PageView } from './view.js';
 import { canSpeak, SPEEDS, say, wake } from './aloud.js';
 import { $, $$, esc, Sheet, card, toast, sfx, setSound, confetti, ago, plural } from './ui.js';
@@ -24,7 +28,8 @@ const NAMES = ['Greta', 'Milly', 'Bil', 'Pip', 'Sprout', 'Nugget', 'Pickle', 'Be
 const GRETA = ['chomp', 'hattie', 'petal', 'scoop', 'sunny'];
 
 let books = [];
-let sheet, editor, reader;
+let sheet, editor, reader, studio;
+const tunes = new Player();      // the soundtrack playing in 🎧 Soundtracks
 let covers = [];               // the little cover pictures on screen, to tidy up
 let warned = false;
 const view = $('#view');
@@ -44,8 +49,10 @@ async function save(book){
 
 // ==================================================================== tabs ===
 
+const TABS = ['create', 'library', 'sounds'];
+
 function setTab(name){
-  if (!['create', 'library'].includes(name)) name = 'create';
+  if (!TABS.includes(name)) name = 'create';
   settings.tab = name;
   saveSettings();
   for (const b of $$('#tabbar .tab')) b.classList.toggle('on', b.dataset.tab === name);
@@ -56,7 +63,9 @@ function setTab(name){
 function paint(){
   for (const v of covers) v.destroy();
   covers = [];
+  tunes.unload();
   if (settings.tab === 'library') paintLibrary();
+  else if (settings.tab === 'sounds') paintSounds();
   else paintCreate();
 }
 
@@ -136,6 +145,77 @@ function paintLibrary(){
   for (const b of done) coverInto($(`[data-cover-of="${b.id}"]`, view), b);
 }
 
+// ------------------------------------------------------------ soundtracks ---
+
+function paintSounds(){
+  const list = books.filter(b => b.track).sort((a, b) => (b.track.at || 0) - (a.track.at || 0));
+  if (!list.length){
+    view.innerHTML = `
+      <section class="empty card">
+        <div class="empty-pic">${castHTML('petal')}</div>
+        <h2>No soundtracks yet</h2>
+        <p>A soundtrack is somebody reading one of your books out loud, to listen to when there isn't time
+          to read. Open a book to change it, tap <b>🎙️ Soundtrack</b> at the top, and then <b>🔴 Record</b>.</p>
+      </section>`;
+    return;
+  }
+  view.innerHTML = `
+    <section class="lib-top">
+      <h2>🎧 Soundtracks</h2>
+      <p>Books being read out loud, for when there isn't time to read. 📖 Read along turns the pages too.</p>
+    </section>
+    <div class="tracks">${list.map(b => `
+      <div class="trk" data-id="${b.id}">
+        <button type="button" class="trk-cover" data-act="along" data-id="${b.id}" aria-label="Read along with ${esc(trackName(b))}">
+          <span data-cover-of="${b.id}"></span></button>
+        <div class="trk-main">
+          <b>${esc(trackName(b))}</b>
+          <small>${b.author ? `by ${esc(b.author)} · ` : ''}<span class="trk-time">${clock(b.track.secs)}</span></small>
+          <span class="trk-bar" aria-hidden="true"><i></i></span>
+          <span class="trk-btns">
+            <button type="button" class="btn go trk-play" data-act="play" data-id="${b.id}">▶️ Listen</button>
+            <button type="button" class="btn ghost" data-act="along" data-id="${b.id}">📖 Read along</button>
+          </span>
+        </div>
+      </div>`).join('')}</div>`;
+  for (const b of list) coverInto($(`[data-cover-of="${b.id}"]`, view), b);
+  // the newest is the one most likely to be played: have it ready for the first tap
+  tunes.load(list[0].id);
+  // tidy away any that have lost their sound (a browser that cleared its storage, say)
+  trackIds().then(ids => {
+    const lost = list.filter(b => !ids.has(b.id));
+    if (!lost.length || settings.tab !== 'sounds') return;
+    for (const b of lost){ delete b.track; save(b); }
+    paint();
+  });
+}
+
+/** Show one soundtrack in the list as playing, or not, `t` seconds in. */
+function paintTune(id, t, on){
+  const r = $(`.trk[data-id="${id}"]`, view);
+  const secs = byId(id)?.track?.secs || 0;
+  if (!r) return;
+  r.classList.toggle('on', on);
+  r.querySelector('.trk-time').textContent = on || t ? `${clock(t)} / ${clock(secs)}` : clock(secs);
+  r.querySelector('.trk-bar i').style.transform = `scaleX(${Math.min(1, t / secs || 0).toFixed(4)})`;
+  r.querySelector('.trk-play').textContent = on ? '⏸ Pause' : t ? '▶️ Carry on' : '▶️ Listen';
+}
+
+/** ▶️ / ⏸ on one soundtrack in the list. */
+async function playTune(book){
+  if (tunes.track?.id === book.id && tunes.playing){ tunes.pause(); return; }
+  tunes.unlock();                             // from the tap, before anything is waited for
+  const was = tunes.track?.id;
+  if (was && was !== book.id) paintTune(was, 0, false);
+  const track = await tunes.load(book.id);
+  if (!track){ toast("Couldn't find that soundtrack."); sfx('nope'); return; }
+  tunes.on.time = (t) => paintTune(book.id, t, true);
+  tunes.on.stop = () => paintTune(book.id, tunes.time, false);
+  tunes.on.end = () => paintTune(book.id, 0, false);
+  try { await tunes.play(); paintTune(book.id, tunes.time, true); }
+  catch { toast("It wouldn't start. Tap ▶️ again."); }
+}
+
 view.addEventListener('click', (e) => {
   const b = e.target.closest('[data-act]');
   if (!b) return;
@@ -147,6 +227,8 @@ view.addEventListener('click', (e) => {
     case 'aloud': if (book){ openReader(book); reader.startReading(); } break;
     case 'edit': if (book) openEditor(book, 'library'); break;
     case 'bin': if (book) binBook(book); break;
+    case 'play': if (book?.track) playTune(book); break;
+    case 'along': if (book?.track){ openReader(book); reader.listen(); } break;
   }
 });
 
@@ -213,6 +295,7 @@ async function newBookCard(){
 
 function openEditor(book, from){
   if (reader.isOpen) reader.close();
+  tunes.pause();
   sheet.close();
   settings.open = book.id;
   settings.openFrom = from;
@@ -336,6 +419,7 @@ function flyOntoShelf(book, first){
 
 function openReader(book, at = 0){
   sheet.close();
+  tunes.pause();
   reader.open(book, at);
   sfx('open');
 }
@@ -343,10 +427,11 @@ function openReader(book, at = 0){
 async function binBook(book){
   const ok = await card(`
     <h3>🗑️ Throw away “${esc(book.title || 'My Book')}”?</h3>
-    <p>The whole book goes, every page of it. This can't be undone.</p>`,
+    <p>The whole book goes, every page of it${book.track ? ', and its soundtrack' : ''}. This can't be undone.</p>`,
   [{ label: 'Keep it', cls: 'ghost', value: null }, { label: 'Throw it away', cls: 'danger', value: 'bin' }]);
   if (ok !== 'bin') return;
   await removeBook(book.id);
+  await removeTrack(book.id);           // its soundtrack goes with it
   books = books.filter(b => b !== book);
   if (reader.isOpen) reader.close();
   paint();
@@ -374,14 +459,21 @@ function helpSheet(){
       <li><b>📜 Caption</b>: words with nobody talking, like a storyteller — "Once upon a time…". Pick a
         panel and put it in a strip along the top, along the bottom, or in a box you can move anywhere.</li>
       <li><b>Bigger or smaller words</b>: tap a bubble or caption, then drag its pink dot, or tap ➕ and ➖.</li>
+      <li><b>Text style</b>: when you type words or a caption, pick how they're written — Comic, Bubbly,
+        Marker, Fancy, Swirly, Blocky, Storybook, Spooky or Pixel. The next ones start in the style you picked
+        last. The title has a style of its own: tap the title on the cover.</li>
       <li><b>⚙️ Settings</b> (in the row above the tools) shows everything in a panel — milbils and what they
         say, captions, and the drawing — and copies or moves the ones you tick into another panel, on this
         page or any other.</li>
       <li><b>✓ Done</b> puts your book in the 📚 Library. Open it there and tap <b>✏️ Edit</b> at the bottom to
         change it whenever you like.</li>
-      <li><b>🔊 Read Aloud</b> reads your book to you: the captions, and every bubble with who said it, each
+      <li><b>🔊 Read Aloud</b> reads your book to you: the captions and the words in every bubble, each
         milbil in their own voice, turning the pages as it goes. It's under every book on the shelf, and at
         the bottom of a book you're reading.</li>
+      <li><b>🎙️ Soundtrack</b> (at the top while you're changing a book) records <i>you</i> reading it out loud.
+        Turn the pages as you read. It's called after the book — a book called Chomp has the Chomp Soundtrack
+        — and it's in <b>🎧 Soundtracks</b> to listen to whenever there isn't time to read, with the pages
+        turning by themselves if you tap <b>📖 Read along</b>.</li>
     </ul>`,
   });
 }
@@ -407,7 +499,7 @@ function settingsSheet(){
       if (act === 'sound'){ settings.sound = id === 'on'; setSound(settings.sound); saveSettings(); sheet.render(); sfx('pick'); }
       if (act === 'dice'){ settings.name = any(NAMES); saveSettings(); sheet.render(); sfx('pick'); }
       if (act === 'speed'){ settings.readSpeed = id; saveSettings(); sheet.render(); sfx('pick'); }
-      if (act === 'try'){ wake(); say({ who: 'chomp', kind: 'say', text: "Chomp says: I'm going to read you a story!" }); }
+      if (act === 'try'){ wake(); say({ who: 'chomp', kind: 'say', text: "I'm going to read you a story!" }); }
     },
   });
 }
@@ -437,7 +529,8 @@ async function boot(){
   loadSettings();
   setSound(settings.sound);
   sheet = new Sheet($('#sheet'));
-  editor = new Editor($('#editor'), sheet, { save, back, done });
+  studio = new Studio($('#studio'), { save, close: () => editor.renderTop() });
+  editor = new Editor($('#editor'), sheet, { save, back, done, studio: (book) => { sheet.close(); studio.open(book); } });
   reader = new Reader($('#reader'), {
     close: () => reader.close(),
     edit: (book) => openEditor(book, 'library'),

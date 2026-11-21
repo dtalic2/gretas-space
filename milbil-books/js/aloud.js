@@ -1,16 +1,15 @@
 // ---------- Read Aloud ----------
 //
 // The device's own voice reads the book out: the title and who made it, then
-// every page in turn. Captions are read in the storyteller's voice. Bubbles are
-// read with who is saying them — "Chomp says…", "Petal thinks…", "Sunny
-// shouts…" — and every milbil has a voice of their own, higher or lower, so
-// you can tell them apart with your eyes shut.
+// every page in turn — the captions and the words in the bubbles, just as they
+// are written, nothing added. Captions are read in the storyteller's voice, and
+// every milbil has a voice of their own, higher or lower, so you can tell who
+// is talking with your eyes shut.
 //
 // It all happens on the device (the browser's speech synthesis), so nothing is
 // sent anywhere and it works without the internet.
 
 import { allPages, findMilbil, isStrip } from './model.js';
-import { who } from './cast.js';
 import { settings } from './store.js';
 
 export const canSpeak = () => 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
@@ -40,8 +39,6 @@ export function sayable(text){
     .replace(/\b[A-Z]{2,}\b/g, (w) => w.toLowerCase())
     .trim();
 }
-
-const VERB = { say: 'says', think: 'thinks', shout: 'shouts' };
 
 /**
  * Words in the order a person would read them: in rows from the top down, and
@@ -76,10 +73,8 @@ export function linesFor(book, i){
     for (const t of [...top, ...readingOrder(p.words.filter(t => !isStrip(t))), ...bottom]){
       if (!t.text?.trim()) continue;
       const m = t.kind !== 'caption' && t.from ? findMilbil(page, t.from) : null;
-      out.push({
-        id: t.id, kind: t.kind, who: m?.who || null,
-        text: m ? `${who(m.who).name} ${VERB[t.kind] || 'says'}: ${t.text}` : t.text,
-      });
+      // just the words — the speaker is in the voice, not in what is said
+      out.push({ id: t.id, kind: t.kind, who: m?.who || null, text: t.text });
     }
   }
   return out;
