@@ -28,6 +28,7 @@ import { castHTML } from './cast.js';
 import { bubbleSVG } from './bubbles.js';
 import { paintInk, drawStroke, usesLayer } from './ink.js';
 import { esc } from './ui.js';
+import { wordsStyle, titleStyle, TITLE_STYLE } from './styles.js';
 
 const pct = (v, of) => `${(v / of * 100).toFixed(3)}%`;
 /** A size in page units, as CSS: some hundredths of the page's width. */
@@ -36,10 +37,31 @@ const cq = (units) => `calc(var(--cq) * ${(units / PAGE_W * 100).toFixed(3)})`;
 /** Older browsers (Safari before 16) have no container units; the page tells them its size instead. */
 const NO_CQ = !(window.CSS?.supports?.('width', '1cqw'));
 
-/** Big for a short title, smaller for a long one, in page units. */
+/** Big for a short title, smaller for a long one, in page units — in Bubbly, the titles' own style. */
 export function titleSize(title){
   const n = Math.max(8, (title || '').length);
   return Math.round(Math.max(66, Math.min(150, 150 * Math.sqrt(11 / n))));
+}
+
+/**
+ * How big a title is in its style: as big as it would look in Bubbly, unless
+ * that wouldn't fit across and down the top of the cover — a wide style, a
+ * long title — and then as big as will. Bubbly itself is titleSize(), exactly
+ * as titles always were.
+ */
+export function titleFontSize(title, st){
+  const T = titleSize(title);
+  if (st.id === TITLE_STYLE) return T;
+  const text = String(title || 'My Book');
+  const longest = Math.max(1, ...text.split(/\s+/).map(w => w.length));
+  const lineHeight = st.id === 'swirly' ? 1.3 : 1.05;
+  // The title's box is about 1000 units across and 430 down. Letters are only
+  // guessed at (`cw` is an average), so it is asked to fit well inside that.
+  for (let S = T * st.scale; ; S *= 0.94){
+    const perLine = 1000 / (st.cw * S);                      // letters that fit across
+    const lines = Math.ceil(text.length * 1.15 / perLine);
+    if ((lines * S * lineHeight <= 380 && longest <= perLine * 0.95) || S < 24) return S;
+  }
 }
 
 export class PageView {
@@ -93,8 +115,10 @@ export class PageView {
 
     if (cover){
       const t = book?.title || 'My Book';
-      this.titleEl.innerHTML = `<h1${this.edit ? ' data-cover="1"' : ''} style="font-size:${cq(titleSize(t))}">${esc(t)}</h1>`;
-      this.numEl.innerHTML = book?.author ? `<span class="by" style="font-size:${cq(44)}">by ${esc(book.author)}</span>` : '';
+      const st = titleStyle(book);
+      this.titleEl.innerHTML = `<h1 class="f-${st.id}"${this.edit ? ' data-cover="1"' : ''} style="font-size:${cq(titleFontSize(t, st))}">${esc(t)}</h1>`;
+      this.numEl.innerHTML = book?.author
+        ? `<span class="by f-${st.id}" style="font-size:${cq(44 * st.scale)}">by ${esc(book.author)}</span>` : '';
     } else {
       this.titleEl.innerHTML = '';
       this.numEl.innerHTML = `<span class="n" style="font-size:${cq(36)}">${num}</span>`;
@@ -173,9 +197,10 @@ export class PageView {
         const speaker = t.from ? findMilbil(page, t.from) : null;
         shapes.push(bubbleSVG(t, speaker, { hit: this.edit }));
         const tw = t.w + 8;
-        texts.push(`<div class="btxt ${t.kind}"${this.edit ? ` data-w="${t.id}"` : ''} data-say="${t.id}" style="` +
+        const st = wordsStyle(t);
+        texts.push(`<div class="btxt ${t.kind} f-${st.id}"${this.edit ? ` data-w="${t.id}"` : ''} data-say="${t.id}" style="` +
           `left:${pct(t.x - tw / 2, PAGE_W)};top:${pct(t.y - t.h / 2, PAGE_H)};width:${pct(tw, PAGE_W)};` +
-          `font-size:${cq(fontSize(t))}">${esc(t.text)}</div>`);
+          `font-size:${cq(fontSize(t) * st.scale)}">${esc(t.text)}</div>`);
       }
     }
     this.bubsEl.innerHTML = shapes.join('');

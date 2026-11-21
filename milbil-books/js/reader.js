@@ -6,12 +6,15 @@
 //
 // Along the bottom: 🔊 Read Aloud, which reads the whole book out from wherever
 // you are (see aloud.js), lighting up each bubble and caption as it goes and
-// turning the pages itself; and ✏️ Edit, which opens the book straight back up
-// in Create, whenever you like.
+// turning the pages itself; 🎧 Soundtrack, if somebody has recorded themselves
+// reading it (see tracks.js), which plays that and turns the pages along with
+// it; and ✏️ Edit, which opens the book straight back up in Create, whenever
+// you like.
 
 import { allPages } from './model.js';
 import { PageView } from './view.js';
 import { linesFor, say, wake, hush, canSpeak } from './aloud.js';
+import { Player, pageAt, timeOf } from './tracks.js';
 import { $, esc, sfx, plural, toast } from './ui.js';
 
 export class Reader {
@@ -41,6 +44,7 @@ export class Reader {
           </div>
           <div class="rd-btns">
             <button type="button" class="btn big rd-read" data-act="read">🔊 Read Aloud</button>
+            <button type="button" class="btn big rd-read rd-listen" data-act="listen" hidden>🎧 Soundtrack</button>
             <button type="button" class="btn go big rd-edit" data-act="edit">✏️ Edit this book</button>
           </div>
         </footer>
@@ -52,7 +56,10 @@ export class Reader {
     this.endEl = $('.rd-end', root);
     this.dotsEl = $('.rd-dots', root);
     this.readBtn = $('[data-act="read"]', root);
+    this.listenBtn = $('[data-act="listen"]', root);
+    this.editBtn = $('[data-act="edit"]', root);
     if (!canSpeak()) this.readBtn.hidden = true;
+    this.player = new Player();
 
     root.addEventListener('click', (e) => {
       const b = e.target.closest('[data-act]');
@@ -64,8 +71,9 @@ export class Reader {
       if (act === 'edit') this.hooks.edit(this.book);
       if (act === 'bin') this.hooks.bin(this.book);
       if (act === 'read') this.toggleReading();
-      if (act === 'again'){ this.stopReading(); this.show(0, 1); }
-      if (act === 'dot'){ this.stopReading(); this.show(+b.dataset.i, +b.dataset.i > this.at ? 1 : -1); }
+      if (act === 'listen') this.toggleListening();
+      if (act === 'again'){ this.stopReading(); this.stopListening(); this.show(0, 1); }
+      if (act === 'dot') this.jump(+b.dataset.i);
     });
 
     // Swipe to turn. A tap on the left or right third of the page turns too.
@@ -116,12 +124,21 @@ export class Reader {
     this.view = new PageView(this.host);
     this.nameEl.textContent = book.title || 'My Book';
     this.subEl.textContent = `${book.author ? `by ${book.author} · ` : ''}${plural(book.pages.length, 'page')}`;
+    // with a soundtrack there are three buttons, so they say less
+    this.listenBtn.hidden = !book.track;
+    this.root.classList.toggle('three', !!book.track);
+    this.player.unload();
+    if (book.track) this.player.load(book.id);      // ready for the first tap
+    this.paintListenBtn();
+    this.paintReadBtn();
     this.fit();
     this.show(at, 0);
   }
 
   close(){
     this.stopReading();
+    this.stopListening();
+    this.player.unload();
     this.view?.destroy();
     this.view = null;
     this.book = null;
@@ -142,7 +159,18 @@ export class Reader {
   turn(dir){
     const to = this.at + dir;
     if (to < 0 || to >= this.count){ sfx('nope'); return; }
+    this.jump(to, dir);
+  }
+
+  /** Go to a page by hand. Read Aloud stops; a soundtrack skips to that page, if it was ever read. */
+  jump(to, dir = to > this.at ? 1 : -1){
     this.stopReading();
+    if (this.listening){
+      const id = allPages(this.book)[to]?.id;
+      const t = id ? timeOf(this.player.track, id) : null;
+      if (t != null) this.player.seek(t);
+      else this.stopListening();
+    }
     this.show(to, dir);
   }
 
@@ -194,13 +222,16 @@ export class Reader {
   }
 
   paintReadBtn(){
+    const three = !!this.book?.track;
     this.readBtn.classList.toggle('on', !!this.reading);
-    this.readBtn.textContent = this.reading ? '⏹ Stop reading' : '🔊 Read Aloud';
+    this.readBtn.textContent = this.reading ? (three ? '⏹ Stop' : '⏹ Stop reading') : three ? '🔊 Read' : '🔊 Read Aloud';
+    this.editBtn.textContent = three ? '✏️ Edit' : '✏️ Edit this book';
   }
 
   /** Read from this page to the end — or from the cover, if it's already The End. */
   startReading(){
     if (!canSpeak()){ toast("Sorry — this browser can't read aloud."); return; }
+    this.stopListening();
     wake();
     this.reading = { token: Symbol('read') };
     this.paintReadBtn();
@@ -243,5 +274,65 @@ export class Reader {
     hush();
     this.paintReadBtn();
     this.host.querySelectorAll('.btxt.speaking').forEach(el => el.classList.remove('speaking'));
+  }
+
+  // ------------------------------------------------------- the soundtrack
+
+  toggleListening(){
+    if (this.listening) this.stopListening();
+    else this.listen();
+  }
+
+  paintListenBtn(){
+    this.listenBtn.classList.toggle('on', !!this.listening);
+    this.listenBtn.textContent = this.listening ? '⏹ Stop' : '🎧 Soundtrack';
+  }
+
+  /**
+   * Play the book's soundtrack, turning the pages where they were turned when
+   * it was recorded. From the page you're on, if it's on the recording; from
+   * the cover if not.
+   */
+  async listen(){
+    const book = this.book;
+    if (!book?.track) return;
+    this.stopReading();
+    const p = this.player;
+    p.unlock();                                   // from the tap, before anything is waited for
+    this.listening = { token: Symbol('listen') };
+    const token = this.listening.token;
+    this.paintListenBtn();
+    const track = await p.load(book.id);
+    if (this.listening?.token !== token) return;
+    if (!track){ this.stopListening(); toast("Couldn't find the soundtrack."); sfx('nope'); return; }
+    const pages = allPages(book);
+    const here = this.at < pages.length ? timeOf(track, pages[this.at].id) : null;
+    if (here == null) this.show(0, this.at ? -1 : 0);
+    p.on.time = (t) => {
+      if (this.listening?.token !== token) return;
+      const i = allPages(this.book).findIndex(pg => pg.id === pageAt(track, t));
+      if (i >= 0 && i !== this.at) this.show(i, i > this.at ? 1 : -1);
+    };
+    p.on.end = () => {
+      if (this.listening?.token !== token) return;
+      this.listening = null;
+      this.paintListenBtn();
+      this.show(this.count - 1, 1);              // The End
+    };
+    p.on.stop = () => { if (this.listening?.token === token){ this.listening = null; this.paintListenBtn(); } };
+    try { await p.play(here ?? 0); }
+    catch {
+      if (this.listening?.token !== token) return;
+      this.listening = null;
+      this.paintListenBtn();
+      toast("It wouldn't start. Tap 🎧 again.");
+    }
+  }
+
+  stopListening(){
+    if (!this.listening) return;
+    this.listening = null;
+    this.player.pause();
+    this.paintListenBtn();
   }
 }

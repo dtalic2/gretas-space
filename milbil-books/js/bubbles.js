@@ -16,6 +16,7 @@
 // oval and its tail come out as one shape with one outline round it.
 
 import { TEXT_SIZE, bodyHalf, bumpRadius, mbWidth, clamp, isStrip, captionFill } from './model.js';
+import { styleOf } from './styles.js';
 
 const INK = '#2b2233';
 const OUTLINE = 9;          // stroke width; the fill covers the inner half of it
@@ -43,9 +44,10 @@ let meter = null;
  * How wide words can be, and how tall, in page units. `size` is the writing's
  * size in page units (or 's', 'm', 'l'). Bigger writing is allowed to be wider
  * in step, so a bubble made bigger keeps the same words on each line. `max`
- * overrides all that.
+ * overrides all that. `font` is the words' style (see styles.js); its font
+ * should have loaded already, or they are measured in whatever stands in for it.
  */
-export function measure(text, kind = 'say', size = 'm', max = null){
+export function measure(text, kind = 'say', size = 'm', max = null, font = null){
   const px = typeof size === 'number' ? size : (TEXT_SIZE[size] || TEXT_SIZE.m);
   if (!meter){
     meter = document.createElement('div');
@@ -54,9 +56,10 @@ export function measure(text, kind = 'say', size = 'm', max = null){
     document.body.appendChild(meter);
   }
   max = Math.round(max ?? (MAX_W[kind] || MAX_W.say) * px / TEXT_SIZE.m);
+  const style = styleOf(font);
   const el = document.createElement('div');
-  el.className = `btxt ${kind}`;
-  el.style.cssText = `position:static;font-size:${px}px;max-width:${max}px;width:max-content`;
+  el.className = `btxt ${kind} f-${style.id}`;
+  el.style.cssText = `position:static;font-size:${px * style.scale}px;max-width:${max}px;width:max-content`;
   el.textContent = text || ' ';
   meter.replaceChildren(el);
 

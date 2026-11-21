@@ -34,6 +34,7 @@ import { simplify, drawStroke } from './ink.js';
 import { PageView } from './view.js';
 import { $, esc, toast, card, sfx } from './ui.js';
 import { settings, saveSettings } from './store.js';
+import { STYLES, styleOf, titleStyle, fontReady, loadFonts } from './styles.js';
 
 const HISTORY = 120;
 const TAP = 7;       // px a finger can wander and still count as a tap
@@ -52,6 +53,21 @@ function sizeRow(fs){
   return `<div class="wc-row"><span class="wc-label">Size</span>${['s', 'm', 'l'].map(z =>
     `<button type="button" class="chip sz sz-${z}${TEXT_SIZE[z] === fs ? ' on' : ''}" data-size="${z}" aria-label="${names[z]} words">A</button>`).join('')}
     <span class="wc-note">or drag the pink dot</span></div>`;
+}
+
+/** The Style row: every text style there is, each one's name written in itself. */
+function styleRow(font, { label = 'Style', base = 15, cls = '' } = {}){
+  return `<div class="wc-row style-row${cls ? ` ${cls}` : ''}"><span class="wc-label">${label}</span>${STYLES.map(s =>
+    `<button type="button" class="chip st f-${s.id}${s.id === font ? ' on' : ''}" data-font="${s.id}"` +
+    ` style="font-size:${(base * s.scale).toFixed(1)}px" aria-label="${s.name} writing">${s.name}</button>`).join('')}</div>`;
+}
+
+/** The box you type in shows the words in the style they'll be in. */
+function styleTextBox(ta, font, size = 19){
+  const s = styleOf(font);
+  ta.classList.remove(...STYLES.map(x => `f-${x.id}`));
+  ta.classList.add(`f-${s.id}`);
+  ta.style.fontSize = `${(size * s.scale).toFixed(1)}px`;
 }
 
 export function pickTitle(not = ''){
@@ -88,7 +104,7 @@ export class Editor {
   constructor(root, sheet, hooks){
     this.root = root;
     this.sheet = sheet;
-    this.hooks = hooks;              // { save(book), back(book), done(book) }
+    this.hooks = hooks;              // { save(book), back(book), done(book), studio(book) }
     this.book = null;
     this.mode = 'move';
     this.sel = null;
@@ -102,6 +118,7 @@ export class Editor {
         <header class="ed-top">
           <button type="button" class="ed-btn back" data-act="back" aria-label="Back to your books">‹</button>
           <button type="button" class="ed-name" data-act="cover"><b></b><small>✏️ title and cover</small></button>
+          <button type="button" class="ed-rec" data-act="studio" aria-label="Record a soundtrack: you, reading this book" title="Record a soundtrack"><i>🎙️</i><span>Soundtrack</span></button>
           <button type="button" class="ed-btn" data-act="undo" aria-label="Undo" title="Undo">↩️</button>
           <button type="button" class="ed-btn" data-act="redo" aria-label="Redo" title="Redo">↪️</button>
           <button type="button" class="btn go ed-done" data-act="done">✓ Done</button>
@@ -122,6 +139,7 @@ export class Editor {
         </nav>
       </div>`;
     this.nameEl = $('.ed-name b', root);
+    this.recBtn = $('.ed-rec', root);
     this.undoBtn = $('[data-act="undo"]', root);
     this.redoBtn = $('[data-act="redo"]', root);
     this.stripEl = $('.ed-strip', root);
@@ -154,6 +172,7 @@ export class Editor {
     this.pageId = allPages(book).some(p => p.id === page) ? page : book.pages[0].id;
     this.root.hidden = false;
     document.body.classList.add('editing');
+    loadFonts();
 
     this.view?.destroy();
     this.host.innerHTML = '';
@@ -234,6 +253,7 @@ export class Editor {
 
   renderTop(){
     this.nameEl.textContent = this.book.title || 'My Book';
+    this.recBtn.classList.toggle('has', !!this.book.track);      // a little dot: it has a soundtrack
     this.undoBtn.disabled = !this.past.length;
     this.redoBtn.disabled = !this.future.length;
   }
@@ -418,7 +438,7 @@ export class Editor {
 
   measureCaption(p, t){
     const mw = stripTextWidth(p);
-    Object.assign(t, measure(t.text, 'caption', fontSize(t), mw), { mw });
+    Object.assign(t, measure(t.text, 'caption', fontSize(t), mw, t.font), { mw });
   }
 
   /** Measure some words again — after their writing changed size, say. */
@@ -426,7 +446,7 @@ export class Editor {
     if (isStrip(t)){ this.measureCaption(p, t); return; }
     const fs = fontSize(t);
     const max = t.kind === 'caption' ? Math.min(MAX_W.caption * fs / TEXT_SIZE.m, Math.max(120, box(p).w - 80)) : null;
-    Object.assign(t, measure(t.text, t.kind, fs, max));
+    Object.assign(t, measure(t.text, t.kind, fs, max, t.font));
     keepWordsOnPage(t);
   }
 
@@ -669,7 +689,7 @@ export class Editor {
 
   coverSheet(){
     const b = this.book;
-    const before = { title: b.title, author: b.author, color: b.color };
+    const before = { title: b.title, author: b.author, color: b.color, titleFont: b.titleFont };
     const refresh = () => {
       this.markDirty(b.cover.id);
       this.renderTop();
@@ -678,7 +698,7 @@ export class Editor {
       this.stripTimer = setTimeout(() => this.renderStrip(), 250);
     };
     this.sheet.show({
-      key: 'cover', icon: '📕', title: 'The cover', sub: 'What your book is called, who made it, and its colour.',
+      key: 'cover', icon: '📕', title: 'The cover', sub: 'What your book is called, who made it, its colour and how the title is written.',
       render: () => `
         <label class="field"><span>Title</span><span class="set-row">
           <input class="in" data-role="title" maxlength="60" value="${esc(b.title)}" placeholder="My Book" autocomplete="off" spellcheck="false">
@@ -686,7 +706,10 @@ export class Editor {
         <label class="field"><span>Made by</span>
           <input class="in" data-role="author" maxlength="30" value="${esc(b.author)}" placeholder="Your name" autocomplete="off" spellcheck="false"></label>
         <div class="field"><span>Colour</span><div class="swatches">${COVER_COLOURS.map(c =>
-          `<button type="button" class="sw big${c === b.color ? ' on' : ''}" data-act="colour" data-id="${c}" style="--c:${c}" aria-label="Cover colour"></button>`).join('')}</div></div>`,
+          `<button type="button" class="sw big${c === b.color ? ' on' : ''}" data-act="colour" data-id="${c}" style="--c:${c}" aria-label="Cover colour"></button>`).join('')}</div></div>
+        <div class="field"><span>Title style</span><div class="swatches cover-styles" style="--c:${b.color}">${STYLES.map(s =>
+          `<button type="button" class="chip st f-${s.id}${s.id === titleStyle(b).id ? ' on' : ''}" data-act="title-font" data-id="${s.id}"` +
+          ` style="font-size:${(17 * s.scale).toFixed(1)}px" aria-label="${s.name} title">${s.name}</button>`).join('')}</div></div>`,
       onInput: (el) => {
         if (el.dataset.role === 'title') b.title = el.value.slice(0, 60);
         if (el.dataset.role === 'author') b.author = el.value.slice(0, 30);
@@ -696,6 +719,13 @@ export class Editor {
         if (act === 'colour'){
           b.color = id;
           for (const s of this.sheet.body.querySelectorAll('[data-act="colour"]')) s.classList.toggle('on', s.dataset.id === id);
+          this.sheet.body.querySelector('.cover-styles')?.style.setProperty('--c', id);
+          sfx('pick');
+          refresh();
+        }
+        if (act === 'title-font'){
+          b.titleFont = id;
+          for (const s of this.sheet.body.querySelectorAll('[data-act="title-font"]')) s.classList.toggle('on', s.dataset.id === id);
           sfx('pick');
           refresh();
         }
@@ -709,7 +739,7 @@ export class Editor {
       onClose: () => {
         b.title = b.title.trim();
         b.author = b.author.trim();
-        const after = { title: b.title, author: b.author, color: b.color };
+        const after = { title: b.title, author: b.author, color: b.color, titleFont: b.titleFont };
         if (JSON.stringify(after) !== JSON.stringify(before)){
           this.push({ kind: 'meta', before, after });
           this.changed(b.cover.id);
@@ -743,6 +773,7 @@ export class Editor {
     switch (act){
       case 'back': this.hooks.back(this.book); break;
       case 'done': this.hooks.done(this.book); break;
+      case 'studio': this.select(null); this.flush(); this.hooks.studio(this.book); break;
       case 'cover': this.coverSheet(); break;
       case 'undo': this.undo(); break;
       case 'redo': this.redo(); break;
@@ -783,6 +814,7 @@ export class Editor {
 
   onKey(e){
     if (!this.book || this.sheet.open || document.querySelector('.card-wrap.show')) return;
+    if (document.body.classList.contains('in-studio')) return;          // the studio is over the top
     if (e.target.closest?.('input, textarea, select')) return;
     const mod = e.metaKey || e.ctrlKey;
     const key = e.key.toLowerCase();
@@ -965,6 +997,8 @@ export class Editor {
     let kind = t?.kind || (speaker ? 'say' : 'caption');
     let fs = t ? fontSize(t) : TEXT_SIZE.m;
     let text = t?.text || '';
+    let font = styleOf(t ? t.font : kind === 'caption' ? settings.captionFont : settings.wordsFont).id;
+    let picked = false;
     const kinds = speaker ? KINDS.filter(k => k.id !== 'caption') : [];
     const name = speaker ? esc(who(speaker.who).name) : '';
     const html = `
@@ -975,7 +1009,8 @@ export class Editor {
       <textarea class="in wc-text" maxlength="160" rows="3" placeholder="${speaker ? 'Type it here…' : 'Meanwhile, at the beach…'}">${esc(text)}</textarea>
       ${kinds.length ? `<div class="wc-row">${kinds.map(k =>
         `<button type="button" class="chip${k.id === kind ? ' on' : ''}" data-kind="${k.id}">${k.icon} ${k.name}</button>`).join('')}</div>` : ''}
-      ${sizeRow(fs)}`;
+      ${sizeRow(fs)}
+      ${styleRow(font)}`;
     const buttons = t
       ? [{ label: '🗑️ Throw away', cls: 'ghost', value: 'delete' }, { label: 'Done ✓', cls: 'go', value: 'ok' }]
       : [{ label: 'Cancel', cls: 'ghost', value: 'cancel' }, { label: 'Done ✓', cls: 'go', value: 'ok' }];
@@ -984,15 +1019,24 @@ export class Editor {
       top: true, cls: 'words-card',
       onOpen: (wrap) => {
         const ta = wrap.querySelector('textarea');
+        styleTextBox(ta, font);
         setTimeout(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 80);
         ta.addEventListener('input', () => { text = ta.value; });
         ta.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); wrap.querySelector('.btn.go').click(); }
         });
         wrap.addEventListener('click', (e) => {
-          const k = e.target.closest('[data-kind]'), z = e.target.closest('[data-size]');
+          const k = e.target.closest('[data-kind]'), z = e.target.closest('[data-size]'), st = e.target.closest('[data-font]');
           if (k){ kind = k.dataset.kind; wrap.querySelectorAll('[data-kind]').forEach(b => b.classList.toggle('on', b === k)); sfx('pick'); }
           if (z){ fs = TEXT_SIZE[z.dataset.size]; wrap.querySelectorAll('[data-size]').forEach(b => b.classList.toggle('on', b === z)); sfx('pick'); }
+          if (st){
+            font = st.dataset.font;
+            picked = true;
+            wrap.querySelectorAll('[data-font]').forEach(b => b.classList.toggle('on', b === st));
+            styleTextBox(ta, font);
+            fontReady(font);
+            sfx('pick');
+          }
         });
       },
     });
@@ -1005,14 +1049,21 @@ export class Editor {
       if (t){ this.select({ type: 'w', id: t.id }); this.deleteSelection(); }
       return;
     }
+    // the next words start in the style picked for these
+    if (picked){
+      if (kind === 'caption') settings.captionFont = font; else settings.wordsFont = font;
+      saveSettings();
+    }
+    await fontReady(font);              // it has to be measured in its own font
+    if (!this.book || this.page !== page) return;
     const before = this.snap();
     let target = t;
     if (t){
-      Object.assign(t, { text, kind, fs });
+      Object.assign(t, { text, kind, fs, font });
       this.remeasure(panel, t);
       keepWordsOnPage(t, box(panel));
     } else {
-      target = { id: uid(), kind, fs, text, x: 0, y: 0, from: speaker?.id || null };
+      target = { id: uid(), kind, fs, font, text, x: 0, y: 0, from: speaker?.id || null };
       this.remeasure(panel, target);
       panel.words.push(target);
       placeWords(panel, target, speaker);
@@ -1245,6 +1296,8 @@ export class Editor {
     let at = t ? (isStrip(t) ? t.at : 'free') : 'bottom';
     let fill = t?.fill || 'yellow';
     let fs = t ? fontSize(t) : TEXT_SIZE.m;
+    let font = styleOf(t ? t.font : settings.captionFont).id;
+    let picked = false;
     const order = this.panelsInOrder();
 
     const map = order.length > 1 ? `
@@ -1263,7 +1316,8 @@ export class Editor {
         <button type="button" class="chip${at === 'free' ? ' on' : ''}" data-at="free">✋ Anywhere</button></div>
       <div class="wc-row"><span class="wc-label">Colour</span>${CAPTION_FILLS.map(c =>
         `<button type="button" class="sw${c.id === fill ? ' on' : ''}" data-fill="${c.id}" style="--c:${c.css}" aria-label="${c.name}"></button>`).join('')}</div>
-      ${sizeRow(fs)}`;
+      ${sizeRow(fs)}
+      ${styleRow(font)}`;
     const buttons = t
       ? [{ label: '🗑️ Throw away', cls: 'ghost', value: 'delete' }, { label: 'Done ✓', cls: 'go', value: 'ok' }]
       : [{ label: 'Cancel', cls: 'ghost', value: 'cancel' }, { label: 'Done ✓', cls: 'go', value: 'ok' }];
@@ -1272,6 +1326,7 @@ export class Editor {
       top: true, cls: 'words-card caption-card',
       onOpen: (wrap) => {
         const ta = wrap.querySelector('textarea');
+        styleTextBox(ta, font);
         setTimeout(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 80);
         ta.addEventListener('input', () => { text = ta.value; });
         ta.addEventListener('keydown', (e) => {
@@ -1279,12 +1334,13 @@ export class Editor {
         });
         wrap.addEventListener('click', (e) => {
           const pick = e.target.closest('[data-pick]'), w = e.target.closest('[data-at]');
-          const c = e.target.closest('[data-fill]'), z = e.target.closest('[data-size]');
+          const c = e.target.closest('[data-fill]'), z = e.target.closest('[data-size]'), st = e.target.closest('[data-font]');
           const mark = (sel, el) => wrap.querySelectorAll(sel).forEach(b => b.classList.toggle('on', b === el));
           if (pick){ panel = this.panel(pick.dataset.pick) || panel; mark('[data-pick]', pick); sfx('pick'); }
           if (w){ at = w.dataset.at; mark('[data-at]', w); sfx('pick'); }
           if (c){ fill = c.dataset.fill; mark('[data-fill]', c); sfx('pick'); }
           if (z){ fs = TEXT_SIZE[z.dataset.size]; mark('[data-size]', z); sfx('pick'); }
+          if (st){ font = st.dataset.font; picked = true; mark('[data-font]', st); styleTextBox(ta, font); fontReady(font); sfx('pick'); }
         });
       },
     });
@@ -1297,6 +1353,9 @@ export class Editor {
       if (t){ this.select({ type: 'w', id: t.id }); this.deleteSelection(); }
       return;
     }
+    if (picked){ settings.captionFont = font; saveSettings(); }
+    await fontReady(font);
+    if (!this.book || this.page !== page) return;
 
     const before = this.snap();
     let c = t;
@@ -1308,7 +1367,7 @@ export class Editor {
       panel.words.push(c);
     }
     const wasFree = t && !isStrip(t);
-    Object.assign(c, { text, fs, fill });
+    Object.assign(c, { text, fs, fill, font });
     let grew = false;
     if (at === 'free'){
       for (const k of ['at', 'sw', 'sh', 'mw', 'framed']) delete c[k];
