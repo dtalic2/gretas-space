@@ -13,7 +13,8 @@
 // A book is a draft until you tap ✓ Done in the editor; then it goes on the
 // shelf in the Library. Editing it again later doesn't take it off the shelf.
 
-import { openStore, loadBooks, putBook, removeBook, removeTrack, trackIds, settings, loadSettings, saveSettings, storageMode } from './store.js';
+import { openStore, onLateOpen, loadBooks, putBook, removeBook, removeTrack, trackIds, settings, loadSettings, saveSettings, storageMode } from './store.js';
+import { makeCopy, copyName, readCopy, restoreSounds } from './backup.js';
 import { newBook, repairBook, COVER_COLOURS } from './model.js';
 import { CAST, castHTML } from './cast.js';
 import { Editor, pickTitle } from './editor.js';
@@ -478,6 +479,8 @@ function helpSheet(){
       <li><b>⚙️ Settings</b> (in the row above the tools) shows everything in a panel — milbils and what they
         say, captions, and the drawing — and copies or moves the ones you tick into another panel, on this
         page or any other.</li>
+      <li><b>💾 Keep your books safe</b>: ⚙️ Settings → <b>Save a copy</b> puts every book in a file.
+        If the browser ever loses them, <b>📂 Bring books back</b> from that file — on this device or another.</li>
       <li><b>✓ Done</b> puts your book in the 📚 Library. Open it there and tap <b>✏️ Edit</b> at the bottom to
         change it whenever you like.</li>
       <li><b>🔊 Read Aloud</b> reads your book to you: the captions and the words in every bubble, each
@@ -506,15 +509,82 @@ function settingsSheet(){
         <button type="button" class="opt2${settings.sound ? ' on' : ''}" data-act="sound" data-id="on"><i>🔊</i><b>On</b></button>
         <button type="button" class="opt2${!settings.sound ? ' on' : ''}" data-act="sound" data-id="off"><i>🔇</i><b>Off</b></button>
       </div></div>
+      <div class="field"><span>💾 Keep your books safe</span>
+        <p class="sheet-note copy-note">Your books are kept by this browser, on this device. A browser can throw them away —
+          Safari does if the game isn't opened for a week, and everything made in a Private tab goes when the tab closes.
+          A copy in a file can always bring them back, here or on another device.</p>
+        <div class="set-btns">
+          <button type="button" class="btn go" data-act="copy"${books.length ? '' : ' disabled'}>💾 Save a copy</button>
+          <button type="button" class="btn ghost" data-act="bring">📂 Bring books back</button>
+        </div>
+        <input type="file" class="copy-file" data-role="copy-file" accept=".json,application/json" tabindex="-1" aria-hidden="true">
+        ${settings.savedCopy ? `<p class="sheet-note">Last copy saved ${ago(settings.savedCopy)}.</p>` : ''}</div>
       <p class="sheet-note">${plural(books.length, 'book')}, saved ${where}. Books stay on this device — they aren't sent anywhere.</p>`,
     onInput: (el) => { if (el.dataset.role === 'name'){ settings.name = el.value.slice(0, 30); saveSettings(); } },
+    onChange: (el) => {
+      if (el.dataset.role === 'copy-file' && el.files?.[0]){ const f = el.files[0]; el.value = ''; bringBack(f); }
+    },
     onAct: (act, id) => {
+      if (act === 'copy'){ saveCopy(); return; }
+      if (act === 'bring'){ sheet.body.querySelector('[data-role="copy-file"]')?.click(); return; }
       if (act === 'sound'){ settings.sound = id === 'on'; setSound(settings.sound); saveSettings(); sheet.render(); sfx('pick'); }
       if (act === 'dice'){ settings.name = any(NAMES); saveSettings(); sheet.render(); sfx('pick'); }
       if (act === 'speed'){ settings.readSpeed = id; saveSettings(); sheet.render(); sfx('pick'); }
       if (act === 'try'){ wake(); say({ who: 'chomp', kind: 'say', text: "I'm going to read you a story!" }); }
     },
   });
+}
+
+/** 💾 Save a copy: every book, with its sounds, as a file to keep. */
+async function saveCopy(){
+  if (!books.length){ toast('There are no books to save yet.'); sfx('nope'); return; }
+  let blob;
+  try { blob = await makeCopy(books); }
+  catch { toast("Sorry — the copy couldn't be made."); sfx('nope'); return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = copyName();
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+  settings.savedCopy = Date.now();
+  saveSettings();
+  if (sheet.open && sheet.cur?.key === 'set') sheet.render();
+  sfx('pick');
+  toast(`💾 ${plural(books.length, 'book')} saved in “${esc(copyName())}”. Keep it somewhere safe, like Files.`, { ms: 6000 });
+}
+
+/** 📂 Bring books back from a copy: every book in it that isn't here, or is newer than the one here. */
+async function bringBack(file){
+  let data;
+  try { data = await readCopy(file); }
+  catch {
+    card(`<h3>📂 That isn't a copy of your books</h3>
+      <p>Pick a file made with <b>💾 Save a copy</b> — it's called something like “Milbil Books ${new Date().getFullYear()}-….json”.</p>`,
+    [{ label: 'OK', cls: 'go' }]);
+    sfx('nope');
+    return;
+  }
+  await restoreSounds(data);
+  let added = 0, updated = 0, same = 0;
+  for (const raw of data.books){
+    const b = repairBook(raw);
+    if (!b) continue;
+    const had = byId(b.id);
+    if (had && (Number(had.updated) || 0) >= (Number(b.updated) || 0)){ same++; continue; }
+    if (had) books = books.filter(x => x !== had);
+    books.push(b);
+    await save(b);
+    if (had) updated++; else added++;
+  }
+  sheet.close();
+  paint();
+  sfx(added || updated ? 'cheer' : 'pick');
+  toast(added || updated
+    ? `📂 ${[added && `${plural(added, 'book')} brought back`, updated && `${plural(updated, 'book')} brought up to date`].filter(Boolean).join(', ')}!`
+    : same === 1 ? 'That book is here already.' : `Those ${same} books are all here already.`, { ms: 5000 });
+  if (added || updated) setTimeout(() => confetti(), 200);
 }
 
 function welcome(){
@@ -555,6 +625,23 @@ async function boot(){
   $('#setBtn').addEventListener('click', settingsSheet);
   for (const b of $$('#tabbar .tab')) b.addEventListener('click', () => { sfx('tap'); setTab(b.dataset.tab); });
 
+  // Usually a moment; Safari can take a while to open its database.
+  view.innerHTML = '<p class="finding">📚 Finding your books…</p>';
+  // If the database opens only after the game stopped waiting for it, its
+  // books are added to whatever is on screen.
+  onLateOpen(async () => {
+    let more = 0;
+    for (const b of (await loadBooks()).map(repairBook).filter(Boolean)){
+      const had = byId(b.id);
+      if (!had){ books.push(b); more++; }
+      // a newer copy than the one on screen, unless that one's open right now
+      else if ((Number(b.updated) || 0) > (Number(had.updated) || 0) && editor.book !== had && reader.book !== had){
+        books[books.indexOf(had)] = b;
+      }
+    }
+    for (const b of books) await putBook(b);       // and anything made meanwhile goes into it
+    if (more){ paint(); toast(`📚 Found ${plural(more, 'book')}.`); }
+  });
   await openStore();
   books = (await loadBooks()).map(repairBook).filter(Boolean);
   setTab(settings.tab);

@@ -763,6 +763,11 @@ body.reading .toasts { bottom: calc(var(--safe-b) + 110px); }
 }
 .name-input button { width: 48px; border-radius: 12px; background: var(--tint); font-size: 19px; }
 
+/* ------------------------------------------- keeping the books safe */
+.finding { text-align: center; color: var(--muted); font-weight: 800; padding: 40px 10px; animation: fade-in .6s .4s both; }
+.copy-note { margin-top: 0; font-weight: 400; }
+.copy-file { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
 /* ============================================================ studio */
 /* Recording a soundtrack: the reader's layout, with a red button. */
 .sd-say {

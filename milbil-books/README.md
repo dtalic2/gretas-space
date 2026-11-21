@@ -288,6 +288,34 @@ while you change it, and ✓ Done puts it back.
 
 Books you haven't finished wait in Create under **Books you're making**.
 
+## 💾 Keeping the books safe
+
+The books are kept by the browser, on the device — nothing is sent anywhere —
+and a browser can throw them away:
+
+- **Safari clears what a website keeps if it isn't opened for seven days**
+  (days Safari is used, that is). A game added to the Home Screen is exempt.
+- Everything made in a **Private** tab goes when the tab is closed.
+- **Clearing History and Website Data** in Safari's settings clears it too.
+- A game added to the **Home Screen** keeps its books apart from Safari's, and
+  another browser or another device has its own — so the books are only where
+  they were made.
+
+**⚙️ Settings → 💾 Save a copy** puts every book in one file — `Milbil Books
+2026-11-21.json` — with their soundtracks and the voices on their bubbles. On an
+iPad it goes to Files (Downloads). **📂 Bring books back** reads one, on this
+device or any other, and puts back every book in it that isn't there already,
+or is newer than the one there. Bringing the same copy back twice changes
+nothing. That's also the way to move books from Safari to the Home Screen game,
+or from one iPad to another.
+
+The game also looks after itself: when it opens it gathers books from
+everywhere it might have kept them — the database, and the small store it falls
+back on on a day the database won't open — and puts any it finds outside the
+database back into it. It waits up to eight seconds for the database ("📚
+Finding your books…"), and if the database turns up even later than that, its
+books are added as soon as it does.
+
 ## 🎧 Soundtracks
 
 A soundtrack is somebody reading a book out loud, recorded and kept with the
@@ -349,7 +377,8 @@ milbil-books/
     ├── tracks.js        soundtracks: names, page turns, playing them
     ├── mic.js           the microphone: asking for it, the level, recording
     ├── voice.js         voices on bubbles and sound buttons: recording, playing, tidying
-    ├── store.js         where books (and soundtracks) are kept
+    ├── store.js         where books (and soundtracks) are kept, and finding them again
+    ├── backup.js        💾 Save a copy and 📂 Bring books back
     ├── ui.js            sheets, cards, toasts, sound, confetti
     └── main.js          the three tabs, new books, Done
 ```
@@ -362,7 +391,7 @@ the same page. Drawing is kept as lines rather than pictures, so it is redrawn
 crisply at every size too.
 
 **Where books are kept.** In the browser's own database (IndexedDB) on the
-device, never sent anywhere. localStorage is shared between every game on
+device, never sent anywhere — see [Keeping the books safe](#-keeping-the-books-safe). localStorage is shared between every game on
 dtalic2.github.io and only holds about five megabytes between all of them; a
 few books with drawings in could fill it. Soundtracks and the voices on bubbles
 are in a second database, `milbil-books-sounds`, so saving a book (every few
@@ -422,3 +451,13 @@ Read Aloud playing all four recordings (and not reading those words out
 itself), lighting each one up; a reload; old unused recordings being tidied
 away while new ones stay; the microphone being refused; and all of it on a
 320-pixel phone and an iPad-sized screen.
+
+Keeping books safe was checked by making books in every version of the game
+there has been and opening them in the newest (all there, every time); by
+putting books where the game falls back to on a day the database won't open
+(found, and moved into the database); by making the database take eleven
+seconds to open (the game says it's finding the books, carries on at eight
+seconds, and adds them when the database arrives); by throwing a book away
+(it doesn't come back from anywhere); and by saving a copy with a voice in it
+and bringing it back in a different browser — once, then again (no second
+copy), and from a file that isn't a copy at all.
