@@ -5,9 +5,17 @@
 // between all of them; a few books with drawings in could fill it. IndexedDB
 // has room for thousands.
 //
-// If IndexedDB will not open (some private-browsing windows refuse it), books
-// fall back to localStorage, and if that is full too they live in memory for as
-// long as the tab is open — and the game says so rather than pretending.
+// If IndexedDB will not open (some private-browsing windows refuse it, and
+// Safari can be slow to wake it up), books fall back to localStorage, and if
+// that is full too they live in memory for as long as the tab is open — and
+// the game says so rather than pretending.
+//
+// Wherever a book was put, it is looked for: loading gathers books from the
+// database, localStorage and memory, the newest copy of each wins, and
+// whatever is outside the database goes into it as soon as the database is
+// open — even if that's a while after the game stopped waiting for it. So a
+// day when Safari's database was slow never strands a book where the next
+// day's game doesn't look.
 //
 // Soundtracks — recordings of somebody reading a book out loud — and the
 // voices recorded onto bubbles are in a second database of their own,
@@ -17,8 +25,7 @@
 // which a second open tab can block.
 //
 // The little settings object (your name, sound, which tab, the last text
-// styles you picked) is in localStorage
-// under `milbil-books-v1`.
+// styles you picked) is in localStorage under `milbil-books-v1`.
 
 import { isStyle } from './styles.js';
 
@@ -26,12 +33,17 @@ const DB_NAME = 'milbil-books';
 const STORE = 'books';
 const SETTINGS_KEY = 'milbil-books-v1';
 const FALLBACK_KEY = 'milbil-books-v1-books';
+const PATIENCE = 8000;       // ms to wait for the database before getting on without it (for now)
 
 let db = null;
 let mode = 'idb';            // 'idb' | 'local' | 'memory'
 const memory = new Map();
+let late = null;             // what to do if the database opens after the game stopped waiting
 
 export const storageMode = () => mode;
+
+/** If the database turns up late, `fn` is called once its books can be loaded. */
+export const onLateOpen = (fn) => { late = fn; };
 
 function openDb(){
   return new Promise((resolve, reject) => {
@@ -48,8 +60,6 @@ function openDb(){
       resolve(req.result);
     };
     req.onerror = () => reject(req.error);
-    req.onblocked = () => reject(new Error('blocked'));
-    setTimeout(() => reject(new Error('timed out')), 4000);
   });
 }
 
@@ -63,30 +73,77 @@ function run(kind, fn){
   });
 }
 
+const canLocal = () => {
+  try { localStorage.setItem('milbil-books-probe', '1'); localStorage.removeItem('milbil-books-probe'); return true; }
+  catch { return false; }
+};
+
+// Ask the browser not to clear the books out when it is short of space.
+const persist = () => { try { navigator.storage?.persist?.()?.catch?.(() => {}); } catch {} };
+
 export async function openStore(){
-  try {
-    db = await openDb();
+  const opening = openDb();
+  const gaveUp = new Promise(r => setTimeout(() => r(null), PATIENCE));
+  try { db = await Promise.race([opening, gaveUp]); } catch { db = null; }
+  if (db){ mode = 'idb'; persist(); return; }
+  mode = canLocal() ? 'local' : 'memory';
+  // It might still open. If it does, it's used from then on, and the books
+  // saved anywhere else meanwhile go into it.
+  opening.then(async (got) => {
+    db = got;
     mode = 'idb';
-    // Ask the browser not to clear the books out when it is short of space.
-    navigator.storage?.persist?.().catch(() => {});
-  } catch {
-    mode = 'local';
-    try { localStorage.setItem('milbil-books-probe', '1'); localStorage.removeItem('milbil-books-probe'); }
-    catch { mode = 'memory'; }
-  }
+    persist();
+    try { await late?.(); } catch {}
+  }, () => {});
 }
 
 function readLocal(){
   try { return JSON.parse(localStorage.getItem(FALLBACK_KEY) || '{}') || {}; } catch { return {}; }
 }
 
+/**
+ * Every book, wherever it was kept: the database, localStorage (from a day
+ * when the database wouldn't open) and memory. If the same book is in more
+ * than one place, the newest copy wins — and any that aren't in the database
+ * yet go into it now, if it's open.
+ */
 export async function loadBooks(){
+  const found = new Map();
+  const keep = (b) => {
+    if (!b || typeof b !== 'object' || typeof b.id !== 'string') return;
+    const had = found.get(b.id);
+    if (!had || (Number(b.updated) || 0) > (Number(had.updated) || 0)) found.set(b.id, b);
+  };
   if (mode === 'idb'){
-    try { return (await run('readonly', s => s.getAll())) || []; }
-    catch { mode = 'local'; }
+    try { ((await run('readonly', s => s.getAll())) || []).forEach(keep); }
+    catch { mode = canLocal() ? 'local' : 'memory'; }
   }
-  if (mode === 'local') return Object.values(readLocal());
-  return [...memory.values()];
+  Object.values(readLocal()).forEach(keep);
+  memory.forEach(keep);
+  if (mode === 'idb') await rescue();
+  return [...found.values()];
+}
+
+/**
+ * Books kept outside the database — in localStorage, or in memory — go into
+ * it, unless it already has a newer copy, and then stop being kept outside it.
+ */
+async function rescue(){
+  const local = readLocal();
+  const outside = [...Object.values(local), ...memory.values()];
+  for (const b of outside){
+    if (!b || typeof b.id !== 'string') continue;
+    try {
+      const inside = await run('readonly', s => s.get(b.id));
+      if (!inside || (Number(b.updated) || 0) > (Number(inside.updated) || 0)) await run('readwrite', s => s.put(b));
+      delete local[b.id];
+      memory.delete(b.id);
+    } catch { break; }
+  }
+  try {
+    if (Object.keys(local).length) localStorage.setItem(FALLBACK_KEY, JSON.stringify(local));
+    else localStorage.removeItem(FALLBACK_KEY);
+  } catch {}
 }
 
 /** Save one book. Resolves true if it is safely stored, false if only in memory. */
@@ -94,7 +151,7 @@ export async function putBook(book){
   const copy = JSON.parse(JSON.stringify(book));
   if (mode === 'idb'){
     try { await run('readwrite', s => s.put(copy)); return true; }
-    catch { mode = 'local'; }
+    catch { mode = canLocal() ? 'local' : 'memory'; }
   }
   if (mode === 'local'){
     const all = readLocal();
@@ -106,11 +163,10 @@ export async function putBook(book){
   return false;
 }
 
+/** Throw a book away — from everywhere it might be kept, so it can't come back. */
 export async function removeBook(id){
   memory.delete(id);
-  if (mode === 'idb'){
-    try { await run('readwrite', s => s.delete(id)); return; } catch {}
-  }
+  if (db){ try { await run('readwrite', s => s.delete(id)); } catch {} }
   const all = readLocal();
   if (all[id]){
     delete all[id];
@@ -221,6 +277,7 @@ const DEFAULTS = () => ({
   pen: { c: '#2b2233', w: 14, g: false, b: false },
   rubber: 44,
   readSpeed: 'normal',        // how fast Read Aloud reads: slow, normal or fast
+  savedCopy: 0,               // when 💾 Save a copy was last used
   wordsFont: 'comic',         // the text style new bubbles start in: the last one picked
   captionFont: 'comic',       // ...and new captions
   recent: ['#2b2233', '#e5484d', '#2f6fe0', '#4cbb4a', '#ffc531'],
