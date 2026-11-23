@@ -30,10 +30,10 @@ import {
   spotForPanel, firstFit, resizeTarget, moveTarget, growToFit, roomFor, addMilbil, fitContents,
   shiftContents, moveToPanel, placeWords, keepWordsOnPage, extent, pageIsEmpty,
   isStrip, stripTextWidth, layoutCaptions, makeRoomForCaption, fontSize, FS_MIN, FS_MAX, TEXT_SIZE,
-  inkIn, hasDrawing, copyAcross, isSound, voiceOnly, soundSize,
+  inkIn, hasDrawing, copyAcross, isSound, voiceOnly, soundSize, fitsOnPage, textRoom, FRAME, CAP_PADY,
 } from './model.js';
 import { CAST, who, castHTML } from './cast.js';
-import { measure, KINDS, MAX_W } from './bubbles.js';
+import { measure, longestWord, KINDS, MAX_W } from './bubbles.js';
 import { simplify, drawStroke } from './ink.js';
 import { PageView } from './view.js';
 import { $, esc, toast, card, sfx } from './ui.js';
@@ -58,8 +58,11 @@ function sizeRow(fs){
   const names = { s: 'Small', m: 'Middle', l: 'Big' };
   return `<div class="wc-row"><span class="wc-label">Size</span>${['s', 'm', 'l'].map(z =>
     `<button type="button" class="chip sz sz-${z}${TEXT_SIZE[z] === fs ? ' on' : ''}" data-size="${z}" aria-label="${names[z]} words">A</button>`).join('')}
-    <span class="wc-note">or drag the pink dot</span></div>`;
+    <span class="wc-note">or drag the pink dot — as big as you like</span></div>`;
 }
+
+/** How wide the longest word is with writing this size, and a little to spare. */
+const wordWidth = (long, fs) => (long ? Math.ceil(long * fs / TEXT_SIZE.m * 1.02) + 2 : 0);
 
 /** The Style row: every text style there is, each one's name written in itself. */
 function styleRow(font, { label = 'Style', base = 15, cls = '' } = {}){
@@ -453,21 +456,109 @@ export class Editor {
   }
 
   measureCaption(p, t){
-    const mw = stripTextWidth(p);
-    // a strip that's all voice is one line deep, with its 🔊 in the middle
-    Object.assign(t, measure(voiceOnly(t) ? ' ' : t.text, 'caption', fontSize(t), mw, t.font), { mw });
+    Object.assign(t, this.dims(p, t), { mw: stripTextWidth(p) });
   }
 
-  /** Measure some words again — after their writing changed size, say. */
-  remeasure(p, t){
+  /** Measure some words again — after their writing changed size, say. `fit`: see shrinkToFit. */
+  remeasure(p, t, { fit = false, long } = {}){
+    if (fit) this.shrinkToFit(p, t);
     if (isStrip(t)){ this.measureCaption(p, t); return; }
-    const fs = fontSize(t);
-    // a sound button is round; a bubble that's all voice is just big enough for its 🔊
-    if (isSound(t)){ t.w = t.h = soundSize(fs); keepWordsOnPage(t); return; }
-    if (voiceOnly(t)){ t.w = Math.round(fs * 2); t.h = Math.round(fs * 1.35); keepWordsOnPage(t); return; }
-    const max = t.kind === 'caption' ? Math.min(MAX_W.caption * fs / TEXT_SIZE.m, Math.max(120, box(p).w - 80)) : null;
-    Object.assign(t, measure(t.text, t.kind, fs, max, t.font));
+    Object.assign(t, this.dims(p, t, fontSize(t), long));
     keepWordsOnPage(t);
+  }
+
+  /** How big some words come out with their writing this size: { w, h }, in page units. */
+  dims(p, t, fs = fontSize(t), long){
+    // a strip that's all voice is one line deep, with its 🔊 in the middle
+    if (isStrip(t)) return measure(voiceOnly(t) ? ' ' : t.text, 'caption', fs, stripTextWidth(p), t.font);
+    // a sound button is round; a bubble that's all voice is just big enough for its 🔊
+    if (isSound(t)){ const d = soundSize(fs); return { w: d, h: d }; }
+    if (voiceOnly(t)) return { w: Math.round(fs * 2), h: Math.round(fs * 1.35) };
+    return measure(t.text, t.kind, fs, this.wrapAt(p, t, fs, long ?? this.longest(t)), t.font);
+  }
+
+  /**
+   * How long a line of words can be before it wraps. Bigger writing has longer
+   * lines, in step, so a bubble made bigger keeps the same words on each line;
+   * a caption box keeps inside its panel; a line is always long enough for the
+   * longest word, so no word is broken in two; and nothing is too wide to fit
+   * across the page.
+   */
+  wrapAt(p, t, fs, long){
+    let max = (MAX_W[t.kind] || MAX_W.say) * fs / TEXT_SIZE.m;
+    if (t.kind === 'caption') max = Math.min(max, Math.max(120, box(p).w - 80));
+    return Math.round(Math.min(textRoom(t.kind), Math.max(max, wordWidth(long, fs))));
+  }
+
+  /** How wide the longest word in some words is, at the middle size. */
+  longest(t){
+    if (isSound(t) || voiceOnly(t)) return 0;
+    return longestWord(t.text, isStrip(t) ? 'caption' : t.kind, t.font);
+  }
+
+  /** How tall a caption strip can be: as tall as its panel, less the other strips in it. */
+  stripRoom(p, t){
+    return box(p).h - 2 * FRAME - p.words.reduce((n, o) => n + (isStrip(o) && o !== t ? o.sh || 0 : 0), 0);
+  }
+
+  /** The longest a line of some words can ever be: across their strip, or across the page. */
+  lineRoom(p, t){ return isStrip(t) ? stripTextWidth(p) : textRoom(t.kind); }
+
+  /**
+   * Would some words fit with their writing this size? All of them on the page
+   * — a caption strip, inside its panel — and, if `whole`, every word in one
+   * piece.
+   */
+  fits(p, t, fs, long, whole = false){
+    if (whole && wordWidth(long, fs) > this.lineRoom(p, t)) return false;
+    if (isStrip(t)) return this.dims(p, t, fs).h + 2 * CAP_PADY <= this.stripRoom(p, t);
+    return fitsOnPage({ ...t, fs, ...this.dims(p, t, fs, long) });
+  }
+
+  /**
+   * The biggest some words' writing can be: as big as anybody likes, so long
+   * as they still fit, and without breaking a word in two that isn't broken
+   * already. Never smaller than it is now.
+   */
+  biggest(p, t){
+    const now = fontSize(t), long = this.longest(t);
+    const whole = wordWidth(long, now) <= this.lineRoom(p, t);
+    const ok = (fs) => this.fits(p, t, fs, long, whole);
+    if (!ok(now + 1)) return now;
+    if (ok(FS_MAX)) return FS_MAX;
+    let lo = now + 1, hi = FS_MAX;
+    while (hi - lo > 1){
+      const mid = (lo + hi) >> 1;
+      if (ok(mid)) lo = mid; else hi = mid;
+    }
+    return lo;
+  }
+
+  /**
+   * Big writing that doesn't fit any more — more words in it, a spikier
+   * bubble, or copied into a bigger panel — is made as big as does fit, with
+   * every word in one piece if they can be. Writing no bigger than Big is left
+   * alone, as it always was.
+   */
+  shrinkToFit(p, t){
+    const now = fontSize(t), floor = Math.min(now, TEXT_SIZE.l);
+    if (now <= floor) return;
+    const long = this.longest(t);
+    const whole = wordWidth(long, floor) <= this.lineRoom(p, t);
+    const ok = (fs) => this.fits(p, t, fs, long, whole);
+    if (ok(now)) return;
+    let lo = floor, hi = now;
+    while (hi - lo > 1){
+      const mid = (lo + hi) >> 1;
+      if (ok(mid)) lo = mid; else hi = mid;
+    }
+    t.fs = lo;
+  }
+
+  /** What ➕ (or the pink dot) says when something is as big as it can go. */
+  tooBig(t){
+    return isStrip(t) ? "That's as big as it can go in this panel. Make the panel bigger for bigger words."
+      : "That's as big as it can go — any bigger and it wouldn't fit on the page.";
   }
 
   /** Bigger or smaller writing, from the ➕ and ➖ buttons. */
@@ -475,9 +566,11 @@ export class Editor {
     const f = find(this.page, this.sel?.id);
     if (!f?.t) return;
     const before = this.snap();
-    const fs = Math.round(clamp(fontSize(f.t) * k, FS_MIN, FS_MAX));
-    if (fs === fontSize(f.t)){
-      toast(k > 1 ? "That's as big as words go." : "That's as small as words go.");
+    const now = fontSize(f.t);
+    let fs = Math.round(clamp(now * k, FS_MIN, FS_MAX));
+    if (k > 1) fs = Math.min(fs, this.biggest(f.panel, f.t));
+    if (fs === now){
+      toast(k > 1 ? this.tooBig(f.t) : "That's as small as words go.");
       sfx('nope');
       return;
     }
@@ -1096,7 +1189,7 @@ export class Editor {
     if (t){
       Object.assign(t, { text, kind, fs, font });
       if (voice) t.voice = voice; else delete t.voice;
-      this.remeasure(panel, t);
+      this.remeasure(panel, t, { fit: true });       // more words in big writing may need it smaller
       keepWordsOnPage(t, box(panel));
     } else {
       target = { id: uid(), kind, fs, font, text, x: 0, y: 0, from: speaker?.id || null };
@@ -1270,7 +1363,7 @@ export class Editor {
     const touched = [...new Set([fromPage, toPage])];
     const before = touched.map(pg => ({ pg, page: this.snap(pg), ink: pg.ink.slice() }));
     const words = copyAcross({ fromPage, from, toPage, to, keys, move });
-    for (const t of words){ this.remeasure(to, t); keepWordsOnPage(t, box(to)); }
+    for (const t of words){ this.remeasure(to, t, { fit: true }); keepWordsOnPage(t, box(to)); }
 
     const parts = [];
     for (const b of before){
@@ -1479,13 +1572,13 @@ export class Editor {
     if (at === 'free'){
       for (const k of ['at', 'sw', 'sh', 'mw', 'framed']) delete c[k];
       const B = box(panel);
-      this.remeasure(panel, c);
+      this.remeasure(panel, c, { fit: true });
       if (wasFree && found.panel === panel) keepWordsOnPage(c, B);
       else placeWords(panel, c, null);
     } else {
       const moved = !t || c.at !== at || found.panel !== panel;
       c.at = at;
-      this.measureCaption(panel, c);
+      this.remeasure(panel, c, { fit: true });
       layoutCaptions(panel);
       // a new strip, or one moved somewhere else, makes room for itself
       if (moved && makeRoomForCaption(page, panel, c) === 'grew'){ grew = true; this.layoutCaptions(); }
@@ -1635,10 +1728,12 @@ export class Editor {
           Object.assign(d, { kind: 'mb-size', id: m.id, h0: m.h, anchor, d0: Math.max(30, Math.hypot(u.x - anchor.x, u.y - anchor.y)) });
         }
       } else if (h.dataset.h === 'w' && this.sel?.type === 'w'){
-        const t = find(page, this.sel.id)?.t;
+        const f = find(page, this.sel.id);
+        const t = f?.t;
         if (t){
           const c = { x: t.x, y: t.y };
-          Object.assign(d, { kind: 'w-size', id: t.id, fs0: fontSize(t), w0: t.w, h0: t.h, c,
+          // as big as they'll go, worked out now rather than at every move of the finger
+          Object.assign(d, { kind: 'w-size', id: t.id, fs0: fontSize(t), c, max: this.biggest(f.panel, t), long: this.longest(t),
             d0: Math.max(30, Math.hypot(u.x - c.x, u.y - c.y)) });
         }
       } else if (this.sel?.type === 'panel'){
@@ -1747,12 +1842,12 @@ export class Editor {
       case 'w-size': {
         const f = find(page, d.id);
         if (!f) break;
-        const fs = Math.round(clamp(d.fs0 * Math.hypot(u.x - d.c.x, u.y - d.c.y) / d.d0, FS_MIN, FS_MAX));
+        const want = d.fs0 * Math.hypot(u.x - d.c.x, u.y - d.c.y) / d.d0;
+        d.over = want > d.max + 0.5;              // further than they can go
+        const fs = Math.round(clamp(want, FS_MIN, d.max));
         if (fs !== fontSize(f.t)){
           f.t.fs = fs;
-          // a strip is measured for real; a bubble just scales, and is measured properly when let go
-          if (isStrip(f.t)) this.measureCaption(f.panel, f.t);
-          else { f.t.w = Math.round(d.w0 * fs / d.fs0); f.t.h = Math.round(d.h0 * fs / d.fs0); keepWordsOnPage(f.t); }
+          this.remeasure(f.panel, f.t, { long: d.long });
         }
         this.renderPage();
         break;
@@ -1820,7 +1915,13 @@ export class Editor {
       }
     }
     if (d.kind === 'mb-size'){ const f = find(page, d.id); if (f) fitContents(f.panel); }
-    if (d.kind === 'w-size'){ const f = find(page, d.id); if (f) this.remeasure(f.panel, f.t); }
+    if (d.kind === 'w-size'){
+      const f = find(page, d.id);
+      if (f){
+        this.remeasure(f.panel, f.t);
+        if (d.over){ toast(this.tooBig(f.t)); sfx('nope'); }
+      }
+    }
     this.commit(d.before);
     this.renderPage();
     this.renderCtx();
