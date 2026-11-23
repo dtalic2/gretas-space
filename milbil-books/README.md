@@ -105,10 +105,25 @@ A new bubble goes as close as it can to just above the milbil's head without
 covering another bubble, anybody's face or a caption. The tail always points at the speaker, wherever either of them is
 dragged. Tap a bubble twice to change the words.
 
-**Bigger or smaller.** Tap a bubble and drag the pink dot on its corner — out to
-make it bigger, in to make it smaller — or tap ➕ and ➖. The writing and the
-bubble grow together, keeping the same words on each line, anywhere from tiny
-to huge. Captions work the same way.
+**Bigger or smaller — as big as you like.** Tap a bubble and drag the pink dot
+on its corner — out to make it bigger, in to make it smaller — or tap ➕ and ➖.
+The writing and the bubble grow together, keeping the same words on each line,
+from tiny right up to as big as the whole page: one giant BOOM! right across
+it, if that's what the page needs. A big bubble can cover other panels, the
+way a big milbil can.
+
+The page is the only limit. Words keep growing until their bubble (spikes and
+bumps and all) wouldn't fit on the page any more, or until a word would have
+to be split in two to fit across it; then ➕ says "That's as big as it can go",
+and so does the pink dot if your finger goes further than that. Captions work
+the same way: a caption box can be as big as the page, and a strip along the
+top or the bottom of a panel as big as its panel (make the panel bigger for
+bigger words). So can a 🔊 sound button.
+
+Big words that stop fitting — more words typed into them, a Talk bubble turned
+into a spikier Shout, or copied into a bigger panel — are made just small
+enough to fit, still with no word split in two. Words no bigger than Big are
+never made smaller.
 
 ### Captions
 
@@ -189,7 +204,8 @@ The **🔊 Sound** tool puts a sound button on the page: a round gold button wit
 any sound you like recorded on it — a roar, a splash, a song, "the end!". It
 starts in the top corner of the panel; drag it anywhere. Tap it to hear it.
 Picked up, it has **▶️ Play**, **🎙️ Record again**, ➕ ➖ (or the pink dot) to
-make it bigger or smaller, and 🗑️. Read Aloud plays it when it gets to it.
+make it bigger or smaller — as big as the page, if you like — and 🗑️. Read
+Aloud plays it when it gets to it.
 
 A recording can be up to a minute long. Copying a page, or copying things to
 another panel with ⚙️ Settings, copies their voices too.
@@ -441,6 +457,20 @@ the browser's voice that writes down everything it's asked to say: the order,
 who says what, each milbil's voice, the pages turning, the bubble that lights
 up, The End, and stopping half way. (What the real voice sounds like depends on
 the device.)
+
+Big words were checked on an iPad-sized screen: "BOOM!" made bigger with ➕
+until it said it couldn't go any bigger (from 48 to 241 — the old limit was 130
+— and the bubble nearly as wide as the page, all of it on it, BOOM! still in
+one piece), made a Shout (just small enough for its spikes to fit), ten BOOMs
+typed into it (smaller, just enough for them all to fit, none split), the pink
+dot dragged a little (a little bigger), right off the page to the corner of the
+screen (as big as it goes, and it says so), and back in (small again), undone
+and redone; a caption strip as big as its panel, a caption box much bigger
+than its panel, a sound button as big as the page, a thought in Pixel with
+every bump on the page, and big words copied into a panel twice the size
+(just small enough to fit). After a reload every size was still there, and the
+reader, on a screen turned sideways, drew every word with the same lines as the
+editor.
 
 Text styles were checked by writing a bubble, a caption and a title in every
 one: each bubble measured in its own font and fitting round its words, the next

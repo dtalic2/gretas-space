@@ -486,7 +486,8 @@ function helpSheet(){
       <li><b>↩️ Undo</b> takes back anything. Pages number themselves.</li>
       <li><b>📜 Caption</b>: words with nobody talking, like a storyteller — "Once upon a time…". Pick a
         panel and put it in a strip along the top, along the bottom, or in a box you can move anywhere.</li>
-      <li><b>Bigger or smaller words</b>: tap a bubble or caption, then drag its pink dot, or tap ➕ and ➖.</li>
+      <li><b>Bigger or smaller words</b>: tap a bubble or caption, then drag its pink dot, or tap ➕ and ➖.
+        Words can be as big as you like — as big as the whole page. (A caption strip can be as big as its panel.)</li>
       <li><b>🎙️ Your own voice on a bubble</b>: when you type what somebody says (or a caption), tap
         <b>🔴 Record</b> in the Voice row and say it. The bubble gets a 🔊 to tap, and Read Aloud plays your
         voice instead of its own. You don't even have to type anything — a bubble can be all voice.</li>

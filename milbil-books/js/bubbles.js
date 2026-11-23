@@ -75,6 +75,17 @@ export function measure(text, kind = 'say', size = 'm', max = null, font = null)
   return { w: Math.ceil(clamp(widest, 16, max)), h: Math.ceil(Math.max(box.height, 20)) };
 }
 
+/**
+ * How wide the longest word in some words is, in page units, written at the
+ * middle size: a line has to be at least that wide — more, in step, for bigger
+ * writing — for no word to be broken in two. Measured with every word on a
+ * line of its own.
+ */
+export function longestWord(text, kind = 'say', font = null){
+  const words = String(text || '').trim().split(/\s+/).filter(Boolean);
+  return words.length ? measure(words.join('\n'), kind, TEXT_SIZE.m, 100000, font).w : 0;
+}
+
 // ---------------------------------------------------------------- shapes ---
 
 const f = (n) => Math.round(n * 10) / 10;

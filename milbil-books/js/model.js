@@ -398,7 +398,11 @@ export function moveToPanel(from, to, m){
 // ---------------------------------------------------------------- words ---
 
 export const TEXT_SIZE = { s: 38, m: 48, l: 64 };
-export const FS_MIN = 24, FS_MAX = 130;     // the smallest and biggest writing can be
+// The smallest writing can be — and a biggest that no writing could ever get
+// to. Words can be as big as anybody likes so long as they fit on the page (see
+// fitsOnPage, and biggest() in editor.js), and nothing is bigger than the page.
+export const FS_MIN = 24, FS_MAX = 1600;
+const EDGE = 12;      // how close to the edge of the page the biggest words can come
 
 /** How big the writing in some words is, in page units. */
 export const fontSize = (t) => clamp(Number(t.fs) || TEXT_SIZE[t.size] || TEXT_SIZE.m, FS_MIN, FS_MAX);
@@ -426,14 +430,40 @@ export function bodyHalf(t){
 
 export const bumpRadius = (rx, ry) => clamp(Math.min(rx, ry) * 0.36, 16, 42);
 
-/** Half the size of everything a bubble draws, bumps and spikes included. */
+/**
+ * Half the size of everything a bubble draws, bumps, spikes and outline
+ * included (but not its tail): a cloud's biggest bump is 1.18 times the usual,
+ * a burst's longest spike 1.3 times as far out as its oval, and the outline
+ * is 9 wide (see bubbles.js).
+ */
 export function extent(t){
   const { rx, ry } = bodyHalf(t);
   if (isStrip(t)) return { rx, ry };
   if (isSound(t)) return { rx: rx + 4, ry: ry + 4 };
-  if (t.kind === 'think'){ const r = bumpRadius(rx, ry); return { rx: rx + r, ry: ry + r }; }
-  if (t.kind === 'shout') return { rx: rx * 1.26, ry: ry * 1.26 };
+  if (t.kind === 'think'){ const r = bumpRadius(rx, ry) * 1.18 + 5; return { rx: rx + r, ry: ry + r }; }
+  if (t.kind === 'shout') return { rx: rx * 1.3 + 5, ry: ry * 1.3 + 5 };
   return { rx: rx + 5, ry: ry + 5 };
+}
+
+/** Does all of a bubble (or a sound button) fit on the page? */
+export function fitsOnPage(t){
+  const { rx, ry } = extent(t);
+  return rx * 2 <= PAGE_W - 2 * EDGE && ry * 2 <= PAGE_H - 2 * EDGE;
+}
+
+const ROOM = new Map();
+/** The longest a line of words can be, and their bubble still fit across the page. */
+export function textRoom(kind){
+  if (!ROOM.has(kind)){
+    let lo = 16, hi = PAGE_W;
+    while (hi - lo > 1){
+      const w = (lo + hi) >> 1;
+      // as tall as it is wide, for the biggest bumps a cloud can have
+      if (extent({ kind, w, h: w }).rx * 2 <= PAGE_W - 2 * EDGE) lo = w; else hi = w;
+    }
+    ROOM.set(kind, lo);
+  }
+  return ROOM.get(kind);
 }
 
 /** Keep a bubble's middle inside its panel and all of it on the page. */
